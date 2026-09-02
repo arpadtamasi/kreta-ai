@@ -1,40 +1,9 @@
 {
-  "name": "kreta-mcp",
-  "version": "0.2.2",
-  "description": "Helyi, csak olvasható KRÉTA MCP-szerver Claude-hoz. Nem hivatalos, nem az eKRÉTA Zrt. terméke.",
+  "name": "kreta-ai",
+  "version": "0.3.0",
+  "description": "Helyi, csak olvasható KRÉTA-lekérdező skill Claude-hoz. Nem hivatalos, nem az eKRÉTA Zrt. terméke.",
   "license": "Apache-2.0",
   "author": { "name": "Árpád Tamási", "url": "https://github.com/arpadtamasi" },
-  "repository": "https://github.com/arpadtamasi/kreta-mcp",
-  "keywords": ["kreta", "mcp", "education", "read-only"],
-  "userConfig": {
-    "KRETA_CHILD_NAMES": {
-      "type": "string",
-      "title": "Gyerek neve",
-      "description": "Ha több gyereked van, adj hozzá egy bejegyzést mindegyiknek (pl. Marci, majd Benedek) — a többi mezőnél ugyanebben a sorrendben add meg az adatait.",
-      "required": true,
-      "multiple": true
-    },
-    "KRETA_USERNAMES": {
-      "type": "string",
-      "title": "KRÉTA felhasználónév",
-      "description": "Ugyanannyi bejegyzés, ugyanabban a sorrendben, mint a Gyerek neve mezőnél.",
-      "required": true,
-      "multiple": true
-    },
-    "KRETA_PASSWORDS": {
-      "type": "string",
-      "title": "KRÉTA jelszó",
-      "description": "Ugyanabban a sorrendben, mint a Gyerek neve mezőnél. Ne használj vesszőt (,) a jelszóban.",
-      "required": true,
-      "sensitive": true,
-      "multiple": true
-    },
-    "KRETA_INSTITUTE_CODES": {
-      "type": "string",
-      "title": "Intézménykód",
-      "description": "Ugyanabban a sorrendben, mint a Gyerek neve mezőnél (pl. az iskolakod.e-kreta.hu kódja).",
-      "required": true,
-      "multiple": true
-    }
-  }
+  "repository": "https://github.com/arpadtamasi/kreta-ai",
+  "keywords": ["kreta", "education", "read-only", "skill"]
 }
