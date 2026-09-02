@@ -5,6 +5,7 @@ from datetime import date
 from unittest.mock import patch
 
 import kreta_mcp_server as server
+from kreta_smoke_test import Credentials
 from mcp.server.mcpserver.exceptions import ToolError
 
 
@@ -93,6 +94,61 @@ class McpHelpersTest(unittest.TestCase):
                 ("oktatasiNevelesiFeladatUid", "task"),
             ],
         )
+
+
+class GetClientChildResolutionTest(unittest.TestCase):
+    def setUp(self) -> None:
+        server._children = None
+        server._clients = {}
+        self.addCleanup(self._reset_globals)
+
+    def _reset_globals(self) -> None:
+        server._children = None
+        server._clients = {}
+
+    def _set_children(self, *labels: str) -> None:
+        server._children = [
+            Credentials(username=f"u-{label}", password="p", institute_code="i", label=label)
+            for label in labels
+        ]
+
+    def test_single_child_needs_no_child_argument(self) -> None:
+        self._set_children("Marci")
+        client = server.get_client()
+        self.assertIn("Marci", server._clients)
+        self.assertIs(server.get_client(), client)  # cached, not reconstructed
+
+    def test_multi_child_without_child_argument_lists_available_names(self) -> None:
+        self._set_children("Marci", "Benedek")
+        with self.assertRaisesRegex(ToolError, "Marci, Benedek"):
+            server.get_client()
+
+    def test_multi_child_with_unknown_name_lists_available_names(self) -> None:
+        self._set_children("Marci", "Benedek")
+        with self.assertRaisesRegex(ToolError, "Marci, Benedek"):
+            server.get_client("Someone Else")
+
+    def test_multi_child_resolves_by_name_case_insensitively(self) -> None:
+        self._set_children("Marci", "Benedek")
+        client = server.get_client("marci")
+        self.assertIn("Marci", server._clients)
+        self.assertNotIn("Benedek", server._clients)
+        self.assertIs(server.get_client("MARCI"), client)  # cached, case-insensitive
+
+    def test_login_without_child_aggregates_all_when_multiple_configured(self) -> None:
+        self._set_children("Marci", "Benedek")
+        with patch.object(server, "get_client", side_effect=lambda c: FakeClient()):
+            result = server.kreta_login()
+        self.assertEqual(set(result), {"Marci", "Benedek"})
+        self.assertTrue(result["Marci"]["authenticated"])
+
+    def test_login_with_child_targets_only_that_child(self) -> None:
+        self._set_children("Marci", "Benedek")
+        fake = FakeClient()
+        with patch.object(server, "get_client", return_value=fake) as mock_get:
+            result = server.kreta_login(child="Marci")
+        mock_get.assert_called_once_with("Marci")
+        self.assertTrue(result["authenticated"])
 
 
 if __name__ == "__main__":

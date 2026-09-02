@@ -37,10 +37,23 @@ Ha nem akarsz a terminállal bajlódni git clone-nal: töltsd le a legfrissebb
   claude plugin install kreta-mcp@kreta-mcp
   ```
 
-Ezután töltsd ki a hitelesítő adataidat: keresd meg, hova telepítette a
-plugint Claude (`claude plugin details kreta-mcp` kiírja), abban a mappában
-másold `.env.example`-t `.env` néven, és töltsd ki (lásd "Hitelesítő
-adatok"). Ez a csomag saját, plugin-specifikus `.mcp.json`-t tartalmaz
+**Nincs `.env`-fájl-keresgélés.** A hitelesítő adataidat Claude natív,
+beépített beállító-dialógusa kéri be — Claude Code-on belül:
+
+```text
+/plugin configure kreta-mcp@kreta-mcp
+```
+
+(Claude Desktopon ugyanez grafikus dialógusablakban jelenik meg a plugin
+beállításainál.) Ez négy mezőt kér: **Gyerek neve**, **KRÉTA
+felhasználónév**, **KRÉTA jelszó**, **Intézménykód** — egy gyereknél egy-egy
+bejegyzést adj meg, többnél gyerekenként egyet, azonos sorrendben (lásd
+"Több gyerek" lentebb). A jelszó mező maszkoltan jelenik meg, és **nem
+kerül sima szövegfájlba**: biztonságos tárolóba (kulcstartó/credentials
+fájl) megy, míg a többi mező a Claude Code beállításaiba — ezt
+végigteszteltük.
+
+Ez a csomag saját, plugin-specifikus `.mcp.json`-t tartalmaz
 (`${CLAUDE_PLUGIN_ROOT}`-ot használ) — ne keverd a lenti, git clone-hoz való
 változattal.
 
@@ -99,35 +112,33 @@ Ezután indítsd újra a Claude Desktopot.
 
 ## Több gyerek
 
-Ha két (vagy több) gyereked KRÉTA-adatait szeretnéd külön-külön elérni, a
-telepítési módtól függ, hogyan csináld.
-
 ### Plugin telepítésnél
 
-A pluginoknak egyedi néven kell futniuk, ezért gyerekenként külön, névre
-szabott csomagot kell építeni és telepíteni:
+**Egyetlen plugin-telepítés kezeli az összes gyerekedet** — nem kell
+gyerekenként külön csomag. A `/plugin configure kreta-mcp@kreta-mcp`
+dialógusban minden mezőnél ("Gyerek neve", "KRÉTA felhasználónév", "KRÉTA
+jelszó", "Intézménykód") adj hozzá egy-egy bejegyzést gyerekenként, mindig
+ugyanabban a sorrendben — pl. előbb Marci adatai mind a négy mezőnél, utána
+Benedeké. Ha a két gyereked különböző intézményben tanul, ez természetesen
+működik, hisz az intézménykód is gyerekenkénti.
 
-```bash
-./scripts/build-plugin.sh marci      # -> dist/kreta-mcp-marci-plugin-*.zip
-./scripts/build-plugin.sh benedek    # -> dist/kreta-mcp-benedek-plugin-*.zip
-```
+**Fontos**: a jelszó ne tartalmazzon vesszőt (`,`) — a program a
+bejegyzéseket vesszővel választja el egymástól, és egy vesszőt tartalmazó
+jelszó összezavarná a párosítást. Ha ez elkerülhetetlen, a smoke test
+azonnal, egyértelmű hibaüzenettel jelzi (nem enged csendben rossz gyerekhez
+párosítani adatokat).
 
-Csomagold ki mindkettőt külön mappába, mindegyikben töltsd ki a `.env`-et az
-adott gyerek adataival (opcionálisan `KRETA_LABEL`-lel), majd:
-
-```bash
-cd kreta-mcp-marci && claude plugin marketplace add . && claude plugin install kreta-mcp-marci@kreta-mcp-marci
-cd ../kreta-mcp-benedek && claude plugin marketplace add . && claude plugin install kreta-mcp-benedek@kreta-mcp-benedek
-```
-
-Ezt végigteszteltük: mindkét plugin egyszerre, konfliktus nélkül telepíthető,
-és Claude a plugin neve alapján (`kreta-mcp-marci` vs. `kreta-mcp-benedek`)
-tudja, melyik gyerekről van szó, amikor rákérdezel.
+Ezután kérdezz rá névvel: *"Mi van Marcinak a héten?"* — Claude a tool
+`child` paraméterében fogja átadni a nevet. Ha csak egy gyerek van
+beállítva, a `child` paramétert soha nem kell megadni.
 
 ### Git clone telepítésnél
 
-Ha a projektet klónoztad (nem plugin), nem kell külön klón gyerekenként. Egy
-klónon belül:
+Ha a projektet klónoztad (nem plugin), a plugin fenti, vesszős listás
+módszere is működik (állítsd be ugyanezt a négy környezeti változót a
+`.env`-ben: `KRETA_CHILD_NAMES`, `KRETA_USERNAMES`, `KRETA_PASSWORDS`,
+`KRETA_INSTITUTE_CODES`), de nem kell — külön `.env` fájlokkal is
+megoldható, nem kell külön klón gyerekenként:
 
 1. Hozz létre gyerekenként egy külön `.env` fájlt, pl. `.env.deak` és
    `.env.kata` (ezek a mintafájl `.env*` mintája miatt automatikusan ki
@@ -208,6 +219,11 @@ különösen akkor, ha szóközt vagy `#` karaktert tartalmaz.
 Az intézménykódot a KRÉTA intézménykeresőjében találod. Megadhatod önmagában a
 kódot, az `iskolakod.e-kreta.hu` hosztnevet vagy a teljes
 `https://iskolakod.e-kreta.hu` címet is; a program normalizálja.
+
+Több gyerekhez lásd a "Több gyerek" szakaszt — plugin telepítésnél ezt egy
+natív, biztonságos dialógus kéri be, git clone-nál a `KRETA_CHILD_NAMES` /
+`KRETA_USERNAMES` / `KRETA_PASSWORDS` / `KRETA_INSTITUTE_CODES` (vesszővel
+elválasztott lista) vagy külön `.env` fájlok valamelyikét használhatod.
 
 ## Közvetlen ellenőrzés
 

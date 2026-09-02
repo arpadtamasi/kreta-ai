@@ -96,6 +96,64 @@ def load_credentials() -> Credentials:
     )
 
 
+def load_all_credentials() -> list[Credentials]:
+    """Egy vagy több gyerek hitelesítő adatainak beolvasása.
+
+    Ha a KRETA_CHILD_NAMES (és a hozzá tartozó KRETA_USERNAMES /
+    KRETA_PASSWORDS / KRETA_INSTITUTE_CODES) be van állítva, azt vesszővel
+    elválasztott listaként értelmezi — ezt tölti ki a plugin natív,
+    "multiple" konfigurációs mezője, gyerekenként egy bejegyzéssel. Ha nincs
+    beállítva, visszaesik az egygyerekes load_credentials()-re (git clone +
+    .env, vagy egygyerekes plugin-telepítés).
+
+    Figyelem: mivel a lista vesszővel elválasztott, egyik érték sem
+    tartalmazhat vesszőt — ez elsősorban a jelszónál számít, ezért ezt a
+    plugin mezőleírása is jelzi a felhasználónak.
+    """
+    raw_names = os.getenv("KRETA_CHILD_NAMES", "")
+    if not raw_names.strip():
+        single = load_credentials()
+        return [single]
+
+    def split(value: str) -> list[str]:
+        return [item.strip() for item in value.split(",")]
+
+    names = split(raw_names)
+    usernames = split(os.getenv("KRETA_USERNAMES", ""))
+    passwords = os.getenv("KRETA_PASSWORDS", "").split(",")
+    institute_codes = split(os.getenv("KRETA_INSTITUTE_CODES", ""))
+
+    lengths = {len(names), len(usernames), len(passwords), len(institute_codes)}
+    if len(lengths) != 1:
+        raise SmokeTestError(
+            "A KRETA_CHILD_NAMES, KRETA_USERNAMES, KRETA_PASSWORDS és "
+            "KRETA_INSTITUTE_CODES változóknak gyerekenként egy, azonos "
+            "számú, vesszővel elválasztott elemet kell tartalmazniuk. Ha "
+            "valamelyik jelszó vesszőt (,) tartalmaz, ez a beállítási mód "
+            "nem használható vele — válassz vessző nélküli jelszót, vagy "
+            "telepítsd azt a gyereket külön, saját pluginként."
+        )
+
+    children: list[Credentials] = []
+    seen: set[str] = set()
+    for name, username, password, code in zip(names, usernames, passwords, institute_codes):
+        key = name.lower()
+        if not name or not username or not password.strip() or not code:
+            raise SmokeTestError(f"Hiányos adat ehhez a gyerekhez: {name or '(névtelen)'}.")
+        if key in seen:
+            raise SmokeTestError(f"Kétszer szerepel ugyanaz a gyerek-név: {name}.")
+        seen.add(key)
+        children.append(
+            Credentials(
+                username=username,
+                password=password,
+                institute_code=normalize_institute_code(code),
+                label=name,
+            )
+        )
+    return children
+
+
 def normalize_institute_code(value: str) -> str:
     candidate = value.strip().rstrip("/")
     if "://" in candidate:
