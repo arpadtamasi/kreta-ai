@@ -1,0 +1,13 @@
+[project]
+name = "kreta-mcp"
+version = "0.2.0"
+description = "Helyi, csak olvasható KRÉTA MCP-szerver Claude-hoz"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.13,<5",
+    "mcp[cli]>=2,<3",
+    "python-dotenv>=1.1,<2",
+    "requests>=2.32,<3",
+]

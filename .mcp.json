@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "kreta": {
+      "type": "stdio",
+      "command": "uv",
+      "args": [
+        "run",
+        "--directory",
+        "${CLAUDE_PROJECT_DIR:-.}",
+        "python",
+        "kreta_mcp_server.py"
+      ]
+    }
+  }
+}
