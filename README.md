@@ -24,7 +24,30 @@ egy senki más adatához nem fér hozzá, senki mástól nem gyűjt be semmit.
   adataid csak a saját gépeden lévő `.env` fájlban és a memóriában léteznek,
   sosem hagyják el a gépedet, kivéve a KRÉTA saját szervere felé.
 
-## Gyors indítás
+## Plugin telepítés (letölthető ZIP, marketplace nélkül)
+
+Ha nem akarsz a terminállal bajlódni git clone-nal: töltsd le a legfrissebb
+`kreta-mcp-plugin-*.zip` fájlt a [Releases](../../releases) oldalról, majd:
+
+- **Claude Desktop**: csomagold ki a ZIP-et, és a plugin feltöltő
+  felületén válaszd ki a kicsomagolt `kreta-mcp` mappát.
+- **Claude Code**: csomagold ki, majd a mappában:
+  ```bash
+  claude plugin marketplace add ./kreta-mcp
+  claude plugin install kreta-mcp@kreta-mcp
+  ```
+
+Ezután töltsd ki a hitelesítő adataidat: keresd meg, hova telepítette a
+plugint Claude (`claude plugin details kreta-mcp` kiírja), abban a mappában
+másold `.env.example`-t `.env` néven, és töltsd ki (lásd "Hitelesítő
+adatok"). Ez a csomag saját, plugin-specifikus `.mcp.json`-t tartalmaz
+(`${CLAUDE_PLUGIN_ROOT}`-ot használ) — ne keverd a lenti, git clone-hoz való
+változattal.
+
+Ez az út is a te géped, a te KRÉTA-adataiddal futtatja a szervert — a plugin
+csak a telepítést egyszerűsíti, semmilyen adat nem megy máshova.
+
+## Gyors indítás (git clone)
 
 1. Telepítsd az [`uv`](https://docs.astral.sh/uv/getting-started/installation/)
    csomagkezelőt (egy parancs, Mac/Linux/Windows):
@@ -192,6 +215,12 @@ ki. A csatolmány-letöltést szándékosan kihagyja.
 ```bash
 uv sync
 uv run python -m unittest discover -s tests
+```
+
+A plugin ZIP újragenerálása (`dist/kreta-mcp-plugin-<verzió>.zip`):
+
+```bash
+./scripts/build-plugin.sh
 ```
 
 ## Licenc

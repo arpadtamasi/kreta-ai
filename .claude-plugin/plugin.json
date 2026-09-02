@@ -1,0 +1,8 @@
+{
+  "name": "kreta-mcp",
+  "version": "0.2.0",
+  "description": "Helyi, csak olvasható KRÉTA MCP-szerver Claude-hoz. Nem hivatalos, nem az eKRÉTA Zrt. terméke.",
+  "license": "Apache-2.0",
+  "repository": "https://github.com/arpadtamasi/kreta-mcp",
+  "keywords": ["kreta", "mcp", "education", "read-only"]
+}
