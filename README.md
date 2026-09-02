@@ -10,17 +10,18 @@ be, majd rögzített, csak olvasható tanulói `GET` végpontokat kérdez le.
 KRÉTA-hitelesítő adataiddal. Ez nem véletlen: ez a projekt senki más
 adatához nem fér hozzá, senki mástól nem gyűjt be semmit.
 
-Kétféle módon érhető el, a telepítési módtól függően:
+Háromféle módon érhető el, a telepítési módtól függően:
+- **Claude Desktop bővítmény (`.mcpb`) — ez az ajánlott.** Letöltesz egy
+  fájlt, duplán kattintasz rá, és a Claude Desktop natív űrlapján megadod a
+  gyerek(ek) adatait. Nem kell hozzá terminál, se Python: a szervert a
+  Desktop saját Node-ja futtatja, a jelszavak a gép kulcstartójába kerülnek.
+  (Fizetős Claude-csomag kell hozzá: Pro/Max/Team.)
 - **Plugin (skill)** — letölthető ZIP, Claude Bash tool-lal futtatja a
-  `kreta_cli.py` parancssoros scriptet. Ez működik Claude Desktopon és a
-  claude.ai weben/mobilon is, nem csak Claude Code-ban.
-- **Git clone (MCP-szerver)** — a hagyományos, `kreta_mcp_server.py`-t
-  használó út, Claude Code-hoz vagy kézzel bekötött Claude Desktop
-  MCP-szerverként. Ez csak Claude Code-ban (illetve a klasszikus, kézzel
-  szerkesztett Desktop `mcpServers` configban) működik — **pluginba
-  csomagolva NEM jelenik meg Claude Desktop vagy a claude.ai web Chat
-  fülén**, mert onnan a pluginokból csak a skillek aktiválódnak, MCP-szerver
-  nem. Emiatt van a fenti, plugin-változat is.
+  `python/kreta_cli.py` parancssoros scriptet. Ez működik a claude.ai
+  weben is, nem csak Claude Code-ban.
+- **Git clone (MCP-szerver)** — a hagyományos, `python/kreta_mcp_server.py`-t
+  használó út Claude Code-hoz vagy kézzel bekötött Claude Desktop
+  MCP-szerverként, technikásabb felhasználóknak.
 
 ## Nem hivatalos projekt — olvasd el, mielőtt használod
 
@@ -39,7 +40,24 @@ Kétféle módon érhető el, a telepítési módtól függően:
   plugin telepítve is van: az ilyen munkamenetek konténerének nincs
   hálózati elérése a KRÉTA szerverei felé.
 
-## Plugin telepítés (letölthető ZIP, ajánlott)
+## Claude Desktop bővítmény (ajánlott, nem technikás szülőknek)
+
+1. Töltsd le a legfrissebb `kreta-ai-*.mcpb` fájlt a
+   [Releases](../../releases) oldalról.
+2. Kattints rá duplán (vagy Claude Desktop → Settings → Extensions →
+   Install extension…), és hagyd jóvá a telepítést.
+3. A megjelenő űrlapon add meg az 1. gyerek nevét, KRÉTA-azonosítóját,
+   jelszavát és az iskola kódját. Ha több gyereked van, töltsd ki a 2. és
+   3. gyerek mezőit is; ha nincs, hagyd üresen őket.
+4. Kész — kérdezz a Chat fülön: *"Mi a házi holnapra?"*, *"Milyen jegyeket
+   kapott Marci a héten?"*
+
+A jelszavak a rendszer kulcstartójában tárolódnak (macOS Keychain / Windows
+Credential Manager), a lekérdezések a te gépedről mennek közvetlenül a KRÉTA
+szerveréhez. A bővítményhez fizetős Claude-csomag kell (Pro/Max/Team);
+Claude Desktop macOS-en és Windowson érhető el.
+
+## Plugin telepítés (letölthető ZIP, claude.ai webhez)
 
 Töltsd le a legfrissebb `kreta-ai-plugin-*.zip` fájlt a
 [Releases](../../releases) oldalról, csomagold ki, majd:
@@ -69,11 +87,11 @@ Ezután kérdezz rá: *"Mi a házi mára?"*, *"Mikor van a következő dolgozat?
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
 2. Töltsd le ezt a repót (`git clone` vagy ZIP), és lépj be a mappájába.
-3. Másold le a `.env.example` fájlt `.env` néven, és töltsd ki a saját KRÉTA
-   belépési adataiddal (lásd lentebb, "Hitelesítő adatok").
-4. Indítsd el a Claude Code-ot ebben a mappában:
+3. Másold le a `python/.env.example` fájlt `python/.env` néven, és töltsd ki
+   a saját KRÉTA belépési adataiddal (lásd lentebb, "Hitelesítő adatok").
+4. Indítsd el a Claude Code-ot a repó gyökerében:
    ```bash
-   uv sync
+   (cd python && uv sync)
    claude
    ```
    Első indításkor hagyd jóvá a projekt MCP-szerverét (a `.mcp.json` már
@@ -104,7 +122,7 @@ neve:
       "args": [
         "run",
         "--directory",
-        "/ABSOLUTE/PATH/TO/kreta-ai",
+        "/ABSOLUTE/PATH/TO/kreta-ai/python",
         "python",
         "kreta_mcp_server.py"
       ]
@@ -116,6 +134,13 @@ neve:
 Ezután indítsd újra a Claude Desktopot.
 
 ## Több gyerek
+
+### Desktop bővítménynél
+
+A beállító-űrlapon egyszerűen töltsd ki a 2. (és 3.) gyerek mezőcsoportját
+is — gyerekenként név, azonosító, jelszó, iskolakód. Az intézménykódot
+testvéreknél is add meg, akkor is, ha ugyanabba az iskolába járnak. Utána
+kérdezz névvel: *"Mi van Marcinak a héten?"*
 
 ### Plugin telepítésnél
 
@@ -228,6 +253,7 @@ elválasztott lista) vagy külön `.env` fájlok valamelyikét használhatod.
 ## Közvetlen ellenőrzés
 
 ```bash
+cd python
 uv sync
 uv run python kreta_smoke_test.py
 ```
@@ -243,7 +269,7 @@ Hiba esetén nem ír ki tokent, jelszót vagy személyes tanulói adatot.
 A skill parancsai közvetlenül is kipróbálhatók:
 
 ```bash
-uv run python kreta_cli.py homework
+cd python && uv run python kreta_cli.py homework
 ```
 
 ## Összes olvasási végpont próbája
@@ -252,7 +278,7 @@ A dokumentált tanulói `GET` végpontokat egyetlen bejelentkezéssel így lehet
 ellenőrizni:
 
 ```bash
-uv run python kreta_read_probe.py
+cd python && uv run python kreta_read_probe.py
 ```
 
 A program csak HTTP-státuszt és elemszámot ír ki. Az azonosítót igénylő
@@ -261,9 +287,29 @@ ki. A csatolmány-letöltést szándékosan kihagyja.
 
 ## Fejlesztés
 
+A repó felépítése:
+
+- `desktop/` — a Claude Desktop bővítmény (Node.js MCP-szerver + manifest)
+- `python/` — a Python MCP-szerver, CLI és tesztek (plugin / git clone út)
+- `skills/`, `.claude-plugin/` — a plugin-változat skillje és manifestje
+- `scripts/` — csomagoló scriptek
+
+Python tesztek:
+
 ```bash
-uv sync
-uv run python -m unittest discover -s tests
+cd python && uv sync && uv run python -m unittest discover -s tests
+```
+
+Node tesztek:
+
+```bash
+cd desktop && npm install && npm test
+```
+
+A Desktop bővítmény újracsomagolása (`dist/kreta-ai-<verzió>.mcpb`):
+
+```bash
+./scripts/build-mcpb.sh
 ```
 
 A plugin ZIP újragenerálása (`dist/kreta-ai-plugin-<verzió>.zip`):

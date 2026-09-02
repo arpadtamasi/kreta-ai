@@ -6,7 +6,7 @@
       "args": [
         "run",
         "--directory",
-        "${CLAUDE_PROJECT_DIR:-.}",
+        "${CLAUDE_PROJECT_DIR:-.}/python",
         "python",
         "kreta_mcp_server.py"
       ]

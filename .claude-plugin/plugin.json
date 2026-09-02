@@ -1,6 +1,6 @@
 {
   "name": "kreta-ai",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Helyi, csak olvasható KRÉTA-lekérdező skill Claude-hoz. Nem hivatalos, nem az eKRÉTA Zrt. terméke.",
   "license": "Apache-2.0",
   "author": { "name": "Árpád Tamási", "url": "https://github.com/arpadtamasi" },

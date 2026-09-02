@@ -1,0 +1,16 @@
+{
+  "name": "kreta-ai-desktop",
+  "version": "0.4.0",
+  "description": "KRÉTA (csak olvasás) — Claude Desktop bővítmény MCP szervere",
+  "type": "module",
+  "private": true,
+  "license": "Apache-2.0",
+  "scripts": {
+    "smoke": "node scripts/smoke.mjs",
+    "test": "node --test tests/*.test.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.21.1",
+    "zod": "^3.25.76"
+  }
+}

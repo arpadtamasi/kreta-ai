@@ -17,16 +17,17 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml','rb'))['project']['version'])")
+VERSION=$(python3 -c "import tomllib; print(tomllib.load(open('python/pyproject.toml','rb'))['project']['version'])")
 DIST_DIR="dist/kreta-ai"
 ZIP_PATH="dist/kreta-ai-plugin-${VERSION}.zip"
 
-rm -rf "dist"
+rm -rf "$DIST_DIR" "$ZIP_PATH"
+mkdir -p "dist"
 mkdir -p "$DIST_DIR/.claude-plugin"
 mkdir -p "$DIST_DIR/skills/kreta"
 
-cp kreta_client.py kreta_cli.py kreta_smoke_test.py \
-   pyproject.toml uv.lock README.md LICENSE .env.example \
+cp python/kreta_client.py python/kreta_cli.py python/kreta_smoke_test.py \
+   python/pyproject.toml python/uv.lock python/.env.example README.md LICENSE \
    "$DIST_DIR/"
 cp .claude-plugin/plugin.json "$DIST_DIR/.claude-plugin/plugin.json"
 cp skills/kreta/SKILL.md "$DIST_DIR/skills/kreta/SKILL.md"

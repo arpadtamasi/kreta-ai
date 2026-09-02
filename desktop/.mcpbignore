@@ -1,0 +1,5 @@
+# Fejlesztési fájlok — a terjesztett csomagba nem valók.
+tests/
+scripts/
+.mcpbignore
+package-lock.json

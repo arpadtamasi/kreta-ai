@@ -1,0 +1,125 @@
+{
+  "manifest_version": "0.3",
+  "name": "kreta-ai",
+  "display_name": "KRÉTA napló",
+  "version": "0.4.0",
+  "description": "Csak olvasható hozzáférés a gyerekeid KRÉTA e-naplójához: jegyek, órarend, hiányzások, házi feladatok, dolgozatok.",
+  "long_description": "Kérdezd a Claude-ot a gyerekeid iskolai dolgairól: \"Milyen jegyeket kapott Marci a héten?\", \"Mikor lesz a következő dolgozat?\", \"Mi a házi feladat holnapra?\". A bővítmény a saját gépeden fut, a KRÉTA-jelszavakat a rendszer kulcstartója őrzi, és minden adat közvetlenül a KRÉTA szerveréről érkezik hozzád — külső szerver nincs a láncban. Csak olvasni tud, módosítani vagy törölni semmit nem képes.",
+  "author": {
+    "name": "Árpád Tamási",
+    "url": "https://github.com/arpadtamasi"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arpadtamasi/kreta-ai"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "kreta",
+    "e-kreta",
+    "iskola",
+    "education",
+    "read-only"
+  ],
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": [
+        "${__dirname}/server/index.js"
+      ],
+      "env": {
+        "KRETA_CHILD1_NAME": "${user_config.child1_name}",
+        "KRETA_CHILD1_USERNAME": "${user_config.child1_username}",
+        "KRETA_CHILD1_PASSWORD": "${user_config.child1_password}",
+        "KRETA_CHILD1_INSTITUTE_CODE": "${user_config.child1_institute_code}",
+        "KRETA_CHILD2_NAME": "${user_config.child2_name}",
+        "KRETA_CHILD2_USERNAME": "${user_config.child2_username}",
+        "KRETA_CHILD2_PASSWORD": "${user_config.child2_password}",
+        "KRETA_CHILD2_INSTITUTE_CODE": "${user_config.child2_institute_code}",
+        "KRETA_CHILD3_NAME": "${user_config.child3_name}",
+        "KRETA_CHILD3_USERNAME": "${user_config.child3_username}",
+        "KRETA_CHILD3_PASSWORD": "${user_config.child3_password}",
+        "KRETA_CHILD3_INSTITUTE_CODE": "${user_config.child3_institute_code}"
+      }
+    }
+  },
+  "user_config": {
+    "child1_name": {
+      "type": "string",
+      "title": "1. gyerek — neve",
+      "description": "Ahogy a Claude-dal beszélgetve hivatkozol rá (pl. Marci).",
+      "required": true
+    },
+    "child1_username": {
+      "type": "string",
+      "title": "1. gyerek — KRÉTA azonosító",
+      "description": "A KRÉTA-ba való belépéshez használt felhasználónév (általában az oktatási azonosító).",
+      "required": true
+    },
+    "child1_password": {
+      "type": "string",
+      "title": "1. gyerek — KRÉTA jelszó",
+      "description": "A gép kulcstartójában tárolódik, nem sima fájlban.",
+      "sensitive": true,
+      "required": true
+    },
+    "child1_institute_code": {
+      "type": "string",
+      "title": "1. gyerek — iskola kódja",
+      "description": "Az iskola KRÉTA-címéből: a https://VALAMI.e-kreta.hu címben a VALAMI. A teljes címet is beírhatod.",
+      "required": true
+    },
+    "child2_name": {
+      "type": "string",
+      "title": "2. gyerek — neve (nem kötelező)",
+      "description": "Ha csak egy gyereked van, hagyd üresen ezt és a többi 2. gyerekes mezőt.",
+      "required": false
+    },
+    "child2_username": {
+      "type": "string",
+      "title": "2. gyerek — KRÉTA azonosító",
+      "required": false,
+      "description": "A 2. gyerek KRÉTA-felhasználóneve (általában az oktatási azonosító)."
+    },
+    "child2_password": {
+      "type": "string",
+      "title": "2. gyerek — KRÉTA jelszó",
+      "sensitive": true,
+      "required": false,
+      "description": "A gép kulcstartójában tárolódik, nem sima fájlban."
+    },
+    "child2_institute_code": {
+      "type": "string",
+      "title": "2. gyerek — iskola kódja",
+      "description": "Testvéreknél is add meg — akkor is, ha ugyanabba az iskolába járnak.",
+      "required": false
+    },
+    "child3_name": {
+      "type": "string",
+      "title": "3. gyerek — neve (nem kötelező)",
+      "description": "Ha nincs harmadik gyerek, hagyd üresen ezt és a többi 3. gyerekes mezőt.",
+      "required": false
+    },
+    "child3_username": {
+      "type": "string",
+      "title": "3. gyerek — KRÉTA azonosító",
+      "required": false,
+      "description": "A 3. gyerek KRÉTA-felhasználóneve (általában az oktatási azonosító)."
+    },
+    "child3_password": {
+      "type": "string",
+      "title": "3. gyerek — KRÉTA jelszó",
+      "sensitive": true,
+      "required": false,
+      "description": "A gép kulcstartójában tárolódik, nem sima fájlban."
+    },
+    "child3_institute_code": {
+      "type": "string",
+      "title": "3. gyerek — iskola kódja",
+      "required": false,
+      "description": "Az iskola KRÉTA-címéből: a https://VALAMI.e-kreta.hu címben a VALAMI."
+    }
+  }
+}

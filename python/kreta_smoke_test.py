@@ -73,7 +73,10 @@ def load_credentials() -> Credentials:
         if env_file and Path(env_file).is_absolute()
         else Path(__file__).resolve().with_name(env_file or ".env")
     )
-    load_dotenv(dotenv_path=dotenv_path, override=False)
+    # interpolate=False: enélkül a dotenv a ${VALAMI} alakot behelyettesíti
+    # az értékekben, ami egy ilyen részletet tartalmazó jelszót csendben
+    # elront. Ezt semmilyen escape nem védi ki, csak ez a kapcsoló.
+    load_dotenv(dotenv_path=dotenv_path, override=False, interpolate=False)
     values = {
         "KRETA_USERNAME": os.getenv("KRETA_USERNAME", "").strip(),
         "KRETA_PASSWORD": os.getenv("KRETA_PASSWORD", ""),
