@@ -99,8 +99,35 @@ Ezután indítsd újra a Claude Desktopot.
 
 ## Több gyerek
 
-Ha két (vagy több) gyereked KRÉTA-adatait szeretnéd külön-külön elérni, nem
-kell külön klónozni a projektet. Egy klónon belül:
+Ha két (vagy több) gyereked KRÉTA-adatait szeretnéd külön-külön elérni, a
+telepítési módtól függ, hogyan csináld.
+
+### Plugin telepítésnél
+
+A pluginoknak egyedi néven kell futniuk, ezért gyerekenként külön, névre
+szabott csomagot kell építeni és telepíteni:
+
+```bash
+./scripts/build-plugin.sh marci      # -> dist/kreta-mcp-marci-plugin-*.zip
+./scripts/build-plugin.sh benedek    # -> dist/kreta-mcp-benedek-plugin-*.zip
+```
+
+Csomagold ki mindkettőt külön mappába, mindegyikben töltsd ki a `.env`-et az
+adott gyerek adataival (opcionálisan `KRETA_LABEL`-lel), majd:
+
+```bash
+cd kreta-mcp-marci && claude plugin marketplace add . && claude plugin install kreta-mcp-marci@kreta-mcp-marci
+cd ../kreta-mcp-benedek && claude plugin marketplace add . && claude plugin install kreta-mcp-benedek@kreta-mcp-benedek
+```
+
+Ezt végigteszteltük: mindkét plugin egyszerre, konfliktus nélkül telepíthető,
+és Claude a plugin neve alapján (`kreta-mcp-marci` vs. `kreta-mcp-benedek`)
+tudja, melyik gyerekről van szó, amikor rákérdezel.
+
+### Git clone telepítésnél
+
+Ha a projektet klónoztad (nem plugin), nem kell külön klón gyerekenként. Egy
+klónon belül:
 
 1. Hozz létre gyerekenként egy külön `.env` fájlt, pl. `.env.deak` és
    `.env.kata` (ezek a mintafájl `.env*` mintája miatt automatikusan ki
