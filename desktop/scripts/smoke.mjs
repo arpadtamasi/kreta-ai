@@ -3,12 +3,13 @@
  * Éles smoke-teszt a Node-porthoz (a kreta_smoke_test.py megfelelője):
  * belépés PKCE-vel, TanulóAdatlap-olvasás, refresh token visszavonása.
  *
- * A hitelesítő adatokat a repo-gyökér .env fájljából olvassa (egygyerekes
- * formátum: KRETA_USERNAME / KRETA_PASSWORD / KRETA_INSTITUTE_CODE).
- * Értéket, tokent, adatot nem ír ki.
+ * A hitelesítő adatokat egy .env fájlból olvassa (egygyerekes formátum:
+ * KRETA_USERNAME / KRETA_PASSWORD / KRETA_INSTITUTE_CODE). Az útvonal
+ * megadható argumentumként, egyébként a repo-gyökér, majd a python/ mappa
+ * .env fájlját nézi. Értéket, tokent, adatot nem ír ki.
  */
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -35,7 +36,15 @@ function loadEnvFile(path) {
 }
 
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
-const env = loadEnvFile(join(repoRoot, ".env"));
+const candidates = process.argv[2]
+  ? [process.argv[2]]
+  : [join(repoRoot, ".env"), join(repoRoot, "python", ".env")];
+const envPath = candidates.find((path) => existsSync(path));
+if (!envPath) {
+  console.error(`HIBA: nincs .env itt: ${candidates.join(", ")}`);
+  process.exit(1);
+}
+const env = loadEnvFile(envPath);
 const credentials = {
   label: env.KRETA_LABEL ?? "",
   username: (env.KRETA_USERNAME ?? "").trim(),
