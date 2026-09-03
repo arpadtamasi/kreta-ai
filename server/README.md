@@ -1,0 +1,151 @@
+# Padtárs — hosztolt KRÉTA MCP-szerver
+
+Custom Connector Claude-hoz, ami a KRÉTA tanulói adatokat **csak olvasásra**
+teszi elérhetővé — és **nem tárol semmilyen hitelesítő adatot**: se jelszót,
+se tokent, se felhasználói rekordot.
+
+Ez a repó helyben futó változatának (`python/`, `desktop/`) a párja. Az a
+kettő a szülő gépén fut; ez egy szerver, ami cserébe **claude.ai weben és
+mobilon is működik**, ahol a helyi MCP-szerverek nem.
+
+> Független projekt. Nem áll kapcsolatban az eKRÉTA Zrt.-vel, és nem hivatalos
+> KRÉTA-termék. A KRÉTA tanulói API nem nyilvános integrációs API; a belépés
+> vagy a végpontok bejelentés nélkül megváltozhatnak.
+
+## Hogyan lehet jelszó nélkül
+
+A ghub-ai (a testvérprojekt) esetében a Google igazi OAuth-partner: a jelszó a
+`accounts.google.com`-on születik, a szerver csak refresh tokent lát. A KRÉTA
+nem ilyen — nincs harmadik feles kliensregisztráció, a `client_id` és a
+`redirect_uri` a hivatalos mobilappé, és nem cserélhető le. Federálni tehát
+nincs mihez.
+
+Ezért itt **a `/authorize` oldal maga a KRÉTA-login**:
+
+1. Claude megnyitja a `/authorize`-t a szülő böngészőjében (a szokásos
+   connector-folyamat).
+2. A szülő ott adja meg a KRÉTA azonosítót, jelszót és intézménykódot —
+   akár több gyerekét egyszerre.
+3. A szerver ott helyben bejelentkezik a KRÉTA IDP-be, megkapja a
+   token-párt, és **a jelszót eldobja**. Nem írja ki sehova, nem naplózza,
+   és nem teszi bele semmilyen tokenbe.
+4. A KRÉTA refresh token AES-256-GCM-mel **lezárva belekerül abba a
+   tokenbe, amit Claude kap**. Claude tárolja; ez a szerver nem.
+
+Egy űrlap, egy kattintás, nulla copy-paste — és a szerveren nincs se
+jelszó-, se token-adatbázis.
+
+## Mit jelent pontosan a „nem tárol"
+
+**Amit nyersz.** Nincs mit ellopni nyugalmi állapotban: se Firestore, se
+Secret Manager bejegyzés gyerekenként — az egész szolgáltatásnak egyetlen
+titka van, a lezáró kulcs. A törlés automatikus: ha a szülő leveszi a
+connectort Claude-ból, az egyetlen példány megszűnik, nincs mit „kérni,
+hogy töröljék". És a szerver nem tud új belépést kezdeményezni, mert nincs
+nála jelszó.
+
+**Amit nem nyersz.** A jelszó a te szervered memóriáján megy át a
+bejelentkezéskor, és a lezáró kulcs a tiéd — tehát a Claude által
+bemutatott tokent ki tudod bontani. Ez „nincs hitelesítőadat-tár", nem
+„zero knowledge". Továbbá a lezárt refresh token gyakorlatilag ugyanolyan
+erős, mint a jelszó: a KRÉTA-scope az e-ügyintézést és a fájlszolgáltatást
+is tartalmazza, még ha ez a szerver csak `GET`-eket hív is.
+
+**És alakilag phishing.** A szülő egy nem-KRÉTA domainre gépeli be az
+iskolai jelszavát. A bejelentkező oldal ezt ki is írja, keretes
+figyelmeztetésben, a mezők fölött. Ezt a szöveget ne lágyítsd.
+
+## Rotál-e a refresh token? — ez dönti el, működik-e tárolás nélkül
+
+A lezárt access token a bejelentkezéskor kapott refresh tokent viszi. Ha a
+KRÉTA IDP **rotál** (minden frissítésnél újat ad és a régit érvényteleníti),
+akkor az a lezárt példány az első használat után elavul — és egy tárolás
+nélküli szervernek nincs hova felírnia az újat.
+
+Erre két válasz van a kódban:
+
+- `src/kreta/rotationCache.ts` — memóriában tartja a legfrissebb refresh
+  tokent, a session id alapján. Egy példányos deploynál
+  (`--max-instances=1`) ez a kapcsolat teljes élettartamát lefedi, kivéve
+  egy hidegindítást; utána visszaesik a lezárt eredetire.
+- `kreta_login` tool — a válaszában ott van a
+  `refresh_token_rotation_observed` mező. **Ez a mérés.** Hívd meg,
+  használd a connectort egy napig, hívd meg újra.
+
+**Ha `true`-t látsz és a kapcsolat rendszeresen elhal**, akkor a tárolás
+nélküli út nem tartható: a `RotationCache` interfésze pontosan az a varrat,
+ahova egy tartós tár (Firestore + Secret Manager, ahogy a ghub-ai csinálja)
+bekerül. Akkor is **a refresh tokent tárold, ne a jelszót** — a UX
+ugyanez az egy űrlap marad.
+
+## Deploy
+
+```bash
+cd server
+npm install
+npm run keygen            # ezt tedd Secret Managerbe TOKEN_SEALING_KEY néven
+npm test
+```
+
+Cloud Runra:
+
+```bash
+gcloud run deploy padtars \
+  --source . \
+  --region europe-west1 \
+  --allow-unauthenticated \
+  --max-instances=1 \
+  --set-env-vars OAUTH_ISSUER=https://<a-te-domained> \
+  --set-secrets TOKEN_SEALING_KEY=padtars-sealing-key:latest
+```
+
+A `--max-instances=1` **nem véletlen**: két folyamat közül csak az egyik
+ismeri a rotációs cache-t és a beváltott kódokat (lásd
+`src/oauth/replayCache.ts`). Egyetlen példány mellett mindkét garancia teljes.
+
+Ezután Claude-ban: Settings → Connectors → Add custom connector → a
+szolgáltatás URL-je. Claude felfedezi a `/.well-known/...` végpontokat, maga
+regisztrál, és megnyitja a bejelentkező oldalt.
+
+## Helyi próba
+
+```bash
+cd server
+TOKEN_SEALING_KEY="$(npm run --silent keygen)" \
+OAUTH_ALLOWED_REDIRECT_URIS="http://localhost:6274/oauth/callback" \
+npm run dev
+```
+
+Az `OAUTH_ALLOWED_REDIRECT_URIS` az a lista, amiből a kliens választhat
+redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
+
+## Felépítés
+
+| Fájl | Szerep |
+|---|---|
+| `src/seal.ts` | AES-256-GCM lezárt tokenek — ez teszi lehetővé a tárolás nélküli működést |
+| `src/oauth/router.ts` | OAuth 2.1 AS, aminek a `/authorize`-a a KRÉTA-login |
+| `src/oauth/pages.ts` | a bejelentkező űrlap (és a figyelmeztetés) |
+| `src/oauth/clients.ts` | állapotmentes kliensregisztráció: a `client_id` maga a rekord |
+| `src/oauth/replayCache.ts` | egyszer-használatos authorization code, példányon belül |
+| `src/kreta/auth.ts` | KRÉTA belépés / frissítés / visszavonás — az egyetlen hely, ahol jelszó van |
+| `src/kreta/client.ts` | csak olvasó Student API kliens |
+| `src/kreta/rotationCache.ts` | a rotáció elleni memóriabeli védőháló |
+| `src/mcp/server.ts` | a 20 csak-olvasó tool |
+
+## Amit ez a szerver nem csinál
+
+Nincs írás, nincs törlés, nincs tetszőleges API-útvonal, és nincs
+csatolmány-letöltés. Ezt a rögzített toollista tartja, nem egy jogosultsági
+beállítás — a KRÉTA-scope ennél többet engedne.
+
+## Nyitott kérdések, mielőtt bárki másnak odaadod
+
+- **Rotáció** — lásd fent; ez az első mérés.
+- **IP-tiltás.** Egy Cloud Run IP-ről sok iskola IDP-jébe belépni pont úgy
+  néz ki, mint a credential stuffing.
+- **Adatvédelem.** Ha nem csak a saját gyerekeid adatait szolgálod ki,
+  kiskorúak oktatási adatai felett adatkezelővé válsz, egy nem dokumentált,
+  nem engedélyezett API-n. A helyben futó változat README-je ma kifejezetten
+  azt ígéri, hogy nincs hosztolt szolgáltatás — ezt együtt kell frissíteni
+  azzal, hogy ez élesbe megy.

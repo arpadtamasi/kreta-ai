@@ -1,0 +1,125 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { KretaError, normalizeInstituteCode } from "../src/kreta/institute.js";
+import { parseLoginForm } from "../src/kreta/loginForm.js";
+import { RotationCache } from "../src/kreta/rotationCache.js";
+import { ReplayCache } from "../src/oauth/replayCache.js";
+import { dateRange, pack, studyTaskUids, validateLimit } from "../src/mcp/shape.js";
+import { ToolError } from "../src/mcp/context.js";
+
+test("institute codes are accepted in every shape a parent might copy", () => {
+  for (const input of ["klik123456", "KLIK123456", " klik123456 ", "klik123456.e-kreta.hu", "https://klik123456.e-kreta.hu", "https://klik123456.e-kreta.hu/"]) {
+    assert.equal(normalizeInstituteCode(input).toLowerCase(), "klik123456");
+  }
+});
+
+test("a non-institute value is rejected with a readable message", () => {
+  for (const input of ["", "  ", "a", "https://example.com/../etc", "kód with space"]) {
+    assert.throws(() => normalizeInstituteCode(input), KretaError);
+  }
+});
+
+test("the login form parser reads the action and every named input", () => {
+  const html = `
+    <html><body>
+      <form method="get" action="/search"><input name="q"></form>
+      <form method="POST" action="/account/login?ReturnUrl=%2Fconnect%2Fauthorize">
+        <input type="hidden" name="__RequestVerificationToken" value="tok&amp;en" />
+        <input type="hidden" name="ReturnUrl" value="/connect/authorize?x=1&amp;y=2">
+        <input name='UserName' value=''>
+        <input name=IsTemporaryLogin value=False>
+        <input type="submit">
+      </form>
+    </body></html>`;
+  const form = parseLoginForm(html);
+  assert.ok(form);
+  assert.equal(form.action, "/account/login?ReturnUrl=%2Fconnect%2Fauthorize");
+  assert.equal(form.fields.__RequestVerificationToken, "tok&en");
+  assert.equal(form.fields.ReturnUrl, "/connect/authorize?x=1&y=2");
+  assert.equal(form.fields.UserName, "");
+  assert.equal(form.fields.IsTemporaryLogin, "False");
+});
+
+test("a page with no POST form yields null rather than a silent bad POST", () => {
+  assert.equal(parseLoginForm("<html><body><p>karbantartás</p></body></html>"), null);
+  assert.equal(parseLoginForm('<form method="post"><input name="a"></form>'), null);
+});
+
+test("the replay cache allows one claim per id", () => {
+  const cache = new ReplayCache(1000);
+  assert.ok(cache.claim("code-1"));
+  assert.equal(cache.claim("code-1"), false);
+  assert.ok(cache.claim("code-2"));
+});
+
+test("the replay cache forgets ids once they could no longer be replayed", () => {
+  const cache = new ReplayCache(1000);
+  assert.ok(cache.claim("code-1", 0));
+  assert.equal(cache.claim("code-1", 500), false);
+  assert.ok(cache.claim("code-1", 2000));
+});
+
+test("the rotation cache returns the newest token and expires stale ones", () => {
+  const cache = new RotationCache(2);
+  cache.set("a", "rt-1", 0);
+  assert.equal(cache.get("a", 1000), "rt-1");
+  cache.set("a", "rt-2", 1000);
+  assert.equal(cache.get("a", 2000), "rt-2");
+  assert.equal(cache.get("a", 40 * 24 * 60 * 60 * 1000), undefined);
+});
+
+test("the rotation cache evicts the least recently used entry at capacity", () => {
+  const cache = new RotationCache(2);
+  cache.set("a", "rt-a");
+  cache.set("b", "rt-b");
+  cache.get("a");
+  cache.set("c", "rt-c");
+  assert.equal(cache.get("b"), undefined);
+  assert.equal(cache.get("a"), "rt-a");
+  assert.equal(cache.get("c"), "rt-c");
+});
+
+test("list answers are capped and report truncation", () => {
+  const packed = pack([1, 2, 3, 4], 2) as { items: unknown[]; returned: number; total: number; truncated: boolean };
+  assert.deepEqual(packed.items, [1, 2]);
+  assert.equal(packed.returned, 2);
+  assert.equal(packed.total, 4);
+  assert.equal(packed.truncated, true);
+  assert.deepEqual(pack({ a: 1 }), { data: { a: 1 } });
+});
+
+test("limits outside the allowed band are refused", () => {
+  assert.equal(validateLimit(1), 1);
+  for (const bad of [0, -1, 501, 1.5]) {
+    assert.throws(() => validateLimit(bad), ToolError);
+  }
+});
+
+test("date ranges default around today and validate explicit input", () => {
+  const today = new Date("2026-09-03T00:00:00Z");
+  assert.deepEqual(dateRange(undefined, undefined, { defaultStartDays: -7, defaultEndDays: 14, today }), {
+    start: "2026-08-27",
+    end: "2026-09-17",
+  });
+  assert.deepEqual(dateRange("2026-09-01", "2026-09-02", { defaultStartDays: 0, today }), {
+    start: "2026-09-01",
+    end: "2026-09-02",
+  });
+  assert.throws(() => dateRange("2026-09-02", "2026-09-01", { defaultStartDays: 0, today }), ToolError);
+  assert.throws(() => dateRange("2026/09/01", undefined, { defaultStartDays: 0, today }), ToolError);
+  assert.throws(() => dateRange("2026-01-01", "2026-12-31", { defaultStartDays: 0, today }), ToolError);
+});
+
+test("study task uids are de-duplicated and stripped of trailing parts", () => {
+  assert.deepEqual(
+    studyTaskUids([
+      { OktatasNevelesiFeladat: { Uid: "111,Altalanos" } },
+      { OktatasNevelesiFeladat: { Uid: "111,Masik" } },
+      { OktatasNevelesiFeladat: { uid: "222" } },
+      { nothing: true },
+      "junk",
+    ]),
+    ["111", "222"],
+  );
+  assert.deepEqual(studyTaskUids(null), []);
+});

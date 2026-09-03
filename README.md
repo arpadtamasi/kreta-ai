@@ -6,9 +6,16 @@ kérdezni.
 
 A program a KRÉTA felé OAuth 2.0 Authorization Code + PKCE folyamattal lép
 be, majd rögzített, csak olvasható tanulói `GET` végpontokat kérdez le.
-**Nincs hivatalos, hosztolt szolgáltatás** — mindig a te gépeden fut, a te
-KRÉTA-hitelesítő adataiddal. Ez nem véletlen: ez a projekt senki más
-adatához nem fér hozzá, senki mástól nem gyűjt be semmit.
+**Nincs hivatalos, hosztolt szolgáltatás** — az alábbi három telepítési mód
+mindegyike a te gépeden fut, a te KRÉTA-hitelesítő adataiddal. Ez nem
+véletlen: ez a projekt senki más adatához nem fér hozzá, senki mástól nem
+gyűjt be semmit.
+
+A `server/` mappában van egy **kísérleti, hosztolható változat** is (Custom
+Connector, ami claude.ai weben és mobilon is működik). Az sem tárol jelszót
+vagy tokent — de ott a bejelentkezés egy szerveren megy át, nem a gépeden,
+ezért külön mérlegelés kérdése; lásd [`server/README.md`](server/README.md).
+Amíg ki nem próbáltad, a fenti három út a javasolt.
 
 Háromféle módon érhető el, a telepítési módtól függően:
 - **Claude Desktop bővítmény (`.mcpb`) — ez az ajánlott.** Letöltesz egy
