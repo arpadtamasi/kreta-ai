@@ -1,4 +1,4 @@
-# Diri — hosztolt KRÉTA MCP-szerver
+# Üzenőfüzet — hosztolt KRÉTA MCP-szerver
 
 Custom Connector Claude-hoz, ami a KRÉTA tanulói adatokat **csak olvasásra**
 teszi elérhetővé — és **nem tárol semmilyen hitelesítő adatot**: se jelszót,
@@ -90,13 +90,13 @@ npm test
 Cloud Runra:
 
 ```bash
-gcloud run deploy diri \
+gcloud run deploy uzenofuzet \
   --source . \
   --region europe-west1 \
   --allow-unauthenticated \
   --max-instances=1 \
   --set-env-vars OAUTH_ISSUER=https://<a-te-domained> \
-  --set-secrets TOKEN_SEALING_KEY=diri-sealing-key:latest
+  --set-secrets TOKEN_SEALING_KEY=uzenofuzet-sealing-key:latest
 ```
 
 A `--max-instances=1` **nem véletlen**: két folyamat közül csak az egyik

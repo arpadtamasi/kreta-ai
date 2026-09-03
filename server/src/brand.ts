@@ -7,7 +7,7 @@
  * this project is unaffiliated, and every public surface has to say so.
  */
 export const BRAND = {
-  name: "Diri",
+  name: "Üzenőfüzet",
   tagline: "Kérdezz a gyereked iskolai adatairól.",
   disclaimer:
     "Független projekt. Nem áll kapcsolatban az eKRÉTA Zrt.-vel, és nem hivatalos KRÉTA-termék.",
