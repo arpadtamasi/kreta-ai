@@ -13,6 +13,8 @@ import { BRAND } from "./brand.js";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
+import { createInstituteRouter } from "./institutes/router.js";
+import { searchKretaInstitutes, type InstituteSearch } from "./institutes/search.js";
 import { createPledgeRouter } from "./pledges/router.js";
 import { FirestorePledgeStore, type PledgeStore } from "./pledges/store.js";
 import { createChildProfileRouter } from "./profiles/router.js";
@@ -29,6 +31,7 @@ export interface AppDeps {
   verifyFirebaseIdToken?: VerifyIdToken;
   createFirebaseSessionCookie?: CreateSessionCookie;
   verifyFirebaseSessionCookie?: VerifySessionCookie;
+  searchInstitutes?: InstituteSearch;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -82,6 +85,13 @@ export function createApp(deps: AppDeps): Express {
     });
 
   app.use("/api/pledges", createPledgeRouter({ store: pledgeStore, verifyIdToken: verifyFirebaseIdToken }));
+  app.use(
+    "/api/institutes",
+    createInstituteRouter({
+      verifyIdToken: verifyFirebaseIdToken,
+      search: deps.searchInstitutes ?? searchKretaInstitutes,
+    }),
+  );
   app.use(
     "/api/session",
     createSessionRouter({

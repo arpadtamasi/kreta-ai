@@ -35,6 +35,7 @@ Parents discover the service on the landing page, sign in with Google on the das
 - The KRÉTA student API is undocumented and may change without notice.
 - The deploy currently needs one Cloud Run instance because refresh-token rotation and authorization-code replay protection are held in memory.
 - KRÉTA passwords and tokens remain outside the profile database. Firestore stores the child name, KRÉTA username and institution code under the verified parent's Firebase user ID. The profile can be edited or deleted on the dashboard.
+- The dashboard can look up live institutions through eKRÉTA's public institution selector. Search terms pass through the server, results are bounded and short-lived, and manual institution-code entry remains available when the undocumented selector changes or fails.
 - The public advocacy wall remains a separate opt-in record: one optional public message per verified Google account, keyed by Firebase user ID. A Google account can still use the wall without creating a child profile.
 - Public launch requires a separate privacy/legal review because the service processes minors' educational data.
 

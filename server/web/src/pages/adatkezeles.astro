@@ -10,6 +10,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <h2>Privát gyerekprofil</h2>
     <p>Google-belépés után a Firestore-ban, a fiókod technikai azonosítója alatt legfeljebb három profil menthető. A profil a gyerek rendes nevét, KRÉTA-felhasználónevét, intézménykódját, valamint a létrehozás és módosítás időpontját tartalmazza. A KRÉTA-jelszó és a KRÉTA-token nem kerül ebbe az adatbázisba.</p>
     <p>A profilokat csak a szerver olvassa a hitelesített Google-fiókod nevében. A kapcsolati pulton szerkesztheted vagy törölheted őket.</p>
+    <p>Az intézmény keresésekor a beírt keresőkifejezést a szerver továbbítja az eKRÉTA nyilvános intézménykeresőjének. A gyorsabb ismételt kereséshez a kifejezés és a találatok legfeljebb tíz percig a szerver memóriájában maradhatnak, tartós adatbázisba nem kerülnek. Kiválasztás után csak az intézménykódot tároljuk a profilban.</p>
 
     <h2>Claude–KRÉTA kapcsolat</h2>
     <p>A mentett KRÉTA-felhasználónevet és intézménykódot a szerver a gyerek neve alapján veszi elő. A KRÉTA-jelszó a belépés idejére átmegy a szerveren, de nem tároljuk. A KRÉTA frissítőtoken titkosítva abba a hozzáférési tokenbe kerül, amelyet Claude őriz; a profiladatbázisba ez sem kerül be.</p>

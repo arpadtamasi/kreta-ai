@@ -42,10 +42,12 @@
           <span>Az eKRÉTA belépési azonosítója. Csak a te profilodban tároljuk.</span>
           <input id="kreta-username" name="kretaUsername" type="text" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" required />
         </label>
-        <label for="institute-code">Intézménykód
-          <span>Például <code>klik123456</code> vagy az iskola <code>e-kreta.hu</code> címe.</span>
-          <input id="institute-code" name="instituteCode" type="text" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" required />
+        <label for="institute-code">Intézmény
+          <span id="institute-help">Írj be legalább 3 karaktert az iskola nevéből vagy kódjából, majd válassz a találatok közül. A kód kézzel is megadható.</span>
+          <input id="institute-code" name="instituteCode" type="text" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" list="institute-options" aria-describedby="institute-help institute-search-status" aria-busy="false" required placeholder="pl. Budenz vagy klik034802001" />
         </label>
+        <datalist id="institute-options"></datalist>
+        <p class="institute-status" id="institute-search-status" role="status" aria-live="polite"></p>
         <button class="save-profile" type="submit">Profil mentése</button>
       </form>
     </div>
@@ -72,6 +74,11 @@
     childName: string;
     kretaUsername: string;
     instituteCode: string;
+  }
+
+  interface InstituteSuggestion {
+    code: string;
+    name: string;
   }
 
   const firebaseConfig = {
@@ -104,9 +111,15 @@
   const nameInput = document.querySelector<HTMLInputElement>("#child-name")!;
   const usernameInput = document.querySelector<HTMLInputElement>("#kreta-username")!;
   const instituteInput = document.querySelector<HTMLInputElement>("#institute-code")!;
+  const instituteOptions = document.querySelector<HTMLDataListElement>("#institute-options")!;
+  const instituteStatus = document.querySelector<HTMLElement>("#institute-search-status")!;
   const returnNote = document.querySelector<HTMLElement>("#profiles-return-note")!;
   let profiles: Profile[] = [];
   let formOpener: HTMLElement | null = null;
+  let instituteTimer: number | undefined;
+  let instituteRequest: AbortController | null = null;
+  let instituteRequestNumber = 0;
+  const instituteChoices = new Map<string, InstituteSuggestion>();
 
   const candidateReturn = new URLSearchParams(location.search).get("return_to") ?? "";
   const returnTo = candidateReturn.startsWith("/authorize?") && candidateReturn.length <= 12_000
@@ -135,7 +148,101 @@
     }
   }
 
+  function resetInstituteSearch(message = "") {
+    window.clearTimeout(instituteTimer);
+    instituteRequest?.abort();
+    instituteRequest = null;
+    instituteRequestNumber += 1;
+    instituteChoices.clear();
+    instituteOptions.replaceChildren();
+    instituteInput.setAttribute("aria-busy", "false");
+    instituteStatus.textContent = message;
+    instituteStatus.dataset.kind = "";
+  }
+
+  function instituteChoiceLabel(suggestion: InstituteSuggestion): string {
+    return `${suggestion.name} — ${suggestion.code}`;
+  }
+
+  function normalizedInstituteQuery(value: string): string {
+    return value.normalize("NFKC").replace(/\s+/gu, " ").trim();
+  }
+
+  async function searchInstitutes(query: string) {
+    const user = auth.currentUser;
+    if (!user) return;
+    const requestNumber = ++instituteRequestNumber;
+    instituteRequest?.abort();
+    instituteRequest = new AbortController();
+    instituteInput.setAttribute("aria-busy", "true");
+    instituteStatus.textContent = "Intézmények keresése…";
+    instituteStatus.dataset.kind = "";
+
+    try {
+      const response = await fetch("/api/institutes", {
+        method: "POST",
+        headers: { "content-type": "application/json", ...await authHeaders(user) },
+        body: JSON.stringify({ q: query }),
+        cache: "no-store",
+        signal: instituteRequest.signal,
+      });
+      const data = await response.json() as { suggestions?: InstituteSuggestion[]; error?: string };
+      if (!response.ok || !data.suggestions) {
+        throw new Error(data.error ?? "Az intézménykereső most nem elérhető.");
+      }
+      if (requestNumber !== instituteRequestNumber || normalizedInstituteQuery(instituteInput.value) !== query) return;
+
+      instituteChoices.clear();
+      instituteOptions.replaceChildren();
+      for (const suggestion of data.suggestions) {
+        const label = instituteChoiceLabel(suggestion);
+        instituteChoices.set(label, suggestion);
+        const option = document.createElement("option");
+        option.value = label;
+        instituteOptions.append(option);
+      }
+      instituteStatus.textContent = data.suggestions.length > 0
+        ? `${data.suggestions.length} találat. Válassz egy intézményt a mező javaslatai közül.`
+        : "Nincs találat. Az intézménykódot kézzel is beírhatod.";
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      if (requestNumber !== instituteRequestNumber) return;
+      instituteChoices.clear();
+      instituteOptions.replaceChildren();
+      instituteStatus.textContent = error instanceof Error
+        ? error.message
+        : "Az intézménykereső most nem elérhető. A kódot kézzel is beírhatod.";
+      instituteStatus.dataset.kind = "error";
+    } finally {
+      if (requestNumber === instituteRequestNumber) {
+        instituteInput.setAttribute("aria-busy", "false");
+        instituteRequest = null;
+      }
+    }
+  }
+
+  instituteInput.addEventListener("input", () => {
+    const chosen = instituteChoices.get(instituteInput.value);
+    if (chosen) {
+      resetInstituteSearch(`Kiválasztva: ${chosen.name} (${chosen.code}).`);
+      instituteInput.value = chosen.code;
+      return;
+    }
+
+    window.clearTimeout(instituteTimer);
+    instituteRequest?.abort();
+    instituteChoices.clear();
+    instituteOptions.replaceChildren();
+    const query = normalizedInstituteQuery(instituteInput.value);
+    if (query.length < 3 || query.includes("://") || query.toLocaleLowerCase("hu-HU").endsWith(".e-kreta.hu")) {
+      resetInstituteSearch();
+      return;
+    }
+    instituteTimer = window.setTimeout(() => void searchInstitutes(query), 280);
+  });
+
   function showForm(profile?: Profile, opener?: HTMLElement) {
+    resetInstituteSearch();
     formOpener = opener?.isConnected && !opener.hidden ? opener : null;
     idInput.value = profile?.id ?? "";
     nameInput.value = profile?.childName ?? "";
@@ -148,6 +255,7 @@
   }
 
   function hideForm(restoreFocus = true) {
+    resetInstituteSearch();
     const target = formOpener;
     formOpener = null;
     form.hidden = true;
@@ -354,6 +462,8 @@
   .profile-form label + label { border-top: 1px solid var(--blue-soft); }
   .profile-form label > span { display: block; margin: .3rem 0 .6rem; color: var(--ink-muted); font-size: .7rem; font-weight: 450; line-height: 1.5; }
   .profile-form input { width: 100%; min-height: 3rem; padding: 0 .8rem; border: 1px solid #8799af; border-radius: 0; color: var(--ink); background: var(--paper-bright); caret-color: var(--blue); }
+  .institute-status { min-height: 1.2rem; margin: -.45rem 0 1rem; color: var(--ink-muted); font-size: .68rem; line-height: 1.5; }
+  .institute-status[data-kind="error"] { color: #a62f22; }
   .save-profile { width: 100%; min-height: 3.55rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-weight: 800; cursor: pointer; }
   .save-profile:disabled, .google-button:disabled { cursor: wait; opacity: .6; }
   .profiles-status { min-height: 1.4rem; margin: 1rem 0 0; color: var(--ink-muted); font-size: .75rem; }

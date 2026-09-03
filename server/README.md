@@ -135,6 +135,12 @@ backend Firebase Adminnal ellenőrzi. A Firestore kliensszabályok mindent
 tiltanak: a gyerekprofilokat és az üzenőfalat csak a Cloud Run szolgáltatás
 olvassa és írja.
 
+Az intézmény mező három karakter után a nyilvános eKRÉTA intézménykeresőt
+hívja a Cloud Run szerveren keresztül. A backend a kapott HTML-listából csak
+az intézmény nevét és kódját adja tovább, legfeljebb húsz találattal. A kereső
+kényelmi funkció: ha a nem dokumentált külső végpont nem elérhető, a kód kézzel
+is megadható.
+
 ## Helyi próba
 
 ```bash
@@ -165,6 +171,7 @@ redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
 | `src/profiles/router.ts` | a Google-fiókhoz kötött gyerekprofilok API-ja |
 | `src/profiles/store.ts` | a privát gyerekprofilok Firestore-adattára |
 | `src/auth/router.ts` | rövid Google ID tokenből `HttpOnly` OAuth-munkamenet |
+| `src/institutes/` | hitelesített adapter az eKRÉTA intézménykereső HTML-válaszához |
 | `web/` | Astro landing, dashboard és tájékoztató oldalak |
 
 ## Amit ez a szerver nem csinál

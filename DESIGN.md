@@ -305,6 +305,7 @@ Containers feel like connected ledger sections, not detachable objects.
 - **Focus:** All public controls inherit the vermilion 3px focus outline and 4px offset.
 - **Status:** Success and failure messages use pale mint and coral against the dark pledge surface; empty/loading records switch to mono metadata.
 - **Credential fields:** Only `/authorize` uses 8px controls with a 1px cool-gray border, 42px minimum height, and a restrained blue focus ring.
+- **Institution finder:** The dashboard profile form keeps its square printed field. After three characters it uses the browser's native suggestion surface, then replaces the chosen school name with the exact KRÉTA institution code. Loading, empty, failure, and manual-entry fallback copy sits directly below the field.
 
 ### Navigation
 
