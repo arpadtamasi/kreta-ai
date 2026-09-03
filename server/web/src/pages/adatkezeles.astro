@@ -1,0 +1,42 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Adatkezelés – Üzenőfüzet" description="Az Üzenőfüzet rövid, közérthető adatkezelési tájékoztatója.">
+  <article class="legal">
+    <h1>Adatkezelés</h1>
+    <p class="intro">Két külön adatfolyam van: a Claude–KRÉTA kapcsolat és a nyilvános üzenetfal. Nem keverjük össze őket.</p>
+
+    <h2>Claude–KRÉTA kapcsolat</h2>
+    <p>A KRÉTA-azonosító és -jelszó a belépés idejére átmegy a szerveren. A jelszót nem tároljuk. A KRÉTA frissítőtoken titkosítva abba a hozzáférési tokenbe kerül, amelyet Claude őriz. Az Üzenőfüzetnek nincs felhasználónkénti KRÉTA-hitelesítőadat-adatbázisa.</p>
+    <p>A szerver üzemeltetési naplói technikai adatokat — például időpontot, kért végpontot és hálózati adatokat — tartalmazhatnak. KRÉTA-jelszót szándékosan nem naplózunk.</p>
+
+    <h2>Nyilvános üzenetfal</h2>
+    <p>A Google-belépéskor a Firebase Authentication azonosítja a fiókot. A szerver megkapja a fiók egyedi azonosítóját és megjelenített nevét; az e-mail-címet nem tesszük közzé és nem mentjük az üzenet mellé.</p>
+    <p>A Firestore-ban a megjelenített nevet, az üzenetet, a fiók technikai azonosítóját és a létrehozás/módosítás időpontját tároljuk. A név, az üzenet és a dátum nyilvános. Egy fiókhoz egy bejegyzés tartozik.</p>
+
+    <h2>Törlés</h2>
+    <p>A saját üzenetedet belépés után közvetlenül törölheted a listáról. A Claude–KRÉTA kapcsolatot Claude csatlakozóbeállításaiban tudod eltávolítani.</p>
+
+    <h2>Szolgáltatók és kapcsolat</h2>
+    <p>A tárhelyet, a futtatást, a hitelesítést és az üzenetfal adatbázisát a Google Cloud és Firebase biztosítja. A forráskód, a hibajelzés és a projekt kapcsolati felülete a <a href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">GitHub-tárolóban</a> érhető el.</p>
+    <p class="updated">Utolsó frissítés: 2026. szeptember 3.</p>
+  </article>
+</BaseLayout>
+
+<style>
+  .legal { max-width: 58rem; margin: 0 auto; padding: clamp(4rem, 9vw, 8rem) var(--page-pad); }
+  h1 { margin: 0 0 1.5rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 10vw, 9rem); font-weight: 600; line-height: .76; text-transform: uppercase; }
+  .intro { margin-bottom: 4rem; color: var(--blue); font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 650; line-height: 1.45; }
+  h2 { margin: 3rem 0 .8rem; padding-top: 1rem; border-top: 2px solid var(--blue); color: var(--blue); font-size: 1.15rem; }
+  p { color: var(--ink-muted); line-height: 1.75; }
+  a { color: var(--blue); font-weight: 750; }
+  .updated { margin-top: 4rem; font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
+
+  @media (max-width: 480px) {
+    h1 {
+      font-size: clamp(3.15rem, 16.4vw, 4rem);
+      overflow-wrap: anywhere;
+    }
+  }
+</style>

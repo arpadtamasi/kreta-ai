@@ -6,7 +6,13 @@ import { createMcpPostHandler, mcpMethodNotAllowed } from "./mcp/route.js";
 import { requireSealedToken } from "./oauth/middleware.js";
 import { ReplayCache } from "./oauth/replayCache.js";
 import { createOAuthRouter } from "./oauth/router.js";
+import { LOGIN_PAGE_SCRIPT, LOGIN_PAGE_STYLE } from "./oauth/pages.js";
 import { BRAND } from "./brand.js";
+import { getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+import { createPledgeRouter, type VerifyIdToken } from "./pledges/router.js";
+import { FirestorePledgeStore, type PledgeStore } from "./pledges/store.js";
 
 export interface AppDeps {
   config: Config;
@@ -14,6 +20,8 @@ export interface AppDeps {
   loginImpl?: typeof login;
   fetchImpl?: typeof fetch;
   rotationCache?: RotationCache;
+  pledgeStore?: PledgeStore;
+  verifyFirebaseIdToken?: VerifyIdToken;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -30,6 +38,24 @@ export function createApp(deps: AppDeps): Express {
   app.get("/health", (_req, res) => {
     res.json({ status: "ok", service: BRAND.name });
   });
+
+  app.get("/authorize.css", (_req, res) => {
+    res.type("text/css").set("Cache-Control", "public, max-age=3600").send(LOGIN_PAGE_STYLE);
+  });
+
+  app.get("/authorize.js", (_req, res) => {
+    res.type("application/javascript").set("Cache-Control", "public, max-age=3600").send(LOGIN_PAGE_SCRIPT);
+  });
+
+  const firebaseApp = getApps()[0] ?? initializeApp();
+  const pledgeStore = deps.pledgeStore ?? new FirestorePledgeStore(getFirestore(firebaseApp));
+  const verifyFirebaseIdToken: VerifyIdToken =
+    deps.verifyFirebaseIdToken ??
+    (async (token) => {
+      const decoded = await getAuth(firebaseApp).verifyIdToken(token);
+      return { uid: decoded.uid, name: decoded.name };
+    });
+  app.use("/api/pledges", createPledgeRouter({ store: pledgeStore, verifyIdToken: verifyFirebaseIdToken }));
 
   app.use(
     createOAuthRouter({

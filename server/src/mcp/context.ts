@@ -3,7 +3,7 @@
  * and builds the read-only KRÉTA client for it.
  *
  * A child is addressed by the label the parent typed on the login page, so
- * "Mi van Marcinak a héten?" maps to a tool call with `child: "Marci"`. With
+ * "Mi van Lillának a héten?" maps to a tool call with `child: "Lilla"`. With
  * exactly one connected child the argument is optional; with several, an
  * omitted or unknown label is an error that *names the available children*,
  * because the model cannot otherwise discover them.

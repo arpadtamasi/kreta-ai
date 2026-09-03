@@ -1,0 +1,393 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-03T18:32:08+02:00",
+  "title": "Design System: Üzenőfüzet",
+  "extensions": {
+    "colorMeta": {
+      "primary-cobalt": {
+        "role": "primary",
+        "displayName": "Cobalt Ink",
+        "canonical": "#113f7a",
+        "description": "Brand, structural rules, links, and strong text on paper.",
+        "tonalRamp": ["oklch(15% 0.112 256.7)", "oklch(27% 0.112 256.7)", "oklch(39% 0.112 256.7)", "oklch(51% 0.112 256.7)", "oklch(63% 0.112 256.7)", "oklch(75% 0.112 256.7)", "oklch(87% 0.112 256.7)", "oklch(95% 0.112 256.7)"]
+      },
+      "primary-cobalt-strong": {
+        "role": "primary",
+        "displayName": "Press Cobalt",
+        "canonical": "#073896",
+        "description": "Filled actions, text selection, and the connector panel.",
+        "tonalRamp": ["oklch(15% 0.160 261.9)", "oklch(27% 0.160 261.9)", "oklch(39% 0.160 261.9)", "oklch(51% 0.160 261.9)", "oklch(63% 0.160 261.9)", "oklch(75% 0.160 261.9)", "oklch(87% 0.160 261.9)", "oklch(95% 0.160 261.9)"]
+      },
+      "primary-cobalt-soft": {
+        "role": "primary",
+        "displayName": "Washed Cobalt",
+        "canonical": "#aebfda",
+        "description": "Quiet dividers, table rules, and secondary underlines.",
+        "tonalRamp": ["oklch(15% 0.043 259.6)", "oklch(27% 0.043 259.6)", "oklch(39% 0.043 259.6)", "oklch(51% 0.043 259.6)", "oklch(63% 0.043 259.6)", "oklch(75% 0.043 259.6)", "oklch(87% 0.043 259.6)", "oklch(95% 0.043 259.6)"]
+      },
+      "vermilion-correction": {
+        "role": "secondary",
+        "displayName": "Vermilion Correction",
+        "canonical": "#d64a35",
+        "description": "Corrections, brackets, sequence numbers, Claude marks, and focus.",
+        "tonalRamp": ["oklch(15% 0.160 31.3)", "oklch(27% 0.160 31.3)", "oklch(39% 0.160 31.3)", "oklch(51% 0.160 31.3)", "oklch(63% 0.160 31.3)", "oklch(75% 0.160 31.3)", "oklch(87% 0.160 31.3)", "oklch(95% 0.160 31.3)"]
+      },
+      "attention-yellow": {
+        "role": "secondary",
+        "displayName": "Attendance Yellow",
+        "canonical": "#f2c84b",
+        "description": "Attention, in-progress status, and translucent insight highlighting.",
+        "tonalRamp": ["oklch(15% 0.146 90.0)", "oklch(27% 0.146 90.0)", "oklch(39% 0.146 90.0)", "oklch(51% 0.146 90.0)", "oklch(63% 0.146 90.0)", "oklch(75% 0.146 90.0)", "oklch(87% 0.146 90.0)", "oklch(95% 0.146 90.0)"]
+      },
+      "success-green": {
+        "role": "secondary",
+        "displayName": "Register Green",
+        "canonical": "#286d58",
+        "description": "Successful, online, or available states.",
+        "tonalRamp": ["oklch(15% 0.077 169.8)", "oklch(27% 0.077 169.8)", "oklch(39% 0.077 169.8)", "oklch(51% 0.077 169.8)", "oklch(63% 0.077 169.8)", "oklch(75% 0.077 169.8)", "oklch(87% 0.077 169.8)", "oklch(95% 0.077 169.8)"]
+      },
+      "cool-paper": {
+        "role": "neutral",
+        "displayName": "Cool Paper",
+        "canonical": "#f4f7fb",
+        "description": "Default public-site canvas and browser theme color.",
+        "tonalRamp": ["oklch(15% 0.006 255.5)", "oklch(27% 0.006 255.5)", "oklch(39% 0.006 255.5)", "oklch(51% 0.006 255.5)", "oklch(63% 0.006 255.5)", "oklch(75% 0.006 255.5)", "oklch(87% 0.006 255.5)", "oklch(95% 0.006 255.5)"]
+      },
+      "bright-paper": {
+        "role": "neutral",
+        "displayName": "Bright Paper",
+        "canonical": "#fbfcfe",
+        "description": "Worked-example sheets, fields, and light text on dark surfaces.",
+        "tonalRamp": ["oklch(15% 0.003 264.5)", "oklch(27% 0.003 264.5)", "oklch(39% 0.003 264.5)", "oklch(51% 0.003 264.5)", "oklch(63% 0.003 264.5)", "oklch(75% 0.003 264.5)", "oklch(87% 0.003 264.5)", "oklch(95% 0.003 264.5)"]
+      },
+      "carbon-ink": {
+        "role": "neutral",
+        "displayName": "Carbon Ink",
+        "canonical": "#0b121c",
+        "description": "Primary reading color and the darkest advocacy-wall ground.",
+        "tonalRamp": ["oklch(15% 0.023 257.3)", "oklch(27% 0.023 257.3)", "oklch(39% 0.023 257.3)", "oklch(51% 0.023 257.3)", "oklch(63% 0.023 257.3)", "oklch(75% 0.023 257.3)", "oklch(87% 0.023 257.3)", "oklch(95% 0.023 257.3)"]
+      },
+      "muted-ink": {
+        "role": "neutral",
+        "displayName": "Muted Ink",
+        "canonical": "#516071",
+        "description": "Explanatory body copy and secondary links.",
+        "tonalRamp": ["oklch(15% 0.033 251.7)", "oklch(27% 0.033 251.7)", "oklch(39% 0.033 251.7)", "oklch(51% 0.033 251.7)", "oklch(63% 0.033 251.7)", "oklch(75% 0.033 251.7)", "oklch(87% 0.033 251.7)", "oklch(95% 0.033 251.7)"]
+      },
+      "grid-line": {
+        "role": "neutral",
+        "displayName": "Blue Graph Rule",
+        "canonical": "rgba(17, 63, 122, .115)",
+        "description": "Low-opacity graph-paper construction line.",
+        "tonalRamp": ["oklch(15% 0.112 256.7 / .115)", "oklch(27% 0.112 256.7 / .115)", "oklch(39% 0.112 256.7 / .115)", "oklch(51% 0.112 256.7 / .115)", "oklch(63% 0.112 256.7 / .115)", "oklch(75% 0.112 256.7 / .115)", "oklch(87% 0.112 256.7 / .115)", "oklch(95% 0.112 256.7 / .115)"]
+      },
+      "night-surface": {
+        "role": "neutral",
+        "displayName": "Night Ledger",
+        "canonical": "#101a27",
+        "description": "Raised tonal band within the dark pledge wall.",
+        "tonalRamp": ["oklch(15% 0.030 255.3)", "oklch(27% 0.030 255.3)", "oklch(39% 0.030 255.3)", "oklch(51% 0.030 255.3)", "oklch(63% 0.030 255.3)", "oklch(75% 0.030 255.3)", "oklch(87% 0.030 255.3)", "oklch(95% 0.030 255.3)"]
+      },
+      "night-rule": {
+        "role": "neutral",
+        "displayName": "Night Rule",
+        "canonical": "#405065",
+        "description": "Dividers and registry columns on the pledge wall.",
+        "tonalRamp": ["oklch(15% 0.041 255.4)", "oklch(27% 0.041 255.4)", "oklch(39% 0.041 255.4)", "oklch(51% 0.041 255.4)", "oklch(63% 0.041 255.4)", "oklch(75% 0.041 255.4)", "oklch(87% 0.041 255.4)", "oklch(95% 0.041 255.4)"]
+      },
+      "night-copy": {
+        "role": "neutral",
+        "displayName": "Night Copy",
+        "canonical": "#c4ceda",
+        "description": "Readable secondary copy on dark pledge surfaces.",
+        "tonalRamp": ["oklch(15% 0.020 252.9)", "oklch(27% 0.020 252.9)", "oklch(39% 0.020 252.9)", "oklch(51% 0.020 252.9)", "oklch(63% 0.020 252.9)", "oklch(75% 0.020 252.9)", "oklch(87% 0.020 252.9)", "oklch(95% 0.020 252.9)"]
+      },
+      "night-meta": {
+        "role": "neutral",
+        "displayName": "Night Meta",
+        "canonical": "#9caabe",
+        "description": "Field help, headers, dates, and quiet dark-surface metadata.",
+        "tonalRamp": ["oklch(15% 0.033 257.3)", "oklch(27% 0.033 257.3)", "oklch(39% 0.033 257.3)", "oklch(51% 0.033 257.3)", "oklch(63% 0.033 257.3)", "oklch(75% 0.033 257.3)", "oklch(87% 0.033 257.3)", "oklch(95% 0.033 257.3)"]
+      },
+      "credential-canvas": {
+        "role": "neutral",
+        "displayName": "Credential Canvas",
+        "canonical": "#f4f5f7",
+        "description": "Neutral viewport ground for the backend-served form.",
+        "tonalRamp": ["oklch(15% 0.003 264.5)", "oklch(27% 0.003 264.5)", "oklch(39% 0.003 264.5)", "oklch(51% 0.003 264.5)", "oklch(63% 0.003 264.5)", "oklch(75% 0.003 264.5)", "oklch(87% 0.003 264.5)", "oklch(95% 0.003 264.5)"]
+      },
+      "credential-sheet": {
+        "role": "neutral",
+        "displayName": "Credential Sheet",
+        "canonical": "#ffffff",
+        "description": "Only elevated container in the shipped interface.",
+        "tonalRamp": ["oklch(15% 0 0)", "oklch(27% 0 0)", "oklch(39% 0 0)", "oklch(51% 0 0)", "oklch(63% 0 0)", "oklch(75% 0 0)", "oklch(87% 0 0)", "oklch(95% 0 0)"]
+      },
+      "credential-ink": {
+        "role": "neutral",
+        "displayName": "Credential Ink",
+        "canonical": "#14181f",
+        "description": "Primary form copy and control text.",
+        "tonalRamp": ["oklch(15% 0.015 261.6)", "oklch(27% 0.015 261.6)", "oklch(39% 0.015 261.6)", "oklch(51% 0.015 261.6)", "oklch(63% 0.015 261.6)", "oklch(75% 0.015 261.6)", "oklch(87% 0.015 261.6)", "oklch(95% 0.015 261.6)"]
+      },
+      "credential-muted": {
+        "role": "neutral",
+        "displayName": "Credential Muted",
+        "canonical": "#626b78",
+        "description": "Tagline, hints, and credential-page disclaimer copy.",
+        "tonalRamp": ["oklch(15% 0.023 257.5)", "oklch(27% 0.023 257.5)", "oklch(39% 0.023 257.5)", "oklch(51% 0.023 257.5)", "oklch(63% 0.023 257.5)", "oklch(75% 0.023 257.5)", "oklch(87% 0.023 257.5)", "oklch(95% 0.023 257.5)"]
+      },
+      "credential-border": {
+        "role": "neutral",
+        "displayName": "Credential Group Border",
+        "canonical": "#dde1e7",
+        "description": "Credential sheet and fieldset outline.",
+        "tonalRamp": ["oklch(15% 0.009 258.3)", "oklch(27% 0.009 258.3)", "oklch(39% 0.009 258.3)", "oklch(51% 0.009 258.3)", "oklch(63% 0.009 258.3)", "oklch(75% 0.009 258.3)", "oklch(87% 0.009 258.3)", "oklch(95% 0.009 258.3)"]
+      },
+      "credential-field-border": {
+        "role": "neutral",
+        "displayName": "Credential Field Border",
+        "canonical": "#c3cad4",
+        "description": "Default 1px input outline on the credential form.",
+        "tonalRamp": ["oklch(15% 0.016 257.2)", "oklch(27% 0.016 257.2)", "oklch(39% 0.016 257.2)", "oklch(51% 0.016 257.2)", "oklch(63% 0.016 257.2)", "oklch(75% 0.016 257.2)", "oklch(87% 0.016 257.2)", "oklch(95% 0.016 257.2)"]
+      },
+      "credential-primary": {
+        "role": "primary",
+        "displayName": "Credential Blue",
+        "canonical": "#1a56db",
+        "description": "Full-width submit action on the backend credential form.",
+        "tonalRamp": ["oklch(15% 0.160 262.9)", "oklch(27% 0.160 262.9)", "oklch(39% 0.160 262.9)", "oklch(51% 0.160 262.9)", "oklch(63% 0.160 262.9)", "oklch(75% 0.160 262.9)", "oklch(87% 0.160 262.9)", "oklch(95% 0.160 262.9)"]
+      },
+      "credential-secondary": {
+        "role": "neutral",
+        "displayName": "Credential Secondary",
+        "canonical": "#eef1f6",
+        "description": "Progressive-disclosure action for adding another child.",
+        "tonalRamp": ["oklch(15% 0.007 260.7)", "oklch(27% 0.007 260.7)", "oklch(39% 0.007 260.7)", "oklch(51% 0.007 260.7)", "oklch(63% 0.007 260.7)", "oklch(75% 0.007 260.7)", "oklch(87% 0.007 260.7)", "oklch(95% 0.007 260.7)"]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Workbook Display",
+        "purpose": "Oversized hero and section-opening phrases only."
+      },
+      "headline": {
+        "displayName": "Direct Headline",
+        "purpose": "High-stakes warnings and large advocacy statements."
+      },
+      "lead": {
+        "displayName": "Interpretive Lead",
+        "purpose": "The explanatory statement paired with a display heading."
+      },
+      "body": {
+        "displayName": "Parent-Facing Body",
+        "purpose": "Readable explanations, registry content, and legal copy."
+      },
+      "action": {
+        "displayName": "Printed Action",
+        "purpose": "Buttons and compact next-step links."
+      },
+      "label": {
+        "displayName": "Recorded Detail",
+        "purpose": "Timestamps, indices, counters, status, and marginal notes."
+      },
+      "credential-body": {
+        "displayName": "Credential UI",
+        "purpose": "Familiar system typography inside the isolated backend login form."
+      }
+    },
+    "shadows": [
+      {
+        "name": "credential-sheet-ambient",
+        "value": "0 18px 46px -32px rgb(20 24 31 / 45%)",
+        "purpose": "The sole shipped shadow; separates only the /authorize sheet from its neutral canvas."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-color",
+        "value": "120ms ease",
+        "purpose": "Background and text-color changes on shared public-site buttons."
+      },
+      {
+        "name": "transcript-entry",
+        "value": "420ms cubic-bezier(.22, .8, .3, 1)",
+        "purpose": "Short vertical reveal for the synthetic transcript records."
+      },
+      {
+        "name": "transcript-stagger",
+        "value": "80ms, 150ms, 220ms",
+        "purpose": "Delay sequence for later transcript messages."
+      },
+      {
+        "name": "reduced-motion-collapse",
+        "value": ".01ms",
+        "purpose": "Global transition and animation duration under prefers-reduced-motion; smooth scrolling is also disabled."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "long-word",
+        "value": "480px"
+      },
+      {
+        "name": "compact-nav",
+        "value": "600px"
+      },
+      {
+        "name": "hero-and-footer-stack",
+        "value": "760px"
+      },
+      {
+        "name": "section-stack",
+        "value": "800px"
+      },
+      {
+        "name": "transcript-tighten",
+        "value": "1050px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Printed Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The canonical square cobalt action with dashed registration rule and authored arrow.",
+      "html": "<button class=\"ds-button-primary\"><span>Kapcsold össze Claude-dal</span><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M3 10h13M11 5l5 5-5 5\" /></svg></button>",
+      "css": ".ds-button-primary { position: relative; display: inline-flex; min-height: 3.55rem; align-items: center; justify-content: space-between; gap: .75rem; padding: .95rem 1.3rem; border: 2px solid var(--blue-strong, #073896); border-radius: 0; color: #fff; background: var(--blue-strong, #073896); font-family: \"Manrope Variable\", Manrope, system-ui, sans-serif; font-size: .9rem; font-weight: 800; cursor: pointer; transition: background-color 120ms ease, color 120ms ease; } .ds-button-primary::before { content: \"\"; align-self: stretch; margin: -.55rem .1rem -.55rem -.85rem; border-left: 1px dashed currentColor; opacity: .7; } .ds-button-primary svg { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-linecap: square; stroke-linejoin: miter; stroke-width: 1.6; } .ds-button-primary:hover { background: var(--blue, #113f7a); } .ds-button-primary:active { background: var(--ink, #0b121c); } .ds-button-primary:focus-visible { outline: 3px solid var(--red, #d64a35); outline-offset: 4px; }"
+    },
+    {
+      "name": "Secondary Printed Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Transparent square action for lower-priority navigation on paper or dark warning bands.",
+      "html": "<button class=\"ds-button-secondary\"><span>Helyi változat a GitHubon</span><svg viewBox=\"0 0 20 20\" aria-hidden=\"true\"><path d=\"M3 10h13M11 5l5 5-5 5\" /></svg></button>",
+      "css": ".ds-button-secondary { position: relative; display: inline-flex; min-height: 3.55rem; align-items: center; gap: .75rem; padding: .95rem 1.3rem; border: 2px solid var(--blue-strong, #073896); border-radius: 0; color: var(--blue-strong, #073896); background: transparent; font-family: \"Manrope Variable\", Manrope, system-ui, sans-serif; font-size: .9rem; font-weight: 800; cursor: pointer; } .ds-button-secondary::before { content: \"\"; align-self: stretch; margin: -.55rem .1rem -.55rem -.85rem; border-left: 1px dashed currentColor; opacity: .7; } .ds-button-secondary svg { width: 1.15em; height: 1.15em; fill: none; stroke: currentColor; stroke-linecap: square; stroke-linejoin: miter; stroke-width: 1.6; transform: rotate(-45deg); } .ds-button-secondary:hover { background: transparent; color: var(--blue-strong, #073896); } .ds-button-secondary:active { background: transparent; } .ds-button-secondary:focus-visible { outline: 3px solid var(--red, #d64a35); outline-offset: 4px; }"
+    },
+    {
+      "name": "Site Header",
+      "kind": "nav",
+      "description": "A narrow press-striped header with the authored book mark and underlined active navigation.",
+      "html": "<header class=\"ds-site-header\"><a class=\"ds-brand\" href=\"#\"><svg viewBox=\"0 0 46 34\" aria-hidden=\"true\"><path d=\"M3 5.5c7.3-1.2 13.7.5 20 5.1 6.3-4.6 12.7-6.3 20-5.1v22c-7.2-1.1-13.8.4-20 4.1-6.2-3.7-12.8-5.2-20-4.1v-22Z\"/><path d=\"M23 10.6v21M7 11c4.4-.2 8.3.8 12 3M27 14c3.7-2.2 7.6-3.2 12-3M7 17c4.4-.2 8.3.8 12 3M27 20c3.7-2.2 7.6-3.2 12-3\"/></svg><span>Üzenőfüzet</span></a><nav><a class=\"ds-active\" href=\"#\">Hogyan működik?</a><a href=\"#\">Kapcsolati pult</a></nav></header>",
+      "css": ".ds-site-header { min-height: 5.25rem; display: flex; align-items: center; gap: 2rem; padding: 0 1.5rem; border-top: 5px solid var(--blue, #113f7a); border-bottom: 1px solid var(--blue-soft, #aebfda); color: var(--ink, #0b121c); background: var(--paper, #f4f7fb); font-family: \"Manrope Variable\", Manrope, system-ui, sans-serif; } .ds-brand { display: inline-flex; align-items: center; gap: .65rem; padding: .72rem .9rem; border: 2px solid var(--blue, #113f7a); color: var(--blue, #113f7a); font-size: 1.15rem; font-weight: 800; letter-spacing: -.035em; text-decoration: none; } .ds-brand svg { width: 2.4rem; fill: none; stroke: currentColor; stroke-linecap: square; stroke-linejoin: miter; stroke-width: 2; } .ds-site-header nav { display: flex; gap: 2rem; } .ds-site-header nav a { color: var(--ink-muted, #516071); font-size: .9rem; font-weight: 700; text-decoration: none; text-underline-offset: .4rem; } .ds-site-header nav a:hover, .ds-site-header nav a.ds-active { color: var(--blue, #113f7a); text-decoration: underline; text-decoration-thickness: 2px; } .ds-site-header a:focus-visible { outline: 3px solid var(--red, #d64a35); outline-offset: 4px; }"
+    },
+    {
+      "name": "Synthetic Transcript Message",
+      "kind": "custom",
+      "description": "A graph-paper record that proves product behavior with explicitly synthetic student data.",
+      "html": "<article class=\"ds-transcript\"><p class=\"ds-demo-tag\">Bemutató · nem valós tanulói adatok</p><div class=\"ds-message\"><div class=\"ds-avatar\">ÉN</div><div><div class=\"ds-speaker\"><strong>Mi volt ma az iskolában?</strong><time>08:03</time></div><p class=\"ds-tool\">KRÉTA napló használata</p></div></div></article>",
+      "css": ".ds-transcript { position: relative; overflow: hidden; padding: 3.5rem 2rem 2rem 4rem; color: var(--ink, #0b121c); background-color: var(--paper-bright, #fbfcfe); background-image: linear-gradient(var(--grid-line, rgba(17,63,122,.115)) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line, rgba(17,63,122,.115)) 1px, transparent 1px); background-size: 28px 28px; font-family: \"Manrope Variable\", Manrope, system-ui, sans-serif; } .ds-transcript::before { content: \"\"; position: absolute; inset: 0 auto 0 2rem; width: 2px; background: rgba(214,74,53,.55); } .ds-demo-tag { position: absolute; top: .75rem; right: .75rem; margin: 0; padding: .35rem .55rem; border: 1px solid var(--blue-soft, #aebfda); color: var(--blue, #113f7a); background: rgba(244,247,251,.88); font-family: \"IBM Plex Mono\", monospace; font-size: .62rem; letter-spacing: .08em; text-transform: uppercase; } .ds-message { display: grid; grid-template-columns: 2.5rem minmax(0,1fr); gap: 1rem; padding: .65rem 0; border-bottom: 1px solid var(--blue-soft, #aebfda); animation: ds-transcript-entry 420ms cubic-bezier(.22,.8,.3,1) backwards; } .ds-avatar { width: 2.5rem; aspect-ratio: 1; display: grid; place-items: center; color: #fff; background: var(--blue, #113f7a); font-family: \"IBM Plex Mono\", monospace; font-size: .62rem; } .ds-speaker { display: flex; justify-content: space-between; gap: 1rem; color: var(--blue, #113f7a); } .ds-speaker time, .ds-tool { font-family: \"IBM Plex Mono\", monospace; font-size: .62rem; } .ds-tool { margin: .38rem 0 0; color: var(--ink-muted, #516071); } .ds-tool::before { content: \"\"; display: inline-block; width: .5rem; height: .5rem; margin-right: .4rem; background: var(--green, #286d58); } .ds-transcript:focus-visible { outline: 3px solid var(--red, #d64a35); outline-offset: 4px; } @keyframes ds-transcript-entry { from { opacity: .01; transform: translateY(.65rem); } to { opacity: 1; transform: none; } } @media (prefers-reduced-motion: reduce) { .ds-message { animation-duration: .01ms; } }"
+    },
+    {
+      "name": "Correction Insight",
+      "kind": "custom",
+      "description": "A yellow-tinted notebook insight with a vermilion bracket and irregular correction loop.",
+      "html": "<aside class=\"ds-insight\"><span class=\"ds-bracket\" aria-hidden=\"true\"></span><p class=\"ds-insight-title\">Amit érdemes megnézned:</p><p>A hiányzás <span class=\"ds-circled\">„igazolandó”</span> állapotban van.</p></aside>",
+      "css": ".ds-insight { position: relative; margin: 1rem; padding: .85rem 1rem .85rem 1.25rem; border: 1px solid rgba(214,74,53,.25); border-radius: 0; color: var(--ink, #0b121c); background: rgba(242,200,75,.18); font-family: \"Manrope Variable\", Manrope, system-ui, sans-serif; line-height: 1.48; } .ds-insight p { margin: 0; } .ds-insight-title { margin-bottom: .25rem !important; color: var(--blue-strong, #073896); font-weight: 850; } .ds-bracket { position: absolute; top: -.45rem; left: -.75rem; width: .55rem; height: calc(100% + .9rem); border: 2px solid var(--red, #d64a35); border-right: 0; } .ds-circled { position: relative; display: inline-block; color: var(--red, #d64a35); font-weight: 850; } .ds-circled::after { content: \"\"; position: absolute; inset: -.28rem -.45rem; border: 2px solid var(--red, #d64a35); border-radius: 48% 53% 45% 50%; transform: rotate(-3deg); } .ds-insight:focus-visible { outline: 3px solid var(--red, #d64a35); outline-offset: 4px; }"
+    },
+    {
+      "name": "Pledge Textarea",
+      "kind": "input",
+      "refersTo": "pledge-textarea",
+      "description": "Square public-message field with operational count and explicit data warning.",
+      "html": "<div class=\"ds-pledge-field\"><label for=\"ds-pledge-message\">A nyilvános üzeneted</label><textarea id=\"ds-pledge-message\" rows=\"3\" placeholder=\"Azért kérek hivatalos hozzáférést, mert…\"></textarea><div class=\"ds-form-meta\"><span>0/240</span><span>A Google-fiókod neve fog megjelenni.</span></div><p><strong>Ne írj gyermeknevet, osztályt, iskolát vagy más személyes adatot.</strong></p></div>",
+      "css": ".ds-pledge-field { padding: 2rem; color: #fff; background: #101a27; font-family: \"Manrope Variable\", Manrope, system-ui, sans-serif; } .ds-pledge-field label { display: block; margin-bottom: .65rem; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; } .ds-pledge-field textarea { width: 100%; resize: vertical; padding: 1rem; border: 2px solid #8aa2c3; border-radius: 0; color: var(--ink, #0b121c); background: var(--paper-bright, #fbfcfe); font: inherit; line-height: 1.55; } .ds-pledge-field textarea:focus-visible { outline: 3px solid var(--red, #d64a35); outline-offset: 4px; } .ds-form-meta { display: flex; justify-content: space-between; gap: 1rem; margin-top: .5rem; color: #9caabe; font-family: \"IBM Plex Mono\", monospace; font-size: .62rem; } .ds-pledge-field p { color: #9caabe; font-size: .73rem; line-height: 1.55; } .ds-pledge-field p strong { color: #ffd9d3; }"
+    },
+    {
+      "name": "Pledge Registry Row",
+      "kind": "custom",
+      "description": "A three-column dark-ledger record for a verified public pledge.",
+      "html": "<article class=\"ds-pledge-row\"><div class=\"ds-pledge-name\"><strong>Kovács Anna</strong><small>Google-fiókkal hitelesítve</small></div><p>Dokumentált, biztonságos hozzáférést kérek.</p><time>2026. szept. 3.</time></article>",
+      "css": ".ds-pledge-row { display: grid; grid-template-columns: minmax(10rem,.55fr) minmax(16rem,1.7fr) minmax(8rem,.35fr); border-top: 1px solid #405065; color: var(--paper-bright, #fbfcfe); background: var(--ink, #0b121c); font-family: \"Manrope Variable\", Manrope, system-ui, sans-serif; } .ds-pledge-row > * { margin: 0; padding: 1.35rem; border-right: 1px solid #405065; } .ds-pledge-name small { display: block; margin-top: .35rem; color: #77bca3; font-family: \"IBM Plex Mono\", monospace; font-size: .58rem; } .ds-pledge-row p { color: #dce3ec; font-size: .88rem; line-height: 1.55; } .ds-pledge-row time { color: #9caabe; font-family: \"IBM Plex Mono\", monospace; font-size: .64rem; } .ds-pledge-row:focus-visible { outline: 3px solid var(--red, #d64a35); outline-offset: -3px; } @media (max-width: 540px) { .ds-pledge-row { display: block; padding: 1.25rem; } .ds-pledge-row > * { padding: .25rem 0; border: 0; } .ds-pledge-row p { margin: .6rem 0; } }"
+    },
+    {
+      "name": "Credential Sheet",
+      "kind": "card",
+      "refersTo": "credential-sheet",
+      "description": "The isolated backend login form: explicit trust notice, progressive child fields, and system-native controls.",
+      "html": "<main class=\"ds-credential-sheet\"><p class=\"ds-mark\">Üzenőfüzet</p><p class=\"ds-tagline\">Kérdezz a gyereked iskolai adatairól.</p><h2>Csatlakoztatás: Claude</h2><p class=\"ds-notice\"><strong>Ez nem a KRÉTA oldala.</strong>A jelszavadat nem tárolja sehol.</p><fieldset><legend>Gyerek</legend><label>Név <span>— ahogy Claude-ban hivatkozol rá</span><input placeholder=\"pl. Lilla\"></label><label>KRÉTA felhasználónév<input></label><label>KRÉTA jelszó<input type=\"password\"></label></fieldset><button class=\"ds-credential-secondary\" type=\"button\">+ Még egy gyerek</button><button class=\"ds-credential-primary\" type=\"button\">Csatlakoztatás</button><footer>Független projekt. Csak olvasás.</footer></main>",
+      "css": ".ds-credential-sheet { width: min(100%,34rem); padding: clamp(24px,5vw,40px); border: 1px solid #dde1e7; border-radius: 18px; color: #14181f; background: #fff; box-shadow: 0 18px 46px -32px rgb(20 24 31 / 45%); font-family: system-ui,-apple-system,\"Segoe UI\",sans-serif; } .ds-mark { margin: 0 0 4px; font-size: 1.05rem; font-weight: 800; letter-spacing: -.03em; } .ds-tagline { margin: 0 0 24px; color: #626b78; font-size: .9rem; } .ds-credential-sheet h2 { margin: 0 0 12px; font-size: 1.5rem; letter-spacing: -.02em; } .ds-notice { margin: 0 0 24px; padding: 14px 16px; border: 1px solid #f0d9a8; border-radius: 10px; color: #4a3c1d; background: #fdf7ea; font-size: .88rem; line-height: 1.5; } .ds-notice strong { display: block; margin-bottom: 4px; } .ds-credential-sheet fieldset { margin: 0 0 16px; padding: 18px; border: 1px solid #dde1e7; border-radius: 12px; } .ds-credential-sheet legend { padding: 0 6px; color: #404854; font-size: .85rem; font-weight: 700; } .ds-credential-sheet label { display: block; margin-bottom: 12px; color: #404854; font-size: .85rem; font-weight: 600; } .ds-credential-sheet label span { color: #77808d; font-weight: 400; } .ds-credential-sheet input { display: block; width: 100%; min-height: 42px; margin-top: 5px; padding: 0 12px; border: 1px solid #c3cad4; border-radius: 8px; color: inherit; background: #fff; font: inherit; } .ds-credential-sheet button { width: 100%; min-height: 44px; border: 0; border-radius: 8px; font: inherit; font-weight: 700; cursor: pointer; } .ds-credential-secondary { margin-bottom: 16px; color: #2a3140; background: #eef1f6; } .ds-credential-primary { color: #fff; background: #1a56db; } .ds-credential-sheet input:focus-visible, .ds-credential-sheet button:focus-visible { outline: 3px solid rgb(26 115 232 / 38%); outline-offset: 2px; } .ds-credential-sheet footer { margin-top: 24px; color: #77808d; font-size: .75rem; line-height: 1.5; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Corrected School Notebook",
+    "overview": "Üzenőfüzet is a cool exercise-book page made digital: pale blue-white paper, disciplined cobalt ink, ledger rules, and selective vermilion corrections. It should feel authored and specific to a Hungarian parent's school-day questions—not like a generic SaaS landing page or a child-facing school portal. The public surfaces are open, flat compositions; hierarchy comes from scale, section boundaries, and the contrast between paper and ink.\n\nThe system changes register when the job changes. The landing's transcript is explicitly synthetic Lilla–Áron product proof; the public Google pledge wall becomes a dark civic ledger; and the backend-served credential page is a contained, utilitarian form with its own system-font and rounded-control vocabulary. These flows must remain visually and conceptually distinct because they carry different data and trust boundaries.",
+    "keyCharacteristics": [
+      "Cool notebook paper with cobalt structure and restrained vermilion correction marks.",
+      "Narrow, oversized display type paired with calm body copy and operational mono labels.",
+      "Full-width ledger compositions built from rules and asymmetrical 37/63 splits, not floating cards.",
+      "Square printed controls with flat fill, authored line icons, and a dashed registration rule.",
+      "Grid paper used as meaningful school material on selected surfaces, never as ambient decoration everywhere.",
+      "One explicitly isolated credential-form exception with rounded fields and a single soft sheet shadow."
+    ],
+    "rules": [
+      {
+        "name": "The Ink-and-Correction Rule",
+        "body": "Cobalt carries structure and action; vermilion marks exceptions, annotations, sequence, and focus. Do not let the correction color become a general fill.",
+        "section": "colors"
+      },
+      {
+        "name": "The Paper Has a Job Rule",
+        "body": "Graph lines appear only where the interface is acting like school paper—the synthetic transcript, the advocacy statement, and the 404 ledger page.",
+        "section": "colors"
+      },
+      {
+        "name": "The Trust Registers Stay Separate Rule",
+        "body": "Keep the pale editorial site, dark public pledge ledger, and neutral credential sheet visually distinct; they represent separate data flows.",
+        "section": "colors"
+      },
+      {
+        "name": "The Narrow Voice Rule",
+        "body": "Big Shoulders is for decisive display phrases, never body copy, form labels, navigation, or long explanations.",
+        "section": "typography"
+      },
+      {
+        "name": "The Recorded Detail Rule",
+        "body": "Use IBM Plex Mono where information behaves like a timestamp, index, counter, measurement, status, or marginal note—not as a broad stylistic wash.",
+        "section": "typography"
+      },
+      {
+        "name": "The Split-Then-Stack Rule",
+        "body": "Keep major desktop flows at the 37/63 ledger proportion, then switch to a true vertical sequence between 760px and 800px instead of squeezing both registers.",
+        "section": "layout"
+      },
+      {
+        "name": "The Flat Ledger Rule",
+        "body": "Public-site surfaces stay edge-connected and shadowless; create hierarchy with rules, tonal bands, and spacing.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Shadow Rule",
+        "body": "Do not add another elevation level. The credential sheet is the only shipped elevated surface.",
+        "section": "elevation"
+      },
+      {
+        "name": "The No Generic Card Rule",
+        "body": "On the public site, do not turn content into rounded, floating, shadowed cards; sections and records connect to the page grid.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Curve Must Mean Something Rule",
+        "body": "Outside `/authorize`, curves belong to human correction marks and warning symbols, not routine containers.",
+        "section": "shapes"
+      }
+    ],
+    "dos": [
+      "Do use the 37/63 ledger split for major question-and-proof compositions, then stack it between 760px and 800px according to content density.",
+      "Do keep cobalt structural, vermilion corrective, yellow attentive, and green confirmatory.",
+      "Do preserve square, flat, edge-connected public-site components and the dashed registration rule on shared buttons.",
+      "Do label the landing transcript as synthetic and retain only the fictional Lilla–Áron demonstration data.",
+      "Do keep the public Google pledge wall and KRÉTA credential form visibly separate from each other and from the Claude connection dashboard.",
+      "Do preserve keyboard focus, 390px responsiveness, and the reduced-motion override."
+    ],
+    "donts": [
+      "Don't introduce generic rounded cards, pill controls, floating panels, gradients, or decorative drop shadows into the public site.",
+      "Don't spread graph paper across every surface; reserve it for content that materially behaves like a notebook or ledger.",
+      "Don't use Big Shoulders for prose or IBM Plex Mono as a general body face.",
+      "Don't replace the authored book, arrow, or spark marks with library icons.",
+      "Don't migrate the `/authorize` sheet's rounded application styling into landing, dashboard, explanatory, legal, pledge, or error surfaces.",
+      "Don't soften, bury, or visually de-emphasize the credential warning, and never imply that Google identity is linked to a student."
+    ]
+  }
+}

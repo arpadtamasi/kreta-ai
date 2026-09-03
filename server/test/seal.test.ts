@@ -7,7 +7,7 @@ const key = randomBytes(32);
 const sealer = new Sealer(key);
 
 test("seals and opens a payload unchanged", () => {
-  const value = { sid: "abc", children: [{ label: "Marci", refreshToken: "rt-1" }] };
+  const value = { sid: "abc", children: [{ label: "Lilla", refreshToken: "rt-1" }] };
   assert.deepEqual(sealer.open("access", sealer.seal("access", value, 60)), value);
 });
 

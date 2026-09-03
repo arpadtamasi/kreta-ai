@@ -10,7 +10,7 @@
 import { BRAND } from "../brand.js";
 import { escapeHtml } from "../htmlEscape.js";
 
-const STYLE = `
+export const LOGIN_PAGE_STYLE = `
   :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
   * { box-sizing: border-box; }
   body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f4f5f7; color: #14181f; }
@@ -35,13 +35,26 @@ const STYLE = `
   footer { margin-top: 24px; color: #77808d; font-size: .75rem; line-height: 1.5; }
 `;
 
+export const LOGIN_PAGE_SCRIPT = `
+  const add = document.getElementById("add");
+  add?.addEventListener("click", () => {
+    const next = document.querySelector("fieldset.extra[hidden]");
+    if (!next) return;
+    next.hidden = false;
+    next.disabled = false;
+    for (const input of next.querySelectorAll("input")) input.required = true;
+    if (!document.querySelector("fieldset.extra[hidden]")) add.hidden = true;
+    next.querySelector("input")?.focus();
+  });
+`;
+
 function childFieldset(index: number, legend: string): string {
   const optional = index > 0;
   return `
 <fieldset${optional ? ' class="extra" hidden disabled' : ""}>
   <legend>${escapeHtml(legend)}</legend>
   <label>Név <span class="hint">— ahogy Claude-ban hivatkozol rá</span>
-    <input name="label" type="text" autocomplete="off" ${optional ? "" : "required"} placeholder="pl. Marci"></label>
+    <input name="label" type="text" autocomplete="off" ${optional ? "" : "required"} placeholder="pl. Lilla"></label>
   <label>KRÉTA felhasználónév
     <input name="username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" ${optional ? "" : "required"}></label>
   <label>KRÉTA jelszó
@@ -71,7 +84,7 @@ export function renderLoginPage(params: LoginPageParams): string {
 <title>Bejelentkezés — ${escapeHtml(BRAND.name)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<style>${STYLE}</style>
+<link rel="stylesheet" href="/authorize.css">
 </head>
 <body>
 <main>
@@ -99,18 +112,7 @@ ${error}
   Csak olvasás: a kapcsolat semmit nem módosít és nem töröl a KRÉTA-ban.
 </footer>
 </main>
-<script>
-  const add = document.getElementById("add");
-  add.addEventListener("click", () => {
-    const next = document.querySelector("fieldset.extra[hidden]");
-    if (!next) return;
-    next.hidden = false;
-    next.disabled = false;
-    for (const input of next.querySelectorAll("input")) input.required = true;
-    if (!document.querySelector("fieldset.extra[hidden]")) add.hidden = true;
-    next.querySelector("input").focus();
-  });
-</script>
+<script src="/authorize.js" defer></script>
 </body>
 </html>`;
 }
@@ -124,7 +126,7 @@ export function renderErrorPage(title: string, detail: string): string {
 <title>${escapeHtml(title)} — ${escapeHtml(BRAND.name)}</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
-<style>${STYLE}</style>
+<link rel="stylesheet" href="/authorize.css">
 </head>
 <body>
 <main>

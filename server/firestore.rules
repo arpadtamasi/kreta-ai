@@ -1,0 +1,11 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // The browser never talks to Firestore directly. The Cloud Run service
+    // validates Firebase ID tokens and uses its dedicated service account.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

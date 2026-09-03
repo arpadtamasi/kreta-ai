@@ -42,7 +42,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
         "kérésére kérj le adatot, és csak a válaszhoz szükséges mezőket jelenítsd meg. " +
         "Módosító vagy törlő művelet nincs. Ha több gyerek van csatlakoztatva, minden tool " +
         "elfogad egy 'child' paramétert (a gyerek neve) — ha a felhasználó név szerint kérdez " +
-        "('Mi van Marcinak?'), azt add át; ha egy tool 'child' nélkül hibát ad, a hibaüzenet " +
+        "('Mi van Lillának?'), azt add át; ha egy tool 'child' nélkül hibát ad, a hibaüzenet " +
         "felsorolja az elérhető neveket.",
     },
   );

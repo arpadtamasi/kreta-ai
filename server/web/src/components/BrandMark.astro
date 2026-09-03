@@ -1,0 +1,39 @@
+---
+interface Props {
+  compact?: boolean;
+}
+
+const { compact = false } = Astro.props;
+---
+
+<a class:list={["brand", { compact }]} href="/" aria-label="Üzenőfüzet – főoldal">
+  <svg viewBox="0 0 46 34" role="img" aria-hidden="true">
+    <path d="M3 5.5c7.3-1.2 13.7.5 20 5.1 6.3-4.6 12.7-6.3 20-5.1v22c-7.2-1.1-13.8.4-20 4.1-6.2-3.7-12.8-5.2-20-4.1v-22Z" />
+    <path d="M23 10.6v21M7 11c4.4-.2 8.3.8 12 3M27 14c3.7-2.2 7.6-3.2 12-3M7 17c4.4-.2 8.3.8 12 3M27 20c3.7-2.2 7.6-3.2 12-3" />
+  </svg>
+  <span>Üzenőfüzet</span>
+</a>
+
+<style>
+  .brand {
+    display: inline-flex;
+    align-items: center;
+    gap: .65rem;
+    color: var(--blue);
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: -.035em;
+    text-decoration: none;
+  }
+
+  svg {
+    width: 2.4rem;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+    stroke-width: 2;
+  }
+
+  .compact span { display: none; }
+</style>

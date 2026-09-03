@@ -1,0 +1,17 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArrowMark from "../components/ArrowMark.astro";
+---
+
+<BaseLayout title="Nincs ilyen lap – Üzenőfüzet">
+  <section class="not-found">
+    <h1><span>404</span>Ez a bejegyzés<br />nincs a naplóban.</h1>
+    <a class="button" href="/">Vissza a főoldalra <ArrowMark /></a>
+  </section>
+</BaseLayout>
+
+<style>
+  .not-found { min-height: 70vh; padding: clamp(5rem, 12vw, 11rem) var(--page-pad); background-color: var(--paper-bright); background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 28px 28px; }
+  h1 { max-width: 70rem; margin: 0 0 3rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4.5rem, 9vw, 9rem); font-weight: 600; line-height: .76; letter-spacing: -.035em; text-transform: uppercase; }
+  h1 span { display: block; margin-bottom: 1rem; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .85rem; font-weight: 500; letter-spacing: .08em; }
+</style>

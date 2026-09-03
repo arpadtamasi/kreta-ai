@@ -1,8 +1,13 @@
 # Üzenőfüzet — hosztolt KRÉTA MCP-szerver
 
 Custom Connector Claude-hoz, ami a KRÉTA tanulói adatokat **csak olvasásra**
-teszi elérhetővé — és **nem tárol semmilyen hitelesítő adatot**: se jelszót,
-se tokent, se felhasználói rekordot.
+teszi elérhetővé — és **nem tárol KRÉTA-hitelesítő adatot**: se jelszót,
+se felhasználónkénti tokent.
+
+A landing oldalon ettől elkülönül egy nyilvános üzenőfal. Az opcionális
+kiálláshoz a Firebase Authentication hitelesíti a Google-fiókot, a Firestore
+pedig a nyilvános nevet és üzenetet tárolja. Ezt a fiókot nem kell diákhoz
+kapcsolni, és az e-mail-cím nem jelenik meg az üzenőfalon.
 
 Ez a repó helyben futó változatának (`python/`, `desktop/`) a párja. Az a
 kettő a szülő gépén fut; ez egy szerver, ami cserébe **claude.ai weben és
@@ -85,6 +90,7 @@ cd server
 npm install
 npm run keygen            # ezt tedd Secret Managerbe TOKEN_SEALING_KEY néven
 npm test
+npm run build
 ```
 
 Cloud Runra:
@@ -106,6 +112,25 @@ ismeri a rotációs cache-t és a beváltott kódokat (lásd
 Ezután Claude-ban: Settings → Connectors → Add custom connector → a
 szolgáltatás URL-je. Claude felfedezi a `/.well-known/...` végpontokat, maga
 regisztrál, és megnyitja a bejelentkező oldalt.
+
+### Firebase Hosting, Google-belépés és üzenőfal
+
+Az Astro frontend statikusan a `public/` könyvtárba épül. A Firebase Hosting
+csak az API-, MCP- és OAuth-útvonalakat továbbítja a fenti Cloud Run
+szolgáltatáshoz; a többi útvonalat és a 404 oldalt statikusan szolgálja ki.
+
+```bash
+cd server
+npm run build:web
+firebase deploy --project uzenofuzet --only firestore:rules,hosting
+```
+
+A Google-belépéshez a Firebase Console Authentication → Sign-in method
+oldalán engedélyezni kell a Google szolgáltatót és megadni a projekt
+támogatási e-mail-címét. A kliens csak a Firebase publikus webkonfigurációját
+kapja; a beküldéshez szükséges ID tokent a backend Firebase Adminnal
+ellenőrzi. A Firestore kliensszabályok mindent tiltanak: az üzenőfalat csak a
+Cloud Run szolgáltatás olvassa és írja.
 
 ## Helyi próba
 
@@ -132,6 +157,9 @@ redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
 | `src/kreta/client.ts` | csak olvasó Student API kliens |
 | `src/kreta/rotationCache.ts` | a rotáció elleni memóriabeli védőháló |
 | `src/mcp/server.ts` | a 20 csak-olvasó tool |
+| `src/pledges/router.ts` | hitelesített nyilvános üzenetek API-ja |
+| `src/pledges/store.ts` | az üzenőfal Firestore-adattára |
+| `web/` | Astro landing, dashboard és tájékoztató oldalak |
 
 ## Amit ez a szerver nem csinál
 

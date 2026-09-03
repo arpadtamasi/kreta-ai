@@ -1,0 +1,73 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArrowMark from "../components/ArrowMark.astro";
+---
+
+<BaseLayout title="Hogyan működik? – Üzenőfüzet" description="Őszinte leírás arról, hogyan kezeli az Üzenőfüzet a KRÉTA-jelszót és az adatokat.">
+  <header class="page-hero">
+    <h1>Hogyan<br />működik?</h1>
+    <p>Az Üzenőfüzet kényelmesebb hozzáférést ad. Ettől még fontos pontosan értened, kiben és miben bízol meg.</p>
+  </header>
+
+  <section class="password" id="jelszo" aria-labelledby="password-title">
+    <div class="warning-mark" aria-hidden="true">!</div>
+    <div>
+      <h2 id="password-title">A belépéskor a KRÉTA-jelszavad átmegy az Üzenőfüzet szerverén.</h2>
+      <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak a belépéshez használjuk, majd eldobjuk.</p>
+      <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. Ez tárolásmentes hitelesítőadat-kezelés, nem „zero knowledge”.</p>
+      <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> Futtasd a nyílt forrású változatot a saját gépeden, így a KRÉTA-jelszó nem megy át a mi szerverünkön.</aside>
+      <a class="button secondary" href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">Helyi változat a GitHubon <ArrowMark direction="up-right" /></a>
+    </div>
+  </section>
+
+  <section class="flow" aria-labelledby="flow-title">
+    <div>
+      <h2 id="flow-title">Mi történik<br />a háttérben?</h2>
+    </div>
+    <ol>
+      <li><span>01</span><div><h3>Claude megnyitja a belépést</h3><p>A csatlakozó beállításakor a böngésződ az Üzenőfüzet hitelesítési oldalára visz.</p></div></li>
+      <li><span>02</span><div><h3>A szerver egyszer belép a KRÉTA-ba</h3><p>A megadott azonosítót és jelszót elküldi a KRÉTA beléptető rendszerének. A jelszót ezután eldobja.</p></div></li>
+      <li><span>03</span><div><h3>Claude egy lezárt tokent kap</h3><p>A KRÉTA frissítőtoken titkosítva kerül a Claude által őrzött kapcsolatba. A szerveren nincs felhasználónkénti KRÉTA-tokenadatbázis.</p></div></li>
+      <li><span>04</span><div><h3>A kérdések csak olvasnak</h3><p>A 20 rögzített eszköz naplót, órarendet, jegyet és más tanulói adatot olvas. Nem ír vissza a KRÉTA-ba.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="advocacy">
+    <h2>2026-ban jár nekünk egy normális hozzáférési út.</h2>
+    <p>Ha az zavar jobban, hogy nincs hivatalos, dokumentált és biztonságos út a saját családod adataihoz, kérj ilyet az iskoládtól és az eKRÉTÁ-tól. Írj nekik. Beszéljetek róla más szülőkkel. Szerveződjetek.</p>
+    <blockquote>„Kérjük, tegyenek elérhetővé dokumentált, biztonságos, külső alkalmazások számára használható hozzáférést a szülők és tanulók saját KRÉTA-adataihoz.”</blockquote>
+    <a class="button" href="/#uzenetfal">Írd fel a neved a közös üzenethez <ArrowMark /></a>
+  </section>
+</BaseLayout>
+
+<style>
+  .page-hero { display: grid; grid-template-columns: 37% 63%; min-height: 34rem; padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  h1 { grid-column: 1; margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 8vw, 9rem); font-weight: 600; line-height: .76; letter-spacing: -.035em; text-transform: uppercase; }
+  .page-hero > p:last-child { grid-column: 2; grid-row: 1 / span 2; align-self: end; max-width: 51rem; margin: 0; color: var(--blue); font-size: clamp(1.35rem, 2.2vw, 2.2rem); font-weight: 650; line-height: 1.35; }
+  .password { display: grid; grid-template-columns: 1fr 5fr; gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 9vw, 9rem) var(--page-pad); color: white; background: var(--ink); }
+  .warning-mark { width: clamp(5rem, 9vw, 9rem); aspect-ratio: 1; display: grid; place-items: center; align-self: start; border: 5px solid var(--red); border-radius: 50%; color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: clamp(3rem, 6vw, 6rem); transform: rotate(-5deg); }
+  .password h2 { max-width: 67rem; margin: 0 0 1.6rem; font-size: clamp(2.1rem, 4.2vw, 4.7rem); letter-spacing: -.045em; line-height: 1.05; }
+  .password p { max-width: 64rem; color: #bac6d5; line-height: 1.75; }
+  .password .large { color: white; font-size: clamp(1.15rem, 1.7vw, 1.6rem); line-height: 1.55; }
+  aside { max-width: 64rem; margin: 2rem 0; padding: 1.3rem 1.5rem; border: 1px solid rgba(242, 200, 75, .65); color: #f3e8bd; background: #172433; line-height: 1.65; }
+  .password .button { border-color: #9cb9df; color: white; }
+  .flow { display: grid; grid-template-columns: 37% 63%; }
+  .flow > div { padding: clamp(4rem, 8vw, 8rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
+  .flow h2 { margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 6vw, 7rem); font-weight: 600; line-height: .76; text-transform: uppercase; }
+  .flow ol { margin: 0; padding: 0; list-style: none; }
+  .flow li { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: 2rem var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .flow li > span { color: var(--red); font-family: "IBM Plex Mono", monospace; }
+  .flow h3 { margin: 0 0 .45rem; font-size: 1rem; }
+  .flow li p { max-width: 45rem; margin: 0; color: var(--ink-muted); font-size: .84rem; line-height: 1.65; }
+  .advocacy { padding: clamp(4rem, 9vw, 9rem) var(--page-pad); background-color: var(--paper-bright); background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 28px 28px; }
+  .advocacy h2 { max-width: 70rem; margin: 0 0 1.5rem; color: var(--blue); font-size: clamp(2.7rem, 5.5vw, 6rem); letter-spacing: -.055em; line-height: .98; }
+  .advocacy > p { max-width: 57rem; color: var(--ink-muted); font-size: 1rem; line-height: 1.75; }
+  blockquote { max-width: 67rem; margin: 3rem 0; padding: 1.5rem 2rem; border: 2px solid var(--blue); color: var(--blue); background: rgba(244, 247, 251, .9); font-size: clamp(1.05rem, 1.7vw, 1.45rem); font-weight: 750; line-height: 1.55; }
+  @media (max-width: 800px) {
+    .page-hero, .flow { display: block; }
+    .page-hero { min-height: auto; }
+    .page-hero > p:last-child { margin-top: 3rem; }
+    .password { grid-template-columns: 1fr; }
+    .flow > div { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
+  }
+</style>

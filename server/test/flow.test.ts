@@ -40,7 +40,7 @@ const stubFetch: typeof fetch = async (input) => {
   const url = String(input);
   if (url.startsWith("https://idp.e-kreta.hu/connect/token")) {
     return new Response(
-      JSON.stringify({ access_token: "kreta-access", refresh_token: "kreta-refresh-marci-diak", expires_in: 300 }),
+      JSON.stringify({ access_token: "kreta-access", refresh_token: "kreta-refresh-lilla-diak", expires_in: 300 }),
       { status: 200, headers: { "content-type": "application/json" } },
     );
   }
@@ -154,7 +154,7 @@ async function callMcp(accessToken: string, body: unknown): Promise<Record<strin
 }
 
 /** Runs the whole happy path and returns everything the assertions need. */
-async function connect(children = [{ label: "Marci", username: "marci-diak", password: PASSWORD, instituteCode: "klik123456" }]) {
+async function connect(children = [{ label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" }]) {
   const { clientId, clientSecret } = await register();
   const { verifier, challenge } = pkce();
   const state = randomBytes(8).toString("hex");
@@ -227,12 +227,12 @@ test("a wrong KRÉTA password re-renders the form with an error and issues no co
   const { challenge } = pkce();
   const request = await openLoginPage(clientId, challenge, "st");
   const response = await submitLogin(request, [
-    { label: "Marci", username: "marci-diak", password: "rossz", instituteCode: "klik123456" },
+    { label: "Lilla", username: "lilla-diak", password: "rossz", instituteCode: "klik123456" },
   ]);
   assert.equal(response.status, 400);
   const html = await response.text();
   assert.match(html, /Sikertelen bejelentkezés/);
-  assert.match(html, /Marci:/);
+  assert.match(html, /Lilla:/);
   assert.doesNotMatch(html, /rossz/, "the submitted password must never be echoed back");
 });
 
@@ -281,7 +281,7 @@ test("a code cannot be redeemed with another client's secret", async () => {
   const { verifier, challenge } = pkce();
   const request = await openLoginPage(clientId, challenge, "st");
   const redirected = await submitLogin(request, [
-    { label: "Marci", username: "marci-diak", password: PASSWORD, instituteCode: "klik123456" },
+    { label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" },
   ]);
   const code = new URL(redirected.headers.get("location")!).searchParams.get("code")!;
 
@@ -296,7 +296,7 @@ test("PKCE and replay protection hold at /token", async () => {
   const { verifier, challenge } = pkce();
   const request = await openLoginPage(clientId, challenge, "st");
   const redirected = await submitLogin(request, [
-    { label: "Marci", username: "marci-diak", password: PASSWORD, instituteCode: "klik123456" },
+    { label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" },
   ]);
   const code = new URL(redirected.headers.get("location")!).searchParams.get("code")!;
 
@@ -325,7 +325,7 @@ test("/mcp refuses a missing, forged or foreign token", async () => {
 
 test("several children connect in one go and are addressed by name", async () => {
   const { accessToken } = await connect([
-    { label: "Marci", username: "marci-diak", password: PASSWORD, instituteCode: "klik123456" },
+    { label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" },
     { label: "Kata", username: "kata-diak", password: PASSWORD, instituteCode: "https://klik999999.e-kreta.hu" },
   ]);
 
@@ -336,7 +336,7 @@ test("several children connect in one go and are addressed by name", async () =>
     params: { name: "kreta_evaluations", arguments: {} },
   })) as { result: { isError?: boolean; content: Array<{ text: string }> } };
   assert.equal(ambiguous.result.isError, true);
-  assert.match(ambiguous.result.content[0]!.text, /Marci, Kata/);
+  assert.match(ambiguous.result.content[0]!.text, /Lilla, Kata/);
 
   const named = (await callMcp(accessToken, {
     jsonrpc: "2.0",
@@ -354,24 +354,24 @@ test("several children connect in one go and are addressed by name", async () =>
   assert.equal(status.label, "Kata");
   assert.equal(status.institution, "klik999999");
   assert.equal(status.password_stored, false);
-  assert.deepEqual(status.children, ["Marci", "Kata"]);
+  assert.deepEqual(status.children, ["Lilla", "Kata"]);
 
   const unknown = (await callMcp(accessToken, {
     jsonrpc: "2.0",
     id: 5,
     method: "tools/call",
-    params: { name: "kreta_evaluations", arguments: { child: "Benedek" } },
+    params: { name: "kreta_evaluations", arguments: { child: "Áron" } },
   })) as { result: { isError?: boolean; content: Array<{ text: string }> } };
   assert.equal(unknown.result.isError, true);
-  assert.match(unknown.result.content[0]!.text, /Nincs "Benedek" nevű/);
+  assert.match(unknown.result.content[0]!.text, /Nincs "Áron" nevű/);
 });
 
 test("two children with the same name are refused rather than silently merged", async () => {
   const { clientId } = await register();
   const request = await openLoginPage(clientId, pkce().challenge, "st");
   const response = await submitLogin(request, [
-    { label: "Marci", username: "a", password: PASSWORD, instituteCode: "klik1" },
-    { label: "marci", username: "b", password: PASSWORD, instituteCode: "klik2" },
+    { label: "Lilla", username: "a", password: PASSWORD, instituteCode: "klik1" },
+    { label: "lilla", username: "b", password: PASSWORD, instituteCode: "klik2" },
   ]);
   assert.equal(response.status, 400);
   assert.match(await response.text(), /Kétszer szerepel ugyanaz a név/);

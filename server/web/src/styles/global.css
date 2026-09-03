@@ -1,0 +1,78 @@
+:root {
+  --paper: #f4f7fb;
+  --paper-bright: #fbfcfe;
+  --ink: #0b121c;
+  --ink-muted: #516071;
+  --blue: #113f7a;
+  --blue-strong: #073896;
+  --blue-soft: #aebfda;
+  --grid-line: rgba(17, 63, 122, .115);
+  --red: #d64a35;
+  --yellow: #f2c84b;
+  --green: #286d58;
+  --page-pad: clamp(1.25rem, 3.8vw, 4.5rem);
+  --max: 1600px;
+  color-scheme: light;
+  font-family: "Manrope Variable", Manrope, system-ui, sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+  font-synthesis: none;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; }
+body { margin: 0; min-width: 320px; background: var(--paper); }
+button, input, textarea { font: inherit; }
+button, a { -webkit-tap-highlight-color: transparent; }
+::selection { color: var(--paper-bright); background: var(--blue-strong); }
+
+:focus-visible {
+  outline: 3px solid var(--red);
+  outline-offset: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: .75rem;
+  left: .75rem;
+  padding: .7rem 1rem;
+  color: white;
+  background: var(--ink);
+  transform: translateY(-180%);
+}
+.skip-link:focus { transform: none; }
+
+.button {
+  position: relative;
+  display: inline-flex;
+  min-height: 3.55rem;
+  align-items: center;
+  justify-content: center;
+  gap: .75rem;
+  padding: .95rem 1.3rem;
+  border: 2px solid var(--blue-strong);
+  border-radius: 0;
+  color: white;
+  background: var(--blue-strong);
+  font-size: .9rem;
+  font-weight: 800;
+  text-decoration: none;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+.button::before {
+  content: "";
+  align-self: stretch;
+  margin: -.55rem .1rem -.55rem -.85rem;
+  border-left: 1px dashed currentColor;
+  opacity: .7;
+}
+.button:hover { background: var(--blue); }
+.button:active { background: var(--ink); }
+.button.secondary { color: var(--blue-strong); background: transparent; box-shadow: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
+}

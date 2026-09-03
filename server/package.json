@@ -8,21 +8,35 @@
     "node": ">=22.12"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "npm run build:server && npm run build:web",
+    "build:server": "tsc -p tsconfig.build.json",
+    "build:web": "astro build",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "typecheck": "tsc -p tsconfig.json",
+    "dev:web": "astro dev",
+    "preview:web": "astro preview",
+    "typecheck": "npm run typecheck:server && npm run typecheck:web",
+    "typecheck:server": "tsc -p tsconfig.json",
+    "typecheck:web": "astro check --tsconfig web/tsconfig.json",
     "test": "tsx --test test/*.test.ts",
     "keygen": "tsx scripts/keygen.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "express": "^4.21.2",
+    "express": "^5.2.1",
+    "firebase-admin": "^14.3.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@types/express": "^4.17.21",
+    "@astrojs/check": "^0.9.10",
+    "@fontsource-variable/big-shoulders-display": "^5.3.0",
+    "@fontsource-variable/manrope": "^5.3.0",
+    "@fontsource/big-shoulders-stencil-display": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@types/express": "^5.0.6",
     "@types/node": "^22.10.2",
+    "astro": "^7.3.1",
+    "firebase": "^12.18.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
   }
