@@ -141,6 +141,32 @@ az intézmény nevét és kódját adja tovább, legfeljebb húsz találattal. A
 kényelmi funkció: ha a nem dokumentált külső végpont nem elérhető, a kód kézzel
 is megadható.
 
+### KRÉTA relay adatközponti hálózatokhoz
+
+A KRÉTA a központi belépési és intézményi végpontjain TCP-szinten eldobja az
+ismert adatközponti kimeneteket, köztük a Google Cloud, AWS, Hetzner és ATW
+címeit. A szerver ezért opcionálisan egy saját magyar lakossági hálózaton futó
+relayt használ. A Cloud Run és a relay között a teljes kérés AES-256-GCM-mel
+titkosított; a relay kizárólag HTTPS `*.e-kreta.hu` és `*.ekreta.hu` célokat
+enged át, és nem naplózza a kéréstörzset.
+
+Helyi indítás a szerver buildje után:
+
+```bash
+KRETA_RELAY_KEY="<32 bájtos base64url kulcs>" node dist/relay.js
+```
+
+A helyi `127.0.0.1:39090` portot hitelesített HTTPS tunnel mögé kell tenni,
+majd a Cloud Run szolgáltatásnak együtt kell megadni:
+
+```text
+KRETA_RELAY_URL=https://<saját-tunnel>/v1/fetch
+KRETA_RELAY_KEY=<ugyanaz a kulcs>
+```
+
+A relayt futtató gépnek online kell maradnia. A relay `/health` végpontja nem
+ér el KRÉTA-adatot; csak a helyi folyamat életét jelzi.
+
 ## Helyi próba
 
 ```bash
@@ -164,7 +190,9 @@ redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
 | `src/oauth/replayCache.ts` | egyszer-használatos authorization code, példányon belül |
 | `src/kreta/auth.ts` | KRÉTA belépés / frissítés / visszavonás — az egyetlen hely, ahol jelszó van |
 | `src/kreta/client.ts` | csak olvasó Student API kliens |
+| `src/kreta/relay.ts` | eKRÉTA-hostokra korlátozott, titkosított relay transzport |
 | `src/kreta/rotationCache.ts` | a rotáció elleni memóriabeli védőháló |
+| `src/relay.ts` | magyar lakossági hálózaton futó helyi relay folyamat |
 | `src/mcp/server.ts` | a 20 csak-olvasó tool |
 | `src/pledges/router.ts` | hitelesített nyilvános üzenetek API-ja |
 | `src/pledges/store.ts` | az üzenőfal Firestore-adattára |
