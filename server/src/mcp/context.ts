@@ -1,16 +1,13 @@
 /**
- * Per-request tool context: resolves which connected child a call is about
- * and builds the read-only KRÉTA client for it.
- *
- * A child is addressed by the label the parent typed on the login page, so
- * "Mi van Lillának a héten?" maps to a tool call with `child: "Lilla"`. With
- * exactly one connected child the argument is optional; with several, an
- * omitted or unknown label is an error that *names the available children*,
- * because the model cannot otherwise discover them.
+ * Resolves a Claude tool call to one encrypted, Google-owned KRÉTA
+ * connection. The OAuth token contains only profile references; the KRÉTA
+ * token remains in the parent's server-side profile.
  */
 import { KretaClient } from "../kreta/client.js";
-import type { RotationCache } from "../kreta/rotationCache.js";
 import type { SealedChild, SealedSession } from "../oauth/types.js";
+import { claimConnection, connectionIsOnline, openConnectionCredential, renewConnection } from "../profiles/connection.js";
+import type { ChildProfileStore } from "../profiles/store.js";
+import type { Sealer } from "../seal.js";
 
 export class ToolError extends Error {
   constructor(message: string) {
@@ -39,26 +36,54 @@ export function resolveChild(session: SealedSession, requested?: string): Sealed
 }
 
 export interface ClientFactoryDeps {
-  rotationCache: RotationCache;
+  childProfileStore: ChildProfileStore;
+  sealer: Sealer;
   fetchImpl?: typeof fetch;
 }
 
 /**
- * Builds a client for one child. The refresh token comes from the rotation
- * cache when this process has seen a newer one than the token sealed at
- * login (src/kreta/rotationCache.ts), and any rotation observed during the
- * call is written straight back.
+ * Builds a client from the latest encrypted profile credential. Trial
+ * connections may use only their initial 30-minute access token; keep-alive
+ * connections persist every successful refresh with a version check.
  */
-export function createClient(
+export async function createClient(
   session: SealedSession,
   child: SealedChild,
   deps: ClientFactoryDeps,
-): KretaClient {
-  const cacheKey = `${session.sid}:${child.label.toLowerCase()}`;
+): Promise<KretaClient> {
+  const profile = await deps.childProfileStore.get(session.uid, child.profileId);
+  if (!profile?.connection || !connectionIsOnline(profile.connection)) {
+    throw new ToolError(`${child.label} nincs online. Csatlakoztasd újra a kapcsolati pulton.`);
+  }
+
+  let credential;
+  try {
+    credential = openConnectionCredential(deps.sealer, profile.connection);
+  } catch {
+    throw new ToolError(`${child.label} kapcsolata lejárt. Csatlakoztasd újra a kapcsolati pulton.`);
+  }
+
+  let current = profile.connection;
   return new KretaClient({
-    instituteCode: child.instituteCode,
-    refreshToken: deps.rotationCache.get(cacheKey) ?? child.refreshToken,
+    instituteCode: profile.instituteCode,
+    refreshToken: credential.refreshToken,
+    accessToken: credential.accessToken,
+    accessExpiresAt: credential.accessExpiresAt,
+    allowRefresh: current.mode === "keep_alive",
     ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
-    onRotate: (refreshToken) => deps.rotationCache.set(cacheKey, refreshToken),
+    onBeforeRefresh: async () => {
+      const claimed = claimConnection(current);
+      if (!await deps.childProfileStore.updateConnection(session.uid, profile.id, current.version, claimed)) {
+        throw new ToolError(`${child.label} kapcsolatát éppen másik kérés frissíti. Próbáld újra.`);
+      }
+      current = claimed;
+    },
+    onRefresh: async (tokens) => {
+      const next = renewConnection(deps.sealer, current, tokens);
+      if (!await deps.childProfileStore.updateConnection(session.uid, profile.id, current.version, next)) {
+        throw new ToolError(`${child.label} frissített kapcsolatát nem sikerült biztonságosan elmenteni.`);
+      }
+      current = next;
+    },
   });
 }

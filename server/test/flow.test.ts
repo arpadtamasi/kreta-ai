@@ -1,10 +1,9 @@
 /**
- * End-to-end: dynamic registration → /authorize → KRÉTA login → /token →
- * an MCP tool call, with both KRÉTA login and the KRÉTA API stubbed.
+ * End-to-end: dynamic registration → Google-backed /authorize → /token →
+ * an MCP tool call backed by encrypted child-profile credentials.
  *
- * The load-bearing assertion is `no credential is stored or leaked`: the
- * whole design claim is that the parent's password exists only for the
- * duration of the login call, so it is checked directly rather than assumed.
+ * The client-facing OAuth artifacts carry profile references, never KRÉTA
+ * credentials. The encrypted credential stays in the parent-owned store.
  */
 import assert from "node:assert/strict";
 import { randomBytes, createHash } from "node:crypto";
@@ -12,69 +11,95 @@ import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
-import { KretaError } from "../src/kreta/institute.js";
-import type { LoginCredentials } from "../src/kreta/auth.js";
-import type { ChildProfile, ChildProfileInput, ChildProfileStore } from "../src/profiles/store.js";
+import { createConnection } from "../src/profiles/connection.js";
+import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore } from "../src/profiles/store.js";
+import type { Sealer } from "../src/seal.js";
 
 const REDIRECT_URI = "https://claude.ai/api/mcp/auth_callback";
-const PASSWORD = "sup3r-titk0s-jelszo";
 const SEALING_KEY = randomBytes(32).toString("base64");
 
-const loginCalls: LoginCredentials[] = [];
-
 class MemoryChildProfileStore implements ChildProfileStore {
-  readonly profiles: ChildProfile[] = [
-    {
-      id: "profile-lilla",
-      childName: "Lilla",
-      normalizedName: "lilla",
-      kretaUsername: "lilla-diak",
-      instituteCode: "klik123456",
-      createdAt: new Date(0).toISOString(),
-      updatedAt: new Date(0).toISOString(),
-    },
-    {
-      id: "profile-kata",
-      childName: "Kata",
-      normalizedName: "kata",
-      kretaUsername: "kata-diak",
-      instituteCode: "klik999999",
-      createdAt: new Date(1).toISOString(),
-      updatedAt: new Date(1).toISOString(),
-    },
-  ];
+  readonly profiles: ChildProfile[];
+
+  constructor(sealer: Sealer) {
+    const tokens = (suffix: string) => ({
+      accessToken: "kreta-access",
+      refreshToken: `kreta-refresh-${suffix}`,
+      expiresIn: 300,
+      rotated: false,
+    });
+    this.profiles = [
+      {
+        id: "profile-lilla",
+        childName: "Lilla",
+        normalizedName: "lilla",
+        kretaUsername: "lilla-diak",
+        instituteCode: "klik123456",
+        connection: createConnection(sealer, tokens("lilla-diak"), "keep_alive"),
+        createdAt: new Date(0).toISOString(),
+        updatedAt: new Date(0).toISOString(),
+      },
+      {
+        id: "profile-kata",
+        childName: "Kata",
+        normalizedName: "kata",
+        kretaUsername: "kata-diak",
+        instituteCode: "klik999999",
+        connection: createConnection(sealer, tokens("kata-diak"), "keep_alive"),
+        createdAt: new Date(1).toISOString(),
+        updatedAt: new Date(1).toISOString(),
+      },
+    ];
+  }
 
   async list(uid: string) {
     return uid === "parent-uid" ? this.profiles : [];
   }
 
-  async save(_uid: string, input: ChildProfileInput & { id?: string }) {
-    const profile = {
+  async get(uid: string, id: string) {
+    return uid === "parent-uid" ? this.profiles.find((profile) => profile.id === id) : undefined;
+  }
+
+  async save(_uid: string, input: ChildProfileInput & { id?: string }, connection?: ChildConnection) {
+    const profile: ChildProfile = {
       ...input,
       id: input.id ?? "profile-new",
+      ...(connection ? { connection } : {}),
       createdAt: new Date(0).toISOString(),
       updatedAt: new Date(0).toISOString(),
     };
     return profile;
   }
 
+  async updateConnection(uid: string, id: string, expectedVersion: number, connection: ChildConnection) {
+    const profile = await this.get(uid, id);
+    if (!profile?.connection || profile.connection.version !== expectedVersion) return false;
+    profile.connection = connection;
+    return true;
+  }
+
+  async clearConnection(uid: string, id: string) {
+    const profile = await this.get(uid, id);
+    if (!profile) return false;
+    delete profile.connection;
+    return true;
+  }
+
+  async listDueConnections(now: Date, limit: number) {
+    return this.profiles
+      .filter((profile) => {
+        const nextActionAt = profile.connection?.mode === "keep_alive"
+          ? profile.connection.nextRefreshAt
+          : profile.connection?.expiresAt;
+        return nextActionAt ? Date.parse(nextActionAt) <= now.valueOf() : false;
+      })
+      .slice(0, limit)
+      .map((profile) => ({ uid: "parent-uid", profile }));
+  }
+
   async delete() {
     return false;
   }
-}
-
-/** Stands in for the KRÉTA IDP login: accepts one known parent, rejects the rest. */
-async function stubLogin(credentials: LoginCredentials) {
-  loginCalls.push(credentials);
-  if (credentials.password !== PASSWORD) {
-    throw new KretaError("Sikertelen bejelentkezés. Ellenőrizd az azonosítót, a jelszót és az intézmény kódját.");
-  }
-  return {
-    accessToken: "kreta-access",
-    refreshToken: `kreta-refresh-${credentials.username}`,
-    expiresIn: 300,
-    rotated: false,
-  };
 }
 
 /** Stands in for the KRÉTA token endpoint and the institute's Student API. */
@@ -99,12 +124,12 @@ const config = loadConfig({
   TOKEN_SEALING_KEY: SEALING_KEY,
   OAUTH_ALLOWED_REDIRECT_URIS: REDIRECT_URI,
 } as NodeJS.ProcessEnv);
+const profileStore = new MemoryChildProfileStore(config.sealer);
 
 const server = createApp({
   config,
-  loginImpl: stubLogin,
   fetchImpl: stubFetch,
-  childProfileStore: new MemoryChildProfileStore(),
+  childProfileStore: profileStore,
   verifyFirebaseSessionCookie: async (cookie) => {
     if (cookie === "parent-session") return { uid: "parent-uid", name: "Anna Példa" };
     if (cookie === "other-session") return { uid: "other-uid", name: "Másik Szülő" };
@@ -130,7 +155,12 @@ async function register(): Promise<{ clientId: string; clientSecret: string }> {
   return { clientId: body.client_id, clientSecret: body.client_secret };
 }
 
-async function openLoginPage(clientId: string, challenge: string, state: string): Promise<string> {
+async function authorize(
+  clientId: string,
+  challenge: string,
+  state: string,
+  cookie = "parent-session",
+): Promise<Response> {
   const query = new URLSearchParams({
     response_type: "code",
     client_id: clientId,
@@ -139,31 +169,8 @@ async function openLoginPage(clientId: string, challenge: string, state: string)
     code_challenge_method: "S256",
     state,
   });
-  const response = await fetch(`${base}/authorize?${query}`, {
-    headers: { cookie: "__session=parent-session" },
-    redirect: "manual",
-  });
-  assert.equal(response.status, 200);
-  const html = await response.text();
-  const match = /name="request" value="([^"]+)"/.exec(html);
-  assert.ok(match, "the login page must carry the sealed request");
-  return match[1]!;
-}
-
-async function submitLogin(
-  request: string,
-  children: Array<{ childName: string; password: string }>,
-): Promise<Response> {
-  const form = new URLSearchParams();
-  form.set("request", request);
-  for (const child of children) {
-    form.append("childName", child.childName);
-    form.append("password", child.password);
-  }
-  return fetch(`${base}/authorize/login`, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded", cookie: "__session=parent-session", origin: base },
-    body: form.toString(),
+  return fetch(`${base}/authorize?${query}`, {
+    headers: { cookie: `__session=${cookie}` },
     redirect: "manual",
   });
 }
@@ -207,13 +214,11 @@ async function callMcp(accessToken: string, body: unknown): Promise<Record<strin
 }
 
 /** Runs the whole happy path and returns everything the assertions need. */
-async function connect(children = [{ childName: "Lilla", password: PASSWORD }]) {
+async function connect() {
   const { clientId, clientSecret } = await register();
   const { verifier, challenge } = pkce();
   const state = randomBytes(8).toString("hex");
-  const request = await openLoginPage(clientId, challenge, state);
-
-  const redirected = await submitLogin(request, children);
+  const redirected = await authorize(clientId, challenge, state);
   assert.equal(redirected.status, 302);
   const location = new URL(redirected.headers.get("location")!);
   assert.equal(location.origin + location.pathname, REDIRECT_URI);
@@ -275,7 +280,7 @@ test("/authorize requires PKCE, reporting the error to the client", async () => 
   assert.equal(location.searchParams.get("state"), "st");
 });
 
-test("/authorize identifies the parent first, then shows password-manager friendly fields", async () => {
+test("/authorize identifies the parent with Google, then returns a code without KRÉTA fields", async () => {
   const { clientId } = await register();
   const query = new URLSearchParams({
     response_type: "code",
@@ -291,50 +296,20 @@ test("/authorize identifies the parent first, then shows password-manager friend
 
   const withSession = await fetch(`${base}/authorize?${query}`, {
     headers: { cookie: "__session=parent-session" },
-  });
-  assert.equal(withSession.status, 200);
-  const html = await withSession.text();
-  assert.match(html, /name="childName"/);
-  assert.match(html, /autocomplete="section-child-1 username"/);
-  assert.match(html, /autocomplete="section-child-1 current-password"/);
-  assert.match(html, /<link rel="stylesheet" href="\/authorize\.css">/);
-  assert.doesNotMatch(html, /<style>/);
-  assert.doesNotMatch(html, /name="username"/);
-  assert.doesNotMatch(html, /name="instituteCode"/);
-  assert.doesNotMatch(html, /pl\. Marci/);
-
-  const css = await fetch(`${base}/authorize.css`);
-  assert.equal(css.status, 200);
-  assert.match(css.headers.get("content-type") ?? "", /text\/css/);
-  assert.match(await css.text(), /\.password-wrap/);
-});
-
-test("an OAuth request is bound to the Google account that opened it", async () => {
-  const { clientId } = await register();
-  const request = await openLoginPage(clientId, pkce().challenge, "st");
-  const form = new URLSearchParams({ request, childName: "Lilla", password: PASSWORD });
-  const response = await fetch(`${base}/authorize/login`, {
-    method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded", cookie: "__session=other-session", origin: base },
-    body: form,
     redirect: "manual",
   });
-  assert.equal(response.status, 302);
-  assert.match(response.headers.get("location") ?? "", /^\/dashboard\?return_to=/);
+  assert.equal(withSession.status, 302);
+  const location = new URL(withSession.headers.get("location")!);
+  assert.equal(location.origin + location.pathname, REDIRECT_URI);
+  assert.ok(location.searchParams.get("code"));
+  assert.equal(location.searchParams.get("state"), "st");
 });
 
-test("a wrong KRÉTA password re-renders the form with an error and issues no code", async () => {
+test("a Google account without online children returns to profile setup", async () => {
   const { clientId } = await register();
-  const { challenge } = pkce();
-  const request = await openLoginPage(clientId, challenge, "st");
-  const response = await submitLogin(request, [
-    { childName: "Lilla", password: "rossz" },
-  ]);
-  assert.equal(response.status, 400);
-  const html = await response.text();
-  assert.match(html, /Sikertelen bejelentkezés/);
-  assert.match(html, /Lilla:/);
-  assert.doesNotMatch(html, /rossz/, "the submitted password must never be echoed back");
+  const response = await authorize(clientId, pkce().challenge, "st", "other-session");
+  assert.equal(response.status, 302);
+  assert.match(response.headers.get("location") ?? "", /^\/dashboard\?return_to=/);
 });
 
 test("the connected session reaches the MCP tools and answers KRÉTA data", async () => {
@@ -356,7 +331,10 @@ test("the connected session reaches the MCP tools and answers KRÉTA data", asyn
     jsonrpc: "2.0",
     id: 2,
     method: "tools/call",
-    params: { name: "kreta_homework", arguments: { start_date: "2026-09-01", end_date: "2026-09-07" } },
+    params: {
+      name: "kreta_homework",
+      arguments: { child: "Lilla", start_date: "2026-09-01", end_date: "2026-09-07" },
+    },
   })) as { result: { isError?: boolean; content: Array<{ text: string }> } };
   assert.notEqual(called.result.isError, true);
   const payload = JSON.parse(called.result.content[0]!.text) as { total: number; items: Array<{ Uid: string }> };
@@ -364,41 +342,38 @@ test("the connected session reaches the MCP tools and answers KRÉTA data", asyn
   assert.equal(payload.items[0]!.Uid, "hf-1");
 });
 
-test("no credential is stored or leaked: the password is not in any issued token", async () => {
+test("client-facing OAuth artifacts contain profile references, never KRÉTA credentials", async () => {
   const { code, accessToken } = await connect();
-  assert.ok(loginCalls.some((call) => call.password === PASSWORD), "the stub login did receive the password");
+  const authorization = config.sealer.open<{ session: { children: Array<Record<string, unknown>> } }>("code", code);
+  const session = config.sealer.open<{ children: Array<Record<string, unknown>> }>("access", accessToken);
+
+  for (const child of [...authorization.session.children, ...session.children]) {
+    assert.deepEqual(Object.keys(child).sort(), ["instituteCode", "label", "profileId"]);
+  }
 
   for (const [what, token] of [["code", code], ["access token", accessToken]] as const) {
     const decoded = Buffer.from(token.split(".")[2]!, "base64url").toString("latin1");
-    assert.ok(!token.includes(PASSWORD), `the ${what} must not contain the password`);
-    assert.ok(!decoded.includes(PASSWORD), `the ${what} ciphertext must not contain the password`);
-    // Sealed, not merely encoded: the refresh token must not be readable either.
+    assert.ok(!decoded.includes("kreta-access"), `the ${what} must not expose the access token`);
     assert.ok(!decoded.includes("kreta-refresh"), `the ${what} must not expose the refresh token`);
   }
 });
 
 test("a code cannot be redeemed with another client's secret", async () => {
-  const { clientId } = await register();
+  const { clientId, clientSecret } = await register();
   const { verifier, challenge } = pkce();
-  const request = await openLoginPage(clientId, challenge, "st");
-  const redirected = await submitLogin(request, [
-    { childName: "Lilla", password: PASSWORD },
-  ]);
+  const redirected = await authorize(clientId, challenge, "st");
   const code = new URL(redirected.headers.get("location")!).searchParams.get("code")!;
 
   const foreignSecret = (await register()).clientSecret;
   assert.equal((await redeem(code, clientId, foreignSecret, verifier)).status, 401);
   // The rejected attempt must not have consumed the code.
-  assert.equal((await redeem(code, clientId, (await register()).clientSecret, verifier)).status, 401);
+  assert.equal((await redeem(code, clientId, clientSecret, verifier)).status, 200);
 });
 
 test("PKCE and replay protection hold at /token", async () => {
   const { clientId, clientSecret } = await register();
   const { verifier, challenge } = pkce();
-  const request = await openLoginPage(clientId, challenge, "st");
-  const redirected = await submitLogin(request, [
-    { childName: "Lilla", password: PASSWORD },
-  ]);
+  const redirected = await authorize(clientId, challenge, "st");
   const code = new URL(redirected.headers.get("location")!).searchParams.get("code")!;
 
   const wrongVerifier = await redeem(code, clientId, clientSecret, pkce().verifier);
@@ -424,11 +399,8 @@ test("/mcp refuses a missing, forged or foreign token", async () => {
   assert.equal(forged.status, 401);
 });
 
-test("several children connect in one go and are addressed by name", async () => {
-  const { accessToken } = await connect([
-    { childName: "Lilla", password: PASSWORD },
-    { childName: "Kata", password: PASSWORD },
-  ]);
+test("several connected children are addressed by name", async () => {
+  const { accessToken } = await connect();
 
   const ambiguous = (await callMcp(accessToken, {
     jsonrpc: "2.0",
@@ -465,15 +437,4 @@ test("several children connect in one go and are addressed by name", async () =>
   })) as { result: { isError?: boolean; content: Array<{ text: string }> } };
   assert.equal(unknown.result.isError, true);
   assert.match(unknown.result.content[0]!.text, /Nincs "Áron" nevű/);
-});
-
-test("two children with the same name are refused rather than silently merged", async () => {
-  const { clientId } = await register();
-  const request = await openLoginPage(clientId, pkce().challenge, "st");
-  const response = await submitLogin(request, [
-    { childName: "Lilla", password: PASSWORD },
-    { childName: "lilla", password: PASSWORD },
-  ]);
-  assert.equal(response.status, 400);
-  assert.match(await response.text(), /Kétszer szerepel ugyanaz a név/);
 });

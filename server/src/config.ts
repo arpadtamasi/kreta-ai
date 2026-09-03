@@ -8,6 +8,8 @@ export interface Config {
   sealer: Sealer;
   authorizationCodeTtlSeconds: number;
   accessTokenTtlSeconds: number;
+  refreshJobAudience: string | undefined;
+  refreshJobServiceAccount: string | undefined;
   port: number;
 }
 
@@ -62,6 +64,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
       env.OAUTH_ACCESS_TOKEN_TTL_SECONDS,
       60 * 60 * 24 * 30, // 30 days; there is no refresh grant (see README).
     ),
+    refreshJobAudience: env.REFRESH_JOB_AUDIENCE?.trim() || undefined,
+    refreshJobServiceAccount: env.REFRESH_JOB_SERVICE_ACCOUNT?.trim() || undefined,
     port: parseIntEnv(env.PORT, 8080),
   };
 }

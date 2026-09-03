@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KretaError, normalizeInstituteCode } from "../src/kreta/institute.js";
+import { KretaClient } from "../src/kreta/client.js";
 import { parseLoginForm } from "../src/kreta/loginForm.js";
-import { RotationCache } from "../src/kreta/rotationCache.js";
 import { ReplayCache } from "../src/oauth/replayCache.js";
 import { dateRange, pack, studyTaskUids, validateLimit } from "../src/mcp/shape.js";
 import { ToolError } from "../src/mcp/context.js";
@@ -45,6 +45,52 @@ test("a page with no POST form yields null rather than a silent bad POST", () =>
   assert.equal(parseLoginForm('<form method="post"><input name="a"></form>'), null);
 });
 
+test("a trial connection never refreshes after its initial access token expires", async () => {
+  let requests = 0;
+  const client = new KretaClient({
+    instituteCode: "klik123456",
+    refreshToken: "trial-refresh",
+    accessToken: "trial-access",
+    accessExpiresAt: Date.now() - 1,
+    allowRefresh: false,
+    fetchImpl: async () => {
+      requests += 1;
+      return new Response("{}");
+    },
+  });
+  await assert.rejects(() => client.getJson("sajat/TanuloAdatlap"), /30 perces próbakapcsolat lejárt/);
+  assert.equal(requests, 0);
+});
+
+test("a keep-alive refresh is reserved before rotation and persisted before the API call", async () => {
+  const events: string[] = [];
+  const client = new KretaClient({
+    instituteCode: "klik123456",
+    refreshToken: "old-refresh",
+    accessToken: "old-access",
+    accessExpiresAt: Date.now() + 30_000,
+    allowRefresh: true,
+    onBeforeRefresh: () => { events.push("claim"); },
+    onRefresh: (tokens) => { events.push(`persist:${tokens.refreshToken}`); },
+    fetchImpl: async (input) => {
+      const url = String(input);
+      if (url.includes("/connect/token")) {
+        events.push("refresh");
+        return new Response(JSON.stringify({
+          access_token: "new-access",
+          refresh_token: "new-refresh",
+          expires_in: 1800,
+        }), { status: 200, headers: { "content-type": "application/json" } });
+      }
+      events.push("api");
+      return new Response(JSON.stringify({ ok: true }), { status: 200 });
+    },
+  });
+
+  assert.deepEqual(await client.getJson("sajat/TanuloAdatlap"), { ok: true });
+  assert.deepEqual(events, ["claim", "refresh", "persist:new-refresh", "api"]);
+});
+
 test("the replay cache allows one claim per id", () => {
   const cache = new ReplayCache(1000);
   assert.ok(cache.claim("code-1"));
@@ -57,26 +103,6 @@ test("the replay cache forgets ids once they could no longer be replayed", () =>
   assert.ok(cache.claim("code-1", 0));
   assert.equal(cache.claim("code-1", 500), false);
   assert.ok(cache.claim("code-1", 2000));
-});
-
-test("the rotation cache returns the newest token and expires stale ones", () => {
-  const cache = new RotationCache(2);
-  cache.set("a", "rt-1", 0);
-  assert.equal(cache.get("a", 1000), "rt-1");
-  cache.set("a", "rt-2", 1000);
-  assert.equal(cache.get("a", 2000), "rt-2");
-  assert.equal(cache.get("a", 40 * 24 * 60 * 60 * 1000), undefined);
-});
-
-test("the rotation cache evicts the least recently used entry at capacity", () => {
-  const cache = new RotationCache(2);
-  cache.set("a", "rt-a");
-  cache.set("b", "rt-b");
-  cache.get("a");
-  cache.set("c", "rt-c");
-  assert.equal(cache.get("b"), undefined);
-  assert.equal(cache.get("a"), "rt-a");
-  assert.equal(cache.get("c"), "rt-c");
 });
 
 test("list answers are capped and report truncation", () => {

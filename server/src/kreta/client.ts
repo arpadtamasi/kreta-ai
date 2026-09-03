@@ -2,8 +2,8 @@
  * Read-only KRÉTA Student API client, ported from python/kreta_client.py.
  *
  * One instance serves one child for one MCP request: it holds no password,
- * only a refresh token it was handed, and it mints a short-lived access
- * token per request. Only relative, fixed API paths are accepted — there is
+ * only the encrypted profile's opened token pair. Only relative, fixed API
+ * paths are accepted — there is
  * no "call any URL" escape hatch, and no write verb anywhere in the class.
  */
 import { MOBILE_API_KEY, MOBILE_USER_AGENT, HTTP_TIMEOUT_MS } from "./constants.js";
@@ -13,15 +13,22 @@ import { refresh, type KretaTokens } from "./auth.js";
 export interface KretaClientOptions {
   instituteCode: string;
   refreshToken: string;
+  accessToken?: string;
+  accessExpiresAt?: number;
+  allowRefresh?: boolean;
   fetchImpl?: typeof fetch;
-  /** Called whenever the IDP hands back a different refresh token. */
-  onRotate?: (refreshToken: string) => void;
+  /** Persists every newly minted access token and any rotated refresh token. */
+  onRefresh?: (tokens: KretaTokens) => void | Promise<void>;
+  /** Atomically reserves the current single-use refresh token. */
+  onBeforeRefresh?: () => void | Promise<void>;
 }
 
 export class KretaClient {
   private readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
-  private readonly onRotate: ((refreshToken: string) => void) | undefined;
+  private readonly onRefresh: ((tokens: KretaTokens) => void | Promise<void>) | undefined;
+  private readonly onBeforeRefresh: (() => void | Promise<void>) | undefined;
+  private readonly allowRefresh: boolean;
   private refreshToken: string;
   private tokens: KretaTokens | null = null;
   private expiresAt = 0;
@@ -34,7 +41,18 @@ export class KretaClient {
     this.baseUrl = `https://${options.instituteCode.toLowerCase()}.e-kreta.hu/ellenorzo/v3/`;
     this.refreshToken = options.refreshToken;
     this.fetchImpl = options.fetchImpl ?? fetch;
-    this.onRotate = options.onRotate;
+    this.onRefresh = options.onRefresh;
+    this.onBeforeRefresh = options.onBeforeRefresh;
+    this.allowRefresh = options.allowRefresh ?? true;
+    if (options.accessToken && options.accessExpiresAt) {
+      this.tokens = {
+        accessToken: options.accessToken,
+        refreshToken: options.refreshToken,
+        expiresIn: Math.max(1, Math.floor((options.accessExpiresAt - Date.now()) / 1000)),
+        rotated: false,
+      };
+      this.expiresAt = options.accessExpiresAt;
+    }
   }
 
   /** The newest refresh token seen, which may differ from the one passed in. */
@@ -44,19 +62,23 @@ export class KretaClient {
 
   private async authenticate(force = false): Promise<void> {
     if (!force && this.tokens && Date.now() < this.expiresAt - 60_000) return;
+    if (!this.allowRefresh) {
+      throw new KretaError("A 30 perces próbakapcsolat lejárt. Csatlakoztasd újra a gyereket a kapcsolati pulton.");
+    }
     // Collapse concurrent tool calls onto one token request rather than
     // racing several refreshes for the same connection.
     if (!force && this.inFlight) return this.inFlight;
 
     const run = (async () => {
+      await this.onBeforeRefresh?.();
       const tokens = await refresh(this.refreshToken, this.fetchImpl);
       this.tokens = tokens;
       this.expiresAt = Date.now() + tokens.expiresIn * 1000;
       if (tokens.refreshToken !== this.refreshToken) {
         this.refreshToken = tokens.refreshToken;
         this.rotationObserved = this.rotationObserved || tokens.rotated;
-        this.onRotate?.(tokens.refreshToken);
       }
+      await this.onRefresh?.(tokens);
     })();
     this.inFlight = run.finally(() => {
       this.inFlight = null;

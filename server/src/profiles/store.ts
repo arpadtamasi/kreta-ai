@@ -1,5 +1,23 @@
-import { randomBytes } from "node:crypto";
-import type { Firestore } from "firebase-admin/firestore";
+import { createHash, randomBytes } from "node:crypto";
+import { FieldValue, type Firestore, type Transaction } from "firebase-admin/firestore";
+
+export type ConnectionMode = "trial" | "keep_alive";
+export type ConnectionState = "active" | "attention";
+
+export interface ChildConnection {
+  /** AES-GCM sealed access + refresh token. Never returned by the HTTP API. */
+  credential: string;
+  mode: ConnectionMode;
+  state: ConnectionState;
+  connectedAt: string;
+  refreshedAt: string;
+  expiresAt: string;
+  nextRefreshAt?: string;
+  keepAliveUntil?: string;
+  version: number;
+  consecutiveFailures: number;
+  lastErrorAt?: string;
+}
 
 export interface ChildProfile {
   id: string;
@@ -7,6 +25,7 @@ export interface ChildProfile {
   normalizedName: string;
   kretaUsername: string;
   instituteCode: string;
+  connection?: ChildConnection;
   createdAt: string;
   updatedAt: string;
 }
@@ -20,7 +39,20 @@ export interface ChildProfileInput {
 
 export interface ChildProfileStore {
   list(uid: string): Promise<ChildProfile[]>;
-  save(uid: string, input: ChildProfileInput & { id?: string }): Promise<ChildProfile>;
+  get(uid: string, id: string): Promise<ChildProfile | undefined>;
+  save(
+    uid: string,
+    input: ChildProfileInput & { id?: string },
+    connection?: ChildConnection,
+  ): Promise<ChildProfile>;
+  updateConnection(
+    uid: string,
+    id: string,
+    expectedVersion: number,
+    connection: ChildConnection,
+  ): Promise<boolean>;
+  clearConnection(uid: string, id: string, expectedVersion?: number): Promise<boolean>;
+  listDueConnections(now: Date, limit: number): Promise<Array<{ uid: string; profile: ChildProfile }>>;
   delete(uid: string, id: string): Promise<boolean>;
 }
 
@@ -42,13 +74,82 @@ interface StoredProfile {
   normalizedName?: unknown;
   kretaUsername?: unknown;
   instituteCode?: unknown;
+  connection?: unknown;
   createdAt?: { toDate?: () => Date };
   updatedAt?: { toDate?: () => Date };
+}
+
+interface StoredConnection {
+  credential?: unknown;
+  mode?: unknown;
+  state?: unknown;
+  connectedAt?: { toDate?: () => Date };
+  refreshedAt?: { toDate?: () => Date };
+  expiresAt?: { toDate?: () => Date };
+  nextRefreshAt?: { toDate?: () => Date };
+  keepAliveUntil?: { toDate?: () => Date };
+  version?: unknown;
+  consecutiveFailures?: unknown;
+  lastErrorAt?: { toDate?: () => Date };
 }
 
 function timestampToIso(value: StoredProfile["createdAt"]): string {
   const date = value?.toDate?.();
   return date instanceof Date && Number.isFinite(date.valueOf()) ? date.toISOString() : new Date(0).toISOString();
+}
+
+function optionalTimestampToIso(value: StoredConnection["nextRefreshAt"]): string | undefined {
+  const date = value?.toDate?.();
+  return date instanceof Date && Number.isFinite(date.valueOf()) ? date.toISOString() : undefined;
+}
+
+function storedConnection(value: unknown): ChildConnection | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const data = value as StoredConnection;
+  if (
+    typeof data.credential !== "string" ||
+    (data.mode !== "trial" && data.mode !== "keep_alive") ||
+    (data.state !== "active" && data.state !== "attention") ||
+    typeof data.version !== "number"
+  ) return undefined;
+  const connectedAt = optionalTimestampToIso(data.connectedAt);
+  const refreshedAt = optionalTimestampToIso(data.refreshedAt);
+  const expiresAt = optionalTimestampToIso(data.expiresAt);
+  if (!connectedAt || !refreshedAt || !expiresAt) return undefined;
+  const nextRefreshAt = optionalTimestampToIso(data.nextRefreshAt);
+  const keepAliveUntil = optionalTimestampToIso(data.keepAliveUntil);
+  const lastErrorAt = optionalTimestampToIso(data.lastErrorAt);
+  return {
+    credential: data.credential,
+    mode: data.mode,
+    state: data.state,
+    connectedAt,
+    refreshedAt,
+    expiresAt,
+    ...(nextRefreshAt ? { nextRefreshAt } : {}),
+    ...(keepAliveUntil ? { keepAliveUntil } : {}),
+    version: Math.max(1, Math.floor(data.version)),
+    consecutiveFailures: typeof data.consecutiveFailures === "number"
+      ? Math.max(0, Math.floor(data.consecutiveFailures))
+      : 0,
+    ...(lastErrorAt ? { lastErrorAt } : {}),
+  };
+}
+
+function firestoreConnection(connection: ChildConnection) {
+  return {
+    credential: connection.credential,
+    mode: connection.mode,
+    state: connection.state,
+    connectedAt: new Date(connection.connectedAt),
+    refreshedAt: new Date(connection.refreshedAt),
+    expiresAt: new Date(connection.expiresAt),
+    ...(connection.nextRefreshAt ? { nextRefreshAt: new Date(connection.nextRefreshAt) } : {}),
+    ...(connection.keepAliveUntil ? { keepAliveUntil: new Date(connection.keepAliveUntil) } : {}),
+    version: connection.version,
+    consecutiveFailures: connection.consecutiveFailures,
+    ...(connection.lastErrorAt ? { lastErrorAt: new Date(connection.lastErrorAt) } : {}),
+  };
 }
 
 function storedProfile(id: string, data: StoredProfile): ChildProfile {
@@ -58,6 +159,7 @@ function storedProfile(id: string, data: StoredProfile): ChildProfile {
     normalizedName: typeof data.normalizedName === "string" ? data.normalizedName : "",
     kretaUsername: typeof data.kretaUsername === "string" ? data.kretaUsername : "",
     instituteCode: typeof data.instituteCode === "string" ? data.instituteCode : "",
+    ...(storedConnection(data.connection) ? { connection: storedConnection(data.connection) } : {}),
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
   };
@@ -74,6 +176,26 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
     return this.#firestore.collection("users").doc(uid).collection("children");
   }
 
+  #queue() {
+    return this.#firestore.collection("connectionRefreshQueue");
+  }
+
+  #queueId(uid: string, profileId: string): string {
+    return createHash("sha256").update(`${uid}\0${profileId}`).digest("base64url");
+  }
+
+  #writeQueue(transaction: Transaction, uid: string, profileId: string, connection: ChildConnection): void {
+    const ref = this.#queue().doc(this.#queueId(uid, profileId));
+    const candidates = [
+      connection.mode === "keep_alive" ? connection.nextRefreshAt : connection.expiresAt,
+      connection.keepAliveUntil,
+    ].filter((value): value is string => Boolean(value));
+    const nextActionAt = candidates.reduce((earliest, value) =>
+      Date.parse(value) < Date.parse(earliest) ? value : earliest,
+    );
+    transaction.set(ref, { uid, profileId, nextRefreshAt: new Date(nextActionAt) });
+  }
+
   async list(uid: string): Promise<ChildProfile[]> {
     const snapshot = await this.#collection(uid).orderBy("createdAt", "asc").limit(12).get();
     const seen = new Set<string>();
@@ -88,7 +210,16 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
     return profiles;
   }
 
-  async save(uid: string, input: ChildProfileInput & { id?: string }): Promise<ChildProfile> {
+  async get(uid: string, id: string): Promise<ChildProfile | undefined> {
+    const snapshot = await this.#collection(uid).doc(id).get();
+    return snapshot.exists ? storedProfile(snapshot.id, snapshot.data() as StoredProfile) : undefined;
+  }
+
+  async save(
+    uid: string,
+    input: ChildProfileInput & { id?: string },
+    connection?: ChildConnection,
+  ): Promise<ChildProfile> {
     const collection = this.#collection(uid);
     const ref = input.id ? collection.doc(input.id) : collection.doc(randomBytes(12).toString("base64url"));
     return this.#firestore.runTransaction(async (transaction) => {
@@ -104,14 +235,17 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
 
       const now = new Date();
       const createdAt = previous?.createdAt ?? now.toISOString();
+      const savedConnection = connection ?? previous?.connection;
       transaction.set(ref, {
         childName: input.childName,
         normalizedName: input.normalizedName,
         kretaUsername: input.kretaUsername,
         instituteCode: input.instituteCode,
+        ...(savedConnection ? { connection: firestoreConnection(savedConnection) } : {}),
         createdAt: new Date(createdAt),
         updatedAt: now,
       });
+      if (savedConnection) this.#writeQueue(transaction, uid, ref.id, savedConnection);
 
       return {
         id: ref.id,
@@ -119,17 +253,71 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
         normalizedName: input.normalizedName,
         kretaUsername: input.kretaUsername,
         instituteCode: input.instituteCode,
+        ...(savedConnection ? { connection: savedConnection } : {}),
         createdAt,
         updatedAt: now.toISOString(),
       };
     });
   }
 
+  async updateConnection(
+    uid: string,
+    id: string,
+    expectedVersion: number,
+    connection: ChildConnection,
+  ): Promise<boolean> {
+    const ref = this.#collection(uid).doc(id);
+    return this.#firestore.runTransaction(async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists) return false;
+      const profile = storedProfile(snapshot.id, snapshot.data() as StoredProfile);
+      if (!profile.connection || profile.connection.version !== expectedVersion) return false;
+      transaction.update(ref, { connection: firestoreConnection(connection), updatedAt: new Date() });
+      this.#writeQueue(transaction, uid, id, connection);
+      return true;
+    });
+  }
+
+  async listDueConnections(now: Date, limit: number): Promise<Array<{ uid: string; profile: ChildProfile }>> {
+    const queue = await this.#queue()
+      .where("nextRefreshAt", "<=", now)
+      .orderBy("nextRefreshAt", "asc")
+      .limit(limit)
+      .get();
+    const due: Array<{ uid: string; profile: ChildProfile }> = [];
+    for (const item of queue.docs) {
+      const data = item.data() as { uid?: unknown; profileId?: unknown };
+      if (typeof data.uid !== "string" || typeof data.profileId !== "string") continue;
+      const profile = await this.get(data.uid, data.profileId);
+      if (!profile?.connection) continue;
+      due.push({ uid: data.uid, profile });
+    }
+    return due;
+  }
+
+  async clearConnection(uid: string, id: string, expectedVersion?: number): Promise<boolean> {
+    const ref = this.#collection(uid).doc(id);
+    return this.#firestore.runTransaction(async (transaction) => {
+      const existing = await transaction.get(ref);
+      if (!existing.exists) return false;
+      if (expectedVersion !== undefined) {
+        const profile = storedProfile(existing.id, existing.data() as StoredProfile);
+        if (profile.connection?.version !== expectedVersion) return false;
+      }
+      transaction.update(ref, { connection: FieldValue.delete(), updatedAt: new Date() });
+      transaction.delete(this.#queue().doc(this.#queueId(uid, id)));
+      return true;
+    });
+  }
+
   async delete(uid: string, id: string): Promise<boolean> {
     const ref = this.#collection(uid).doc(id);
-    const existing = await ref.get();
-    if (!existing.exists) return false;
-    await ref.delete();
-    return true;
+    return this.#firestore.runTransaction(async (transaction) => {
+      const existing = await transaction.get(ref);
+      if (!existing.exists) return false;
+      transaction.delete(ref);
+      transaction.delete(this.#queue().doc(this.#queueId(uid, id)));
+      return true;
+    });
   }
 }

@@ -2,7 +2,7 @@
   "name": "uzenofuzet-server",
   "version": "0.1.0",
   "private": true,
-  "description": "Hosted, read-only KRÉTA MCP server: OAuth 2.1 AS whose /authorize is the KRÉTA login, with sealed, storage-free tokens.",
+  "description": "Hosted, read-only KRÉTA MCP server with Google OAuth and encrypted, parent-controlled connections.",
   "type": "module",
   "engines": {
     "node": ">=22.12"
@@ -25,6 +25,7 @@
     "@modelcontextprotocol/sdk": "^1.30.0",
     "express": "^5.2.1",
     "firebase-admin": "^14.3.0",
+    "google-auth-library": "^10.9.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

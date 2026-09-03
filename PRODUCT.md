@@ -21,11 +21,11 @@ Astro static frontend on Firebase Hosting at `uzenofuzet.tilosazai.org`, with th
 
 ## Positioning
 
-The hosted service uses a verified Google account to store up to three child profiles: the child's real name, KRÉTA username, and institution code. It never stores the KRÉTA password. After login, it seals the KRÉTA refresh token into the credential held by Claude. The password is transient, not zero-knowledge: it passes through the service during login and the operator owns the sealing key.
+The hosted service uses a verified Google account to store up to three child profiles: the child's real name, KRÉTA username, and institution code. It never stores the KRÉTA password. Connecting a child creates an encrypted KRÉTA token pair in that private profile. The parent may choose a 30-minute trial or explicitly opt into a 25-minute keep-alive loop, optionally with an end date. The password is transient, not zero-knowledge: it passes through the service during login and the operator owns the encryption key.
 
 ## Operating Context
 
-Parents discover the service on the landing page, sign in with Google on the dashboard, save each child's non-password KRÉTA profile, add `https://uzenofuzet.tilosazai.org/mcp` as a Claude custom connector, and complete the KRÉTA login with the child's familiar name plus password. The dashboard is a profile/setup and service-status surface; the current architecture cannot inspect a user's Claude-side connector state.
+Parents discover the service on the landing page, sign in with Google on the dashboard, add a child and make that profile Online with the KRÉTA password, then add `https://uzenofuzet.tilosazai.org/mcp` as a Claude custom connector. Claude's authorization is then an ordinary Google-backed OAuth step; its tokens contain profile references, not KRÉTA credentials. The dashboard is a profile/setup and service-status surface; the current architecture cannot inspect a user's Claude-side connector state.
 
 ## Capabilities and Constraints
 
@@ -33,8 +33,9 @@ Parents discover the service on the landing page, sign in with Google on the das
 - The service supports up to three children in one connector session.
 - The hosted service must not claim official affiliation with eKRÉTA Zrt.
 - The KRÉTA student API is undocumented and may change without notice.
-- The deploy currently needs one Cloud Run instance because refresh-token rotation and authorization-code replay protection are held in memory.
-- KRÉTA passwords and tokens remain outside the profile database. Firestore stores the child name, KRÉTA username and institution code under the verified parent's Firebase user ID. The profile can be edited or deleted on the dashboard.
+- The deploy currently needs one Cloud Run instance because authorization-code replay protection is held in memory. Persisted connection refreshes use Firestore version checks.
+- KRÉTA passwords are never stored. While a child is Online, Firestore stores the access and rotating refresh tokens as an expiring AES-256-GCM ciphertext under the verified parent's private profile. Offline removes the connection ciphertext but keeps the profile; deleting the profile removes both.
+- An unchecked keep-alive choice creates a 30-minute trial. An opted-in connection is due for refresh every 25 minutes and can have an optional deadline.
 - The dashboard can look up live institutions through eKRÉTA's public institution selector. Search terms pass through the server, results are bounded and short-lived, and manual institution-code entry remains available when the undocumented selector changes or fails.
 - The public advocacy wall remains a separate opt-in record: one optional public message per verified Google account, keyed by Firebase user ID. A Google account can still use the wall without creating a child profile.
 - Public launch requires a separate privacy/legal review because the service processes minors' educational data.

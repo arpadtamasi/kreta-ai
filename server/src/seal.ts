@@ -1,17 +1,15 @@
 /**
- * Sealed tokens — the mechanism that lets this server hold no per-user token state.
+ * Sealed values — authenticated encryption for short-lived OAuth artifacts
+ * and explicitly opted-in, server-side KRÉTA connection credentials.
  *
- * Everything this service would otherwise have to persist (an authorization
- * code's context, a connected child's KRÉTA refresh token) is instead
- * encrypted into the very string we hand back to the MCP client, and the
- * client stores it for us. A sealed value is AES-256-GCM ciphertext under a
- * single server-held key, so the bearer of the token cannot read or forge
- * its contents, and this service keeps no database of credentials.
+ * OAuth codes and access tokens carry their encrypted context themselves.
+ * A child connection's access and refresh tokens use the same AES-256-GCM
+ * envelope but stay in the Google-owned profile store; client-facing OAuth
+ * artifacts contain only profile references.
  *
- * Be precise about what that does and does not buy (README, "Mit jelent a
- * »nem tárol«"): there is nothing to steal at rest, and deletion is
- * automatic — but we hold the key, so a token presented to us is one we can
- * open. This is "no credential store", not "zero knowledge".
+ * Be precise about what at-rest encryption does and does not buy: the
+ * service holds the key, so this is not zero knowledge. Credential envelopes
+ * carry a hard expiry and are removed when the connection is switched off.
  *
  * The `purpose` is bound as AES-GCM additional authenticated data, so a
  * sealed authorization code can never be replayed as an access token, or
@@ -23,7 +21,7 @@ const VERSION = "v1";
 const IV_BYTES = 12;
 const KEY_BYTES = 32;
 
-export type SealPurpose = "code" | "access" | "client" | "request";
+export type SealPurpose = "code" | "access" | "client" | "request" | "credential";
 
 export class SealError extends Error {
   constructor(message: string) {
@@ -71,8 +69,8 @@ export class Sealer {
     return new Sealer(decoded);
   }
 
-  seal<T>(purpose: SealPurpose, value: T, ttlSeconds: number): string {
-    const envelope: Envelope<T> = { p: purpose, exp: Date.now() + ttlSeconds * 1000, v: value };
+  seal<T>(purpose: SealPurpose, value: T, ttlSeconds: number, now: number = Date.now()): string {
+    const envelope: Envelope<T> = { p: purpose, exp: now + ttlSeconds * 1000, v: value };
     const iv = randomBytes(IV_BYTES);
     const cipher = createCipheriv("aes-256-gcm", this.key, iv);
     cipher.setAAD(Buffer.from(purpose, "utf8"));

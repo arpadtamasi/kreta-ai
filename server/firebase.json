@@ -60,14 +60,6 @@
         "run": { "serviceId": "uzenofuzet", "region": "europe-west1" }
       },
       {
-        "source": "/authorize.js",
-        "run": { "serviceId": "uzenofuzet", "region": "europe-west1" }
-      },
-      {
-        "source": "/authorize/**",
-        "run": { "serviceId": "uzenofuzet", "region": "europe-west1" }
-      },
-      {
         "source": "/token",
         "run": { "serviceId": "uzenofuzet", "region": "europe-west1" }
       }

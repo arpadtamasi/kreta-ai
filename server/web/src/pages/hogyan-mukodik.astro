@@ -13,7 +13,7 @@ import ArrowMark from "../components/ArrowMark.astro";
     <div class="warning-mark" aria-hidden="true">!</div>
     <div>
       <h2 id="password-title">A belépéskor a KRÉTA-jelszavad átmegy az Üzenőfüzet szerverén.</h2>
-      <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak a belépéshez használjuk, majd eldobjuk.</p>
+      <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak az Online kapcsolat létrehozásához használjuk, majd eldobjuk.</p>
       <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. A jelszó kezelése átmeneti, nem „zero knowledge”.</p>
       <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> Futtasd a nyílt forrású változatot a saját gépeden, így a KRÉTA-jelszó nem megy át a mi szerverünkön.</aside>
       <a class="button secondary" href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">Helyi változat a GitHubon <ArrowMark direction="up-right" /></a>
@@ -25,11 +25,18 @@ import ArrowMark from "../components/ArrowMark.astro";
       <h2 id="flow-title">Mi történik<br />a háttérben?</h2>
     </div>
     <ol>
-      <li><span>01</span><div><h3>Egyszer elmented a gyerek profilját</h3><p>A Google-fiókodhoz a gyerek rendes neve, KRÉTA-felhasználóneve és intézménykódja kerül. Jelszó nem.</p></div></li>
-      <li><span>02</span><div><h3>Claude megnyitja a belépést</h3><p>Az Üzenőfüzet a Google-fiókod alapján előveszi a mentett profilokat. A belépőlapon már csak a gyerek nevét és a KRÉTA-jelszót kéri.</p></div></li>
-      <li><span>03</span><div><h3>A szerver egyszer belép a KRÉTA-ba</h3><p>A mentett azonosítót és a most megadott jelszót elküldi a KRÉTA beléptető rendszerének. A jelszót ezután eldobja.</p></div></li>
-      <li><span>04</span><div><h3>Claude egy lezárt tokent kap</h3><p>A KRÉTA frissítőtoken titkosítva kerül a Claude által őrzött kapcsolatba. A kérdések ezután csak olvasnak, nem írnak vissza a KRÉTA-ba.</p></div></li>
+      <li><span>01</span><div><h3>Hozzáadod és Online kapcsolod a gyereket</h3><p>A Google-fiókodhoz a gyerek rendes neve, KRÉTA-felhasználóneve és intézménykódja kerül. A megadott jelszóval a szerver egyszer belép a KRÉTA-ba, majd a jelszót eldobja.</p></div></li>
+      <li><span>02</span><div><h3>Te választod ki az időtartamot</h3><p>Jelölés nélkül ez 30 perces próba. Ha kéred a frissen tartást, az Üzenőfüzet 25 percenként megújítja a kapcsolatot. Opcionális befejezési napot is adhatsz.</p></div></li>
+      <li><span>03</span><div><h3>A forgó token titkosítva marad</h3><p>A KRÉTA access és refresh tokenje lejáró AES-256-GCM titkosítással kerül a privát profilodba. A szerver birtokolja a kulcsot: ez nyugalmi titkosítás, nem „zero knowledge”.</p></div></li>
+      <li><span>04</span><div><h3>Claude-ban már csak Google-belépés van</h3><p>Claude az Online profilok hivatkozását kapja, KRÉTA-jelszót és KRÉTA-tokent nem. Ezután a rögzített eszközök csak olvasnak a naplóból.</p></div></li>
+      <li><span>05</span><div><h3>Az Online állapot bármikor kikapcsolható</h3><p>Kattints az Online állapotra: a kapcsolat és a titkosított token törlődik, a gyerek neve, intézménye és felhasználóneve megmarad.</p></div></li>
     </ol>
+  </section>
+
+  <section class="why" aria-labelledby="why-title">
+    <h2 id="why-title">Miért kell a 25 perces frissítés?</h2>
+    <p>A KRÉTA access tokenje 30 percig él. Frissítéskor új access tokent és új, egyszer használható refresh tokent ad; a korábbi refresh token utána már nem használható. Mivel nincs hivatalos külső OAuth, az Üzenőfüzet csak úgy tud tartósan Online maradni, ha a mindenkori tokent titkosítva megőrzi és még lejárat előtt lecseréli.</p>
+    <p><strong>Ez a bonyolultság a KRÉTA belépési modelljéből következik.</strong> Ha nem kéred, semmi nem frissül a háttérben: 30 perc után a próba Offline lesz.</p>
   </section>
 
   <section class="advocacy">
@@ -60,14 +67,20 @@ import ArrowMark from "../components/ArrowMark.astro";
   .flow h3 { margin: 0 0 .45rem; font-size: 1rem; }
   .flow li p { max-width: 45rem; margin: 0; color: var(--ink-muted); font-size: .84rem; line-height: 1.65; }
   .advocacy { padding: clamp(4rem, 9vw, 9rem) var(--page-pad); background-color: var(--paper-bright); background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 28px 28px; }
+  .why { display: grid; grid-template-columns: 37% minmax(0, 1fr); gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .why h2 { margin: 0; color: var(--blue); font-size: clamp(2rem, 4vw, 4rem); letter-spacing: -.045em; line-height: 1.04; }
+  .why p { grid-column: 2; max-width: 50rem; margin: 0; color: var(--ink-muted); line-height: 1.75; }
+  .why p + p { margin-top: -2rem; }
   .advocacy h2 { max-width: 70rem; margin: 0 0 1.5rem; color: var(--blue); font-size: clamp(2.7rem, 5.5vw, 6rem); letter-spacing: -.055em; line-height: .98; }
   .advocacy > p { max-width: 57rem; color: var(--ink-muted); font-size: 1rem; line-height: 1.75; }
   blockquote { max-width: 67rem; margin: 3rem 0; padding: 1.5rem 2rem; border: 2px solid var(--blue); color: var(--blue); background: rgba(244, 247, 251, .9); font-size: clamp(1.05rem, 1.7vw, 1.45rem); font-weight: 750; line-height: 1.55; }
   @media (max-width: 800px) {
-    .page-hero, .flow { display: block; }
+    .page-hero, .flow, .why { display: block; }
     .page-hero { min-height: auto; }
     .page-hero > p:last-child { margin-top: 3rem; }
     .password { grid-template-columns: 1fr; }
     .flow > div { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
+    .why p { margin-top: 2rem; }
+    .why p + p { margin-top: 1rem; }
   }
 </style>

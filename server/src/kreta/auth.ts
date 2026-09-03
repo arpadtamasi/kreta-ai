@@ -5,9 +5,8 @@
  * The password is a parameter of `login()` and nothing else. It is never
  * returned, never logged, never sealed into a token, and never written
  * anywhere — it exists for the duration of one POST to the IDP and is then
- * unreachable. Everything downstream of this module works from the refresh
- * token alone (see src/oauth/router.ts and README, "Mit jelent a »nem
- * tárol«").
+ * unreachable. Everything downstream of this module works from the encrypted
+ * access/refresh token pair stored on the parent-owned child connection.
  */
 import { createHash, randomBytes } from "node:crypto";
 import {
@@ -32,9 +31,8 @@ export interface KretaTokens {
   expiresIn: number;
   /**
    * Whether the IDP handed back a *different* refresh token than the one
-   * presented. This is the single fact that decides whether a storage-free
-   * deployment can work at all, so it is surfaced rather than inferred
-   * (README, "Rotál-e a refresh token?").
+   * presented. Rotations are surfaced for diagnostics and every successful
+   * refresh is persisted with a profile-version check.
    */
   rotated: boolean;
 }

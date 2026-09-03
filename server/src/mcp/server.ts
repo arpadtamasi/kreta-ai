@@ -52,7 +52,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
     name: string,
     description: string,
     schema: z.ZodRawShape,
-    handler: (args: Record<string, unknown>, client: () => KretaClient) => Promise<unknown>,
+    handler: (args: Record<string, unknown>, client: KretaClient) => Promise<unknown>,
   ): void => {
     server.registerTool(
       name,
@@ -60,7 +60,8 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
       async (args: Record<string, unknown>) => {
         try {
           const child = resolveChild(session, args.child as string | undefined);
-          const payload = await handler(args, () => createClient(session, child, factoryDeps));
+          const client = await createClient(session, child, factoryDeps);
+          const payload = await handler(args, client);
           return { content: [{ type: "text", text: JSON.stringify(payload) }] };
         } catch (error) {
           // KRÉTA and argument errors are safe, actionable Hungarian text.
@@ -84,7 +85,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
     defaultLimit = 100,
   ): void => {
     tool(name, description, { limit: limitArg(defaultLimit), child: childArg }, async (args, client) =>
-      pack(await client().getJson(path), validateLimit(args.limit as number)),
+      pack(await client.getJson(path), validateLimit(args.limit as number)),
     );
   };
 
@@ -111,7 +112,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
           defaultStartDays: defaults.start,
           defaultEndDays: defaults.end,
         });
-        const data = await client().getJson(path, { [params.from]: start, [params.to]: end });
+        const data = await client.getJson(path, { [params.from]: start, [params.to]: end });
         return pack(data, validateLimit(typed.limit));
       },
     );
@@ -122,7 +123,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
     "A KRÉTA-kapcsolat ellenőrzése és a kapcsolat metaadatai.",
     { child: childArg },
     async (args, client) => {
-      const instance = client();
+      const instance = client;
       // The cheapest authenticated call: proves the refresh token still works.
       await instance.getJson("sajat/TanuloAdatlap");
       const child = resolveChild(session, args.child as string | undefined);
@@ -134,21 +135,21 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
         read_only: true,
         credential: "refresh_token",
         password_stored: false,
-        token_storage: "sealed_in_client_token",
+        token_storage: "encrypted_in_profile_store",
         connected_at: new Date(session.connectedAt).toISOString(),
         children: session.children.map((entry) => entry.label),
-        // Surfaced because it is the one fact that decides whether a
-        // storage-free deployment stays healthy (README, "Rotál-e...").
+        // Diagnostic signal: every observed rotation should also have been
+        // persisted by the profile-backed client factory.
         refresh_token_rotation_observed: instance.rotationObserved,
       };
     },
   );
 
   tool("kreta_student_profile", "A tanuló adatlapjának lekérése.", { child: childArg }, async (_args, client) =>
-    pack(await client().getJson("sajat/TanuloAdatlap")),
+    pack(await client.getJson("sajat/TanuloAdatlap")),
   );
   tool("kreta_guardian_profile", "A gondviselő adatlapjának lekérése.", { child: childArg }, async (_args, client) =>
-    pack(await client().getJson("sajat/GondviseloAdatlap")),
+    pack(await client.getJson("sajat/GondviseloAdatlap")),
   );
 
   listTool("kreta_class_groups", "A tanuló osztályainak és csoportjainak lekérése.", "sajat/OsztalyCsoportok");
@@ -206,7 +207,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
     { lesson_uid: z.string().describe("Az órarendi elem uid-ja."), child: childArg },
     async (args, client) =>
       pack(
-        await client().getJson("sajat/OrarendElem", {
+        await client.getJson("sajat/OrarendElem", {
           orarendElemUid: requireUid(args.lesson_uid as string, "órarendi elem uid"),
         }),
       ),
@@ -218,7 +219,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
     { homework_uid: z.string().describe("A házi feladat uid-ja."), child: childArg },
     async (args, client) => {
       const uid = requireUid(args.homework_uid as string, "házi feladat uid");
-      return pack(await client().getJson(`sajat/HaziFeladatok/${encodeURIComponent(uid)}`));
+      return pack(await client.getJson(`sajat/HaziFeladatok/${encodeURIComponent(uid)}`));
     },
   );
 
@@ -231,7 +232,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
         args.consulting_hour_uid as string,
         "fogadóóra uid",
       );
-      return pack(await client().getJson(`sajat/Fogadoorak/${encodeURIComponent(uid)}`));
+      return pack(await client.getJson(`sajat/Fogadoorak/${encodeURIComponent(uid)}`));
     },
   );
 
@@ -240,7 +241,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
     "A tanuló csoportjaihoz elérhető osztályátlagok lekérése.",
     { limit: limitArg(100), child: childArg },
     async (args, client) => {
-      const instance = client();
+      const instance = client;
       const groups = await instance.getJson("sajat/OsztalyCsoportok");
       const averages: unknown[] = [];
       for (const uid of studyTaskUids(groups)) {
@@ -261,7 +262,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
     "A tárgyi eszköz kiosztási és regisztrációs állapotának lekérése.",
     { child: childArg },
     async (_args, client) => {
-      const instance = client();
+      const instance = client;
       return {
         assigned: await instance.getJson("TargyiEszkoz/IsEszkozKiosztva"),
         registered: await instance.getJson("TargyiEszkoz/IsRegisztralt"),

@@ -2,8 +2,9 @@
 
 Custom Connector Claude-hoz, ami a KRÉTA tanulói adatokat **csak olvasásra**
 teszi elérhetővé. Google-fiókonként legfeljebb három privát gyerekprofilt
-tárol (rendes név, KRÉTA-felhasználónév, intézménykód), de **KRÉTA-jelszót
-és felhasználónkénti tokent nem tárol**.
+tárol (rendes név, KRÉTA-felhasználónév, intézménykód). A **KRÉTA-jelszót
+nem tárolja**. Amíg egy gyerek Online, az access és refresh token lejáró,
+AES-256-GCM-mel titkosított formában a privát profilban van.
 
 A landing oldalon ettől elkülönül egy nyilvános üzenőfal. Az opcionális
 kiálláshoz a Firebase Authentication hitelesíti a Google-fiókot, a Firestore
@@ -18,7 +19,7 @@ mobilon is működik**, ahol a helyi MCP-szerverek nem.
 > KRÉTA-termék. A KRÉTA tanulói API nem nyilvános integrációs API; a belépés
 > vagy a végpontok bejelentés nélkül megváltozhatnak.
 
-## Hogyan lehet jelszó nélkül
+## Miért ilyen a kapcsolat
 
 A ghub-ai (a testvérprojekt) esetében a Google igazi OAuth-partner: a jelszó a
 `accounts.google.com`-on születik, a szerver csak refresh tokent lát. A KRÉTA
@@ -26,64 +27,51 @@ nem ilyen — nincs harmadik feles kliensregisztráció, a `client_id` és a
 `redirect_uri` a hivatalos mobilappé, és nem cserélhető le. Federálni tehát
 nincs mihez.
 
-Ezért itt **a `/authorize` oldal maga a KRÉTA-login**:
+Az access token 30 percig él. Minden frissítés új access és új, egyszer
+használható refresh tokent ad; a korábbi refresh token utána már nem
+használható. Ezért két üzemmód van:
+
+- **30 perces próba:** nincs háttérfrissítés, lejáratkor a titkosított
+  kapcsolat is törlődik.
+- **Online tartás:** a szülő kifejezett jelölésére a szerver 25 percenként
+  frissít, és az új tokenpárt verzióellenőrzéssel visszaírja. Opcionális
+  végdátum adható.
+
+A felhasználói út:
 
 1. A szülő Google-belépés után egyszer elmenti a gyerek rendes nevét,
-   KRÉTA-felhasználónevét és intézménykódját a kapcsolati pulton.
-2. Claude megnyitja a `/authorize`-t a szülő böngészőjében. A szerver a
-   Google-munkamenet alapján betölti a mentett profilokat.
-3. A szülő gyerekenként csak a rendes nevet és a KRÉTA-jelszót adja meg.
-   A mezők szabványos `username` / `current-password` automatikuskitöltést
-   használnak, így a jelszókezelő párként tudja megjegyezni őket.
-4. A szerver ott helyben bejelentkezik a KRÉTA IDP-be, megkapja a
+   KRÉTA-felhasználónevét és intézménykódját, majd megadja a jelszót.
+2. A szerver ott helyben bejelentkezik a KRÉTA IDP-be, megkapja a
    token-párt, és **a jelszót eldobja**. Nem írja ki sehova, nem naplózza,
    és nem teszi bele semmilyen tokenbe.
-5. A KRÉTA refresh token AES-256-GCM-mel **lezárva belekerül abba a
-   tokenbe, amit Claude kap**. Claude tárolja; ez a szerver nem.
+3. A szerver a kiválasztott időtartamra titkosítva elmenti a tokenpárt a
+   szülő Firestore-profiljába.
+4. Claude megnyitja a `/authorize`-t. Az Üzenőfüzet Google-munkamenettel
+   azonosítja a szülőt, és a Claude-nak adott OAuth-tokenbe csak az Online
+   gyerekprofilok hivatkozásai kerülnek.
+5. Az Online állapot bármikor kikapcsolható. Ez visszavonja és törli a
+   KRÉTA-kapcsolatot, de a gyerekprofil megmarad.
 
-Egy rövid, ismerős név–jelszó űrlap, nulla azonosító-copy-paste — és a
-szerveren nincs se jelszó-, se tokenadatbázis.
+Így a KRÉTA sajátossága a kapcsolati pulton marad; Claude-ban a belépés
+szokványos Google-alapú OAuth-folyamat.
 
-## Mit jelent pontosan a „nem tárol"
+## Mit jelent pontosan a titkosított tárolás
 
-**Amit nyersz.** Nyugalmi állapotban nincs KRÉTA-jelszó és nincs
-felhasználónkénti KRÉTA-token. A Firestore-ban csak a Google-fiókhoz kötött
-név, felhasználónév és intézménykód van; ezek a kapcsolati pulton törölhetők.
-A szerver nem tud új belépést kezdeményezni, mert nincs nála jelszó.
+**Amit nyersz.** A KRÉTA-jelszó nyugalmi állapotban nincs sehol, és a szerver
+nem tud új teljes belépést kezdeményezni. A tokenek AES-256-GCM ciphertextként,
+kemény lejárattal kerülnek Firestore-ba. A próbát 30 perc után a háttérmunka
+eltávolítja; az Online kapcsolás és a teljes profil is törölhető a pulton.
 
 **Amit nem nyersz.** A jelszó a te szervered memóriáján megy át a
-bejelentkezéskor, és a lezáró kulcs a tiéd — tehát a Claude által
-bemutatott tokent ki tudod bontani. Ez „nincs hitelesítőadat-tár", nem
-„zero knowledge". Továbbá a lezárt refresh token gyakorlatilag ugyanolyan
+bejelentkezéskor, és a lezáró kulcs a tiéd — tehát a profilban lévő tokent
+ki tudod bontani. Ez nyugalmi titkosítás, nem „zero knowledge". Továbbá a
+lezárt refresh token gyakorlatilag ugyanolyan
 erős, mint a jelszó: a KRÉTA-scope az e-ügyintézést és a fájlszolgáltatást
 is tartalmazza, még ha ez a szerver csak `GET`-eket hív is.
 
 **És alakilag phishing.** A szülő egy nem-KRÉTA domainre gépeli be az
-iskolai jelszavát. A bejelentkező oldal ezt ki is írja, keretes
-figyelmeztetésben, a mezők fölött. Ezt a szöveget ne lágyítsd.
-
-## Rotál-e a refresh token? — ez dönti el, működik-e tárolás nélkül
-
-A lezárt access token a bejelentkezéskor kapott refresh tokent viszi. Ha a
-KRÉTA IDP **rotál** (minden frissítésnél újat ad és a régit érvényteleníti),
-akkor az a lezárt példány az első használat után elavul — és egy tárolás
-nélküli szervernek nincs hova felírnia az újat.
-
-Erre két válasz van a kódban:
-
-- `src/kreta/rotationCache.ts` — memóriában tartja a legfrissebb refresh
-  tokent, a session id alapján. Egy példányos deploynál
-  (`--max-instances=1`) ez a kapcsolat teljes élettartamát lefedi, kivéve
-  egy hidegindítást; utána visszaesik a lezárt eredetire.
-- `kreta_login` tool — a válaszában ott van a
-  `refresh_token_rotation_observed` mező. **Ez a mérés.** Hívd meg,
-  használd a connectort egy napig, hívd meg újra.
-
-**Ha `true`-t látsz és a kapcsolat rendszeresen elhal**, akkor a tárolás
-nélküli út nem tartható: a `RotationCache` interfésze pontosan az a varrat,
-ahova egy tartós tár (Firestore + Secret Manager, ahogy a ghub-ai csinálja)
-bekerül. Akkor is **a refresh tokent tárold, ne a jelszót** — a UX
-ugyanez az egy űrlap marad.
+iskolai jelszavát. A kapcsolati pult ezt a mező előtt egyértelműen kiírja.
+Ezt a szöveget ne lágyítsd.
 
 ## Deploy
 
@@ -103,13 +91,19 @@ gcloud run deploy uzenofuzet \
   --region europe-west1 \
   --allow-unauthenticated \
   --max-instances=1 \
-  --set-env-vars OAUTH_ISSUER=https://<a-te-domained> \
+  --set-env-vars OAUTH_ISSUER=https://<a-te-domained>,REFRESH_JOB_AUDIENCE=https://<run-url>,REFRESH_JOB_SERVICE_ACCOUNT=uzenofuzet-refresher@<project>.iam.gserviceaccount.com \
   --set-secrets TOKEN_SEALING_KEY=uzenofuzet-sealing-key:latest
 ```
 
-A `--max-instances=1` **nem véletlen**: két folyamat közül csak az egyik
-ismeri a rotációs cache-t és a beváltott kódokat (lásd
-`src/oauth/replayCache.ts`). Egyetlen példány mellett mindkét garancia teljes.
+A `--max-instances=1` az authorization code memóriabeli replay-védelme miatt
+marad. A KRÉTA-tokenek rotációját a Firestore verzióellenőrzése védi.
+
+Az Online kapcsolatokhoz hozz létre egy külön, belépési jog nélküli service
+accountot és egy ötpercenként futó Cloud Scheduler HTTP jobot. A job a közvetlen
+Cloud Run URL `POST /internal/refresh-connections` végpontját hívja OIDC ID
+tokennel; az audience a `run.app` origin, az e-mail a fenti két env változóval
+egyezzen. A végpont csak az éppen esedékes kapcsolatokat frissíti, alapból
+legfeljebb negyvenet futásonként.
 
 Ezután Claude-ban: Settings → Connectors → Add custom connector → a
 szolgáltatás URL-je. Claude felfedezi a `/.well-known/...` végpontokat, maga
@@ -132,8 +126,8 @@ oldalán engedélyezni kell a Google szolgáltatót és megadni a projekt
 támogatási e-mail-címét. A kliens csak a Firebase publikus webkonfigurációját
 kapja; az ID tokent és az OAuth-hoz használt, `HttpOnly` `__session` sütit a
 backend Firebase Adminnal ellenőrzi. A Firestore kliensszabályok mindent
-tiltanak: a gyerekprofilokat és az üzenőfalat csak a Cloud Run szolgáltatás
-olvassa és írja.
+tiltanak: a gyerekprofilokat, a titkosított kapcsolatokat és az üzenőfalat
+csak a Cloud Run szolgáltatás olvassa és írja.
 
 Az intézmény mező három karakter után a nyilvános eKRÉTA intézménykeresőt
 hívja a Cloud Run szerveren keresztül. A backend a kapott HTML-listából csak
@@ -183,21 +177,21 @@ redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
 
 | Fájl | Szerep |
 |---|---|
-| `src/seal.ts` | AES-256-GCM lezárt tokenek — ez teszi lehetővé a tárolás nélküli működést |
-| `src/oauth/router.ts` | OAuth 2.1 AS, aminek a `/authorize`-a a KRÉTA-login |
-| `src/oauth/pages.ts` | a bejelentkező űrlap (és a figyelmeztetés) |
+| `src/seal.ts` | AES-256-GCM lezárt OAuth-értékek és profilkapcsolati hitelesítő adatok |
+| `src/oauth/router.ts` | Google-munkamenetre és Online profilokra épülő OAuth 2.1 AS |
+| `src/oauth/pages.ts` | terminális OAuth-hibaoldal |
 | `src/oauth/clients.ts` | állapotmentes kliensregisztráció: a `client_id` maga a rekord |
 | `src/oauth/replayCache.ts` | egyszer-használatos authorization code, példányon belül |
 | `src/kreta/auth.ts` | KRÉTA belépés / frissítés / visszavonás — az egyetlen hely, ahol jelszó van |
 | `src/kreta/client.ts` | csak olvasó Student API kliens |
 | `src/kreta/relay.ts` | eKRÉTA-hostokra korlátozott, titkosított relay transzport |
-| `src/kreta/rotationCache.ts` | a rotáció elleni memóriabeli védőháló |
 | `src/relay.ts` | magyar lakossági hálózaton futó helyi relay folyamat |
 | `src/mcp/server.ts` | a 20 csak-olvasó tool |
 | `src/pledges/router.ts` | hitelesített nyilvános üzenetek API-ja |
 | `src/pledges/store.ts` | az üzenőfal Firestore-adattára |
 | `src/profiles/router.ts` | a Google-fiókhoz kötött gyerekprofilok API-ja |
-| `src/profiles/store.ts` | a privát gyerekprofilok Firestore-adattára |
+| `src/profiles/store.ts` | a privát profilok, titkosított kapcsolatok és frissítési sor Firestore-adattára |
+| `src/profiles/refresher.ts` | 25 perces tokenrotáció, határidő és 30 perces próbatakarítás |
 | `src/auth/router.ts` | rövid Google ID tokenből `HttpOnly` OAuth-munkamenet |
 | `src/institutes/` | hitelesített adapter az eKRÉTA intézménykereső HTML-válaszához |
 | `web/` | Astro landing, dashboard és tájékoztató oldalak |
@@ -210,7 +204,6 @@ beállítás — a KRÉTA-scope ennél többet engedne.
 
 ## Nyitott kérdések, mielőtt bárki másnak odaadod
 
-- **Rotáció** — lásd fent; ez az első mérés.
 - **IP-tiltás.** Egy Cloud Run IP-ről sok iskola IDP-jébe belépni pont úgy
   néz ki, mint a credential stuffing.
 - **Adatvédelem.** Ha nem csak a saját gyerekeid adatait szolgálod ki,

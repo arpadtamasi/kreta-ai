@@ -1,16 +1,17 @@
 /** Payloads carried inside sealed tokens. Nothing here is ever persisted. */
 
-/** One connected child, as it travels inside an access token. */
+/** One connected child reference, as it travels inside an access token. */
 export interface SealedChild {
   /** Display name the parent typed, used to disambiguate tools' `gyerek` argument. */
   label: string;
+  profileId: string;
   instituteCode: string;
-  /** KRÉTA refresh token. Never leaves a sealed token or this process's memory. */
-  refreshToken: string;
 }
 
 /** The connection an access token stands for. */
 export interface SealedSession {
+  /** Firebase uid whose encrypted profile connections back this grant. */
+  uid: string;
   /** Stable id for this connection; the rotation cache's key. */
   sid: string;
   children: SealedChild[];
