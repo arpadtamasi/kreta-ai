@@ -8,7 +8,7 @@ web
 
 ## Stack
 
-Astro static frontend on Firebase Hosting at `uzenofuzet.web.app`, with the existing TypeScript/Express MCP backend deployed to Google Cloud Run and reached through Firebase Hosting rewrites.
+Astro static frontend on Firebase Hosting at `uzenofuzet.tilosazai.org`, with the existing TypeScript/Express MCP backend deployed to Google Cloud Run and reached through Firebase Hosting rewrites.
 
 ## Users
 
@@ -25,7 +25,7 @@ The hosted service uses a verified Google account to store up to three child pro
 
 ## Operating Context
 
-Parents discover the service on the landing page, sign in with Google on the dashboard, save each child's non-password KRÉTA profile, add `https://uzenofuzet.web.app/mcp` as a Claude custom connector, and complete the KRÉTA login with the child's familiar name plus password. The dashboard is a profile/setup and service-status surface; the current architecture cannot inspect a user's Claude-side connector state.
+Parents discover the service on the landing page, sign in with Google on the dashboard, save each child's non-password KRÉTA profile, add `https://uzenofuzet.tilosazai.org/mcp` as a Claude custom connector, and complete the KRÉTA login with the child's familiar name plus password. The dashboard is a profile/setup and service-status surface; the current architecture cannot inspect a user's Claude-side connector state.
 
 ## Capabilities and Constraints
 

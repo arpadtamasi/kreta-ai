@@ -1,4 +1,4 @@
-const connectorUrl = "https://uzenofuzet.web.app/mcp";
+const connectorUrl = "https://uzenofuzet.tilosazai.org/mcp";
 const button = document.querySelector("#copy-url");
 const copyStatus = document.querySelector("#copy-status");
 const serviceStatus = document.querySelector("#service-status");

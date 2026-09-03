@@ -5,7 +5,7 @@ export default defineConfig({
   outDir: "./public",
   publicDir: "./web/public",
   srcDir: "./web/src",
-  site: "https://uzenofuzet.web.app",
+  site: "https://uzenofuzet.tilosazai.org",
   build: {
     assets: "_astro",
     // Keep the production CSP strict: page-level styles must be emitted as
