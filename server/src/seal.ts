@@ -1,5 +1,5 @@
 /**
- * Sealed tokens — the mechanism that lets this server hold no per-user state.
+ * Sealed tokens — the mechanism that lets this server hold no per-user token state.
  *
  * Everything this service would otherwise have to persist (an authorization
  * code's context, a connected child's KRÉTA refresh token) is instead

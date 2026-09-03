@@ -1,14 +1,17 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ArrowMark from "../components/ArrowMark.astro";
+import ChildProfiles from "../components/ChildProfiles.astro";
 const connectorUrl = "https://uzenofuzet.web.app/mcp";
 ---
 
 <BaseLayout title="Kapcsolati pult – Üzenőfüzet" description="Az Üzenőfüzet Claude-csatlakozójának beállítása és állapota.">
   <header class="page-hero">
     <h1>Kapcsolati<br />pult</h1>
-    <p>Itt nem jön létre külön Üzenőfüzet-fiók. A kapcsolatot Claude tárolja, a KRÉTA-belépés a csatlakoztatás közben történik.</p>
+    <p>A Google-fiókodhoz elmentjük, melyik gyerekhez melyik KRÉTA-azonosító és intézmény tartozik. A jelszót csak csatlakoztatáskor kérjük.</p>
   </header>
+
+  <ChildProfiles />
 
   <section class="control-grid" aria-label="Csatlakozó beállítása">
     <div class="connector-panel">
@@ -22,8 +25,8 @@ const connectorUrl = "https://uzenofuzet.web.app/mcp";
 
     <ol class="steps">
       <li><span>01</span><div><h2>Nyisd meg a Claude beállításait</h2><p>A Connectors / Csatlakozók résznél válaszd az egyéni csatlakozó hozzáadását.</p></div></li>
-      <li><span>02</span><div><h2>Illeszd be a címet</h2><p>Claude felismeri a csatlakozót, majd egy új ablakban megnyitja az Üzenőfüzet KRÉTA-belépőjét.</p></div></li>
-      <li><span>03</span><div><h2>Kapcsold hozzá a gyermeket</h2><p>Add meg a KRÉTA-azonosítót, jelszót és intézménykódot. Egy kapcsolatban legfeljebb három gyermek adható meg.</p><a href="/hogyan-mukodik#jelszo">Olvasd el előbb, mi történik a jelszóval <ArrowMark /></a></div></li>
+      <li><span>02</span><div><h2>Illeszd be a címet</h2><p>Claude felismeri a csatlakozót, majd az Üzenőfüzet visszahoz ide Google-belépésre, ha még nem azonosítottad magad.</p></div></li>
+      <li><span>03</span><div><h2>Válaszd ki a gyereket</h2><p>A csatlakoztatásnál már csak a gyerek rendes neve és a KRÉTA-jelszó jelenik meg. Egy kapcsolatban legfeljebb három gyerek adható meg.</p><a href="/hogyan-mukodik#jelszo">Olvasd el előbb, mi történik a jelszóval <ArrowMark /></a></div></li>
     </ol>
   </section>
 

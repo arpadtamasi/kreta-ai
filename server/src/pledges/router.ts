@@ -1,13 +1,7 @@
 import { Router, type Request } from "express";
 import { z } from "zod";
+import type { VerifiedUser, VerifyIdToken } from "../auth/types.js";
 import type { PledgeStore } from "./store.js";
-
-export interface VerifiedUser {
-  uid: string;
-  name?: string;
-}
-
-export type VerifyIdToken = (token: string) => Promise<VerifiedUser>;
 
 export interface PledgeRouterDeps {
   store: PledgeStore;

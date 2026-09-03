@@ -1,13 +1,14 @@
 # Üzenőfüzet — hosztolt KRÉTA MCP-szerver
 
 Custom Connector Claude-hoz, ami a KRÉTA tanulói adatokat **csak olvasásra**
-teszi elérhetővé — és **nem tárol KRÉTA-hitelesítő adatot**: se jelszót,
-se felhasználónkénti tokent.
+teszi elérhetővé. Google-fiókonként legfeljebb három privát gyerekprofilt
+tárol (rendes név, KRÉTA-felhasználónév, intézménykód), de **KRÉTA-jelszót
+és felhasználónkénti tokent nem tárol**.
 
 A landing oldalon ettől elkülönül egy nyilvános üzenőfal. Az opcionális
 kiálláshoz a Firebase Authentication hitelesíti a Google-fiókot, a Firestore
-pedig a nyilvános nevet és üzenetet tárolja. Ezt a fiókot nem kell diákhoz
-kapcsolni, és az e-mail-cím nem jelenik meg az üzenőfalon.
+pedig a nyilvános nevet és üzenetet tárolja. A falhoz nem kell gyerekprofilt
+létrehozni, és az e-mail-cím nem jelenik meg az üzenőfalon.
 
 Ez a repó helyben futó változatának (`python/`, `desktop/`) a párja. Az a
 kettő a szülő gépén fut; ez egy szerver, ami cserébe **claude.ai weben és
@@ -27,27 +28,28 @@ nincs mihez.
 
 Ezért itt **a `/authorize` oldal maga a KRÉTA-login**:
 
-1. Claude megnyitja a `/authorize`-t a szülő böngészőjében (a szokásos
-   connector-folyamat).
-2. A szülő ott adja meg a KRÉTA azonosítót, jelszót és intézménykódot —
-   akár több gyerekét egyszerre.
-3. A szerver ott helyben bejelentkezik a KRÉTA IDP-be, megkapja a
+1. A szülő Google-belépés után egyszer elmenti a gyerek rendes nevét,
+   KRÉTA-felhasználónevét és intézménykódját a kapcsolati pulton.
+2. Claude megnyitja a `/authorize`-t a szülő böngészőjében. A szerver a
+   Google-munkamenet alapján betölti a mentett profilokat.
+3. A szülő gyerekenként csak a rendes nevet és a KRÉTA-jelszót adja meg.
+   A mezők szabványos `username` / `current-password` automatikuskitöltést
+   használnak, így a jelszókezelő párként tudja megjegyezni őket.
+4. A szerver ott helyben bejelentkezik a KRÉTA IDP-be, megkapja a
    token-párt, és **a jelszót eldobja**. Nem írja ki sehova, nem naplózza,
    és nem teszi bele semmilyen tokenbe.
-4. A KRÉTA refresh token AES-256-GCM-mel **lezárva belekerül abba a
+5. A KRÉTA refresh token AES-256-GCM-mel **lezárva belekerül abba a
    tokenbe, amit Claude kap**. Claude tárolja; ez a szerver nem.
 
-Egy űrlap, egy kattintás, nulla copy-paste — és a szerveren nincs se
-jelszó-, se token-adatbázis.
+Egy rövid, ismerős név–jelszó űrlap, nulla azonosító-copy-paste — és a
+szerveren nincs se jelszó-, se tokenadatbázis.
 
 ## Mit jelent pontosan a „nem tárol"
 
-**Amit nyersz.** Nincs mit ellopni nyugalmi állapotban: se Firestore, se
-Secret Manager bejegyzés gyerekenként — az egész szolgáltatásnak egyetlen
-titka van, a lezáró kulcs. A törlés automatikus: ha a szülő leveszi a
-connectort Claude-ból, az egyetlen példány megszűnik, nincs mit „kérni,
-hogy töröljék". És a szerver nem tud új belépést kezdeményezni, mert nincs
-nála jelszó.
+**Amit nyersz.** Nyugalmi állapotban nincs KRÉTA-jelszó és nincs
+felhasználónkénti KRÉTA-token. A Firestore-ban csak a Google-fiókhoz kötött
+név, felhasználónév és intézménykód van; ezek a kapcsolati pulton törölhetők.
+A szerver nem tud új belépést kezdeményezni, mert nincs nála jelszó.
 
 **Amit nem nyersz.** A jelszó a te szervered memóriáján megy át a
 bejelentkezéskor, és a lezáró kulcs a tiéd — tehát a Claude által
@@ -113,7 +115,7 @@ Ezután Claude-ban: Settings → Connectors → Add custom connector → a
 szolgáltatás URL-je. Claude felfedezi a `/.well-known/...` végpontokat, maga
 regisztrál, és megnyitja a bejelentkező oldalt.
 
-### Firebase Hosting, Google-belépés és üzenőfal
+### Firebase Hosting, Google-belépés, gyerekprofilok és üzenőfal
 
 Az Astro frontend statikusan a `public/` könyvtárba épül. A Firebase Hosting
 csak az API-, MCP- és OAuth-útvonalakat továbbítja a fenti Cloud Run
@@ -128,9 +130,10 @@ firebase deploy --project uzenofuzet --only firestore:rules,hosting
 A Google-belépéshez a Firebase Console Authentication → Sign-in method
 oldalán engedélyezni kell a Google szolgáltatót és megadni a projekt
 támogatási e-mail-címét. A kliens csak a Firebase publikus webkonfigurációját
-kapja; a beküldéshez szükséges ID tokent a backend Firebase Adminnal
-ellenőrzi. A Firestore kliensszabályok mindent tiltanak: az üzenőfalat csak a
-Cloud Run szolgáltatás olvassa és írja.
+kapja; az ID tokent és az OAuth-hoz használt, `HttpOnly` `__session` sütit a
+backend Firebase Adminnal ellenőrzi. A Firestore kliensszabályok mindent
+tiltanak: a gyerekprofilokat és az üzenőfalat csak a Cloud Run szolgáltatás
+olvassa és írja.
 
 ## Helyi próba
 
@@ -159,6 +162,9 @@ redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
 | `src/mcp/server.ts` | a 20 csak-olvasó tool |
 | `src/pledges/router.ts` | hitelesített nyilvános üzenetek API-ja |
 | `src/pledges/store.ts` | az üzenőfal Firestore-adattára |
+| `src/profiles/router.ts` | a Google-fiókhoz kötött gyerekprofilok API-ja |
+| `src/profiles/store.ts` | a privát gyerekprofilok Firestore-adattára |
+| `src/auth/router.ts` | rövid Google ID tokenből `HttpOnly` OAuth-munkamenet |
 | `web/` | Astro landing, dashboard és tájékoztató oldalak |
 
 ## Amit ez a szerver nem csinál

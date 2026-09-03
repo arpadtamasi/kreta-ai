@@ -6,14 +6,19 @@
  * the parent's credential for KRÉTA tokens on the spot, drops the password,
  * and seals the resulting refresh token into the authorization code.
  *
- * The consequence is that this layer stores nothing: no client table, no
- * code table, no token table, no per-user record anywhere. Every artifact it
- * issues is an AES-256-GCM sealed blob the client holds for us (src/seal.ts).
+ * The KRÉTA password is still transient. A separate Firebase-authenticated
+ * profile store keeps only the child's familiar name, KRÉTA username and
+ * institution so the password manager sees an ordinary two-field login.
+ * OAuth codes and KRÉTA tokens remain AES-256-GCM sealed blobs held by the
+ * client (src/seal.ts).
  */
 import { Router } from "express";
+import { readSessionCookie } from "../auth/session.js";
+import type { VerifySessionCookie } from "../auth/types.js";
 import type { Config } from "../config.js";
 import { login, type LoginCredentials } from "../kreta/auth.js";
-import { KretaError, normalizeInstituteCode } from "../kreta/institute.js";
+import { KretaError } from "../kreta/institute.js";
+import { normalizeChildName, type ChildProfile, type ChildProfileStore } from "../profiles/store.js";
 import { randomId } from "../seal.js";
 import { issueClientId, openClientId } from "./clients.js";
 import { renderErrorPage, renderLoginPage } from "./pages.js";
@@ -29,11 +34,14 @@ interface SealedAuthorizationRequest {
   codeChallenge: string;
   scope?: string;
   clientName?: string;
+  uid: string;
 }
 
 export interface OAuthRouterDeps {
   config: Config;
   codeReplayCache: ReplayCache;
+  childProfileStore: ChildProfileStore;
+  verifySessionCookie: VerifySessionCookie;
   /** Injectable so tests exercise the whole flow without touching KRÉTA. */
   loginImpl?: typeof login;
 }
@@ -55,6 +63,28 @@ function firstString(value: unknown): string | undefined {
   if (typeof value === "string") return value;
   if (Array.isArray(value) && typeof value[0] === "string") return value[0];
   return undefined;
+}
+
+function authorizePath(request: SealedAuthorizationRequest): string {
+  const query = new URLSearchParams({
+    response_type: "code",
+    client_id: request.clientId,
+    redirect_uri: request.redirectUri,
+    code_challenge: request.codeChallenge,
+    code_challenge_method: "S256",
+  });
+  if (request.state) query.set("state", request.state);
+  if (request.scope) query.set("scope", request.scope);
+  return `/authorize?${query.toString()}`;
+}
+
+function dashboardRedirect(returnTo: string): string {
+  return `/dashboard?${new URLSearchParams({ return_to: returnTo }).toString()}#gyerekek`;
+}
+
+function profileForName(profiles: ChildProfile[], childName: string): ChildProfile | undefined {
+  const normalizedName = normalizeChildName(childName);
+  return profiles.find((profile) => profile.normalizedName === normalizedName);
 }
 
 export function createOAuthRouter(deps: OAuthRouterDeps): Router {
@@ -125,76 +155,100 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
 
   // --- /authorize: show the KRÉTA login -----------------------------------
   router.get("/authorize", (req, res) => {
-    const query = req.query as Record<string, unknown>;
-    const clientId = firstString(query.client_id);
-    const redirectUri = firstString(query.redirect_uri);
-    const responseType = firstString(query.response_type);
-    const codeChallenge = firstString(query.code_challenge);
-    const codeChallengeMethod = firstString(query.code_challenge_method);
-    const state = firstString(query.state);
-    const scope = firstString(query.scope);
+    void (async () => {
+      const query = req.query as Record<string, unknown>;
+      const clientId = firstString(query.client_id);
+      const redirectUri = firstString(query.redirect_uri);
+      const responseType = firstString(query.response_type);
+      const codeChallenge = firstString(query.code_challenge);
+      const codeChallengeMethod = firstString(query.code_challenge_method);
+      const state = firstString(query.state);
+      const scope = firstString(query.scope);
 
-    if (!clientId || !redirectUri) {
-      res.status(400).type("html").send(
-        renderErrorPage("Hiányos kérés", "A kliens nem küldött client_id-t vagy redirect_uri-t."),
+      if (!clientId || !redirectUri) {
+        res.status(400).type("html").send(
+          renderErrorPage("Hiányos kérés", "A kliens nem küldött client_id-t vagy redirect_uri-t."),
+        );
+        return;
+      }
+
+      const client = openClientId(sealer, clientId);
+      if (!client) {
+        res.status(401).type("html").send(
+          renderErrorPage("Ismeretlen kliens", "Ez a client_id nem ettől a szolgáltatástól származik."),
+        );
+        return;
+      }
+
+      // Only ever redirect to a URI the client registered AND the deployment
+      // allows — never echo back an arbitrary redirect_uri from the query.
+      if (!client.r.includes(redirectUri) || !config.allowedRedirectUris.includes(redirectUri)) {
+        res.status(400).type("html").send(
+          renderErrorPage("Nem engedélyezett átirányítás", "A kért redirect_uri nem tartozik ehhez a klienshez."),
+        );
+        return;
+      }
+
+      const fail = (error: string, description: string): void => {
+        const target = new URL(redirectUri);
+        target.searchParams.set("error", error);
+        target.searchParams.set("error_description", description);
+        if (state) target.searchParams.set("state", state);
+        res.redirect(302, target.toString());
+      };
+
+      if (responseType !== "code") {
+        fail("unsupported_response_type", "Only response_type=code is supported.");
+        return;
+      }
+      if (!codeChallenge || codeChallengeMethod !== "S256") {
+        fail("invalid_request", "PKCE with code_challenge_method=S256 is required.");
+        return;
+      }
+
+      const sessionCookie = readSessionCookie(req);
+      let user;
+      try {
+        if (!sessionCookie) throw new Error("missing_session");
+        user = await deps.verifySessionCookie(sessionCookie);
+      } catch {
+        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(req.originalUrl));
+        return;
+      }
+
+      const profiles = await deps.childProfileStore.list(user.uid);
+      if (profiles.length === 0) {
+        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(req.originalUrl));
+        return;
+      }
+
+      const request: SealedAuthorizationRequest = {
+        clientId,
+        redirectUri,
+        codeChallenge,
+        uid: user.uid,
+        ...(state ? { state } : {}),
+        ...(scope ? { scope } : {}),
+        ...(client.n ? { clientName: client.n } : {}),
+      };
+
+      res
+        .type("html")
+        .set("Cache-Control", "no-store")
+        .send(
+          renderLoginPage({
+            request: sealer.seal("request", request, config.authorizationCodeTtlSeconds * 5),
+            clientName: client.n,
+            accountName: user.name,
+            manageProfilesUrl: dashboardRedirect(authorizePath(request)),
+            profiles,
+          }),
+        );
+    })().catch(() => {
+      res.status(503).type("html").send(
+        renderErrorPage("A profilok nem érhetők el", "A gyerekprofilokat most nem sikerült betölteni. Próbáld újra."),
       );
-      return;
-    }
-
-    const client = openClientId(sealer, clientId);
-    if (!client) {
-      res.status(401).type("html").send(
-        renderErrorPage("Ismeretlen kliens", "Ez a client_id nem ettől a szolgáltatástól származik."),
-      );
-      return;
-    }
-
-    // Only ever redirect to a URI the client registered AND the deployment
-    // allows — never echo back an arbitrary redirect_uri from the query.
-    if (!client.r.includes(redirectUri) || !config.allowedRedirectUris.includes(redirectUri)) {
-      res.status(400).type("html").send(
-        renderErrorPage("Nem engedélyezett átirányítás", "A kért redirect_uri nem tartozik ehhez a klienshez."),
-      );
-      return;
-    }
-
-    // From here the redirect_uri is trusted, so protocol errors go back to
-    // the client as an error redirect rather than dead-ending in the browser.
-    const fail = (error: string, description: string): void => {
-      const target = new URL(redirectUri);
-      target.searchParams.set("error", error);
-      target.searchParams.set("error_description", description);
-      if (state) target.searchParams.set("state", state);
-      res.redirect(302, target.toString());
-    };
-
-    if (responseType !== "code") {
-      fail("unsupported_response_type", "Only response_type=code is supported.");
-      return;
-    }
-    if (!codeChallenge || codeChallengeMethod !== "S256") {
-      fail("invalid_request", "PKCE with code_challenge_method=S256 is required.");
-      return;
-    }
-
-    const request: SealedAuthorizationRequest = {
-      clientId,
-      redirectUri,
-      codeChallenge,
-      ...(state ? { state } : {}),
-      ...(scope ? { scope } : {}),
-      ...(client.n ? { clientName: client.n } : {}),
-    };
-
-    res
-      .type("html")
-      .set("cache-control", "no-store")
-      .send(
-        renderLoginPage({
-          request: sealer.seal("request", request, config.authorizationCodeTtlSeconds * 5),
-          clientName: client.n,
-        }),
-      );
+    });
   });
 
   // --- /authorize/login: the KRÉTA sign-in itself -------------------------
@@ -222,6 +276,34 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
         return;
       }
 
+      const origin = req.get("origin");
+      if (origin !== issuerOf(req, config)) {
+        res.status(403).type("html").send(
+          renderErrorPage("Nem engedélyezett kérés", "A belépést az Üzenőfüzet oldaláról kell elküldeni."),
+        );
+        return;
+      }
+
+      const sessionCookie = readSessionCookie(req);
+      let user;
+      try {
+        if (!sessionCookie) throw new Error("missing_session");
+        user = await deps.verifySessionCookie(sessionCookie);
+        if (!request.uid || user.uid !== request.uid) throw new Error("session_changed");
+      } catch {
+        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(authorizePath(request)));
+        return;
+      }
+
+      const profiles = await deps.childProfileStore.list(user.uid);
+      if (profiles.length === 0) {
+        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(authorizePath(request)));
+        return;
+      }
+
+      const labels = asList(body.childName);
+      const passwords = asList(body.password);
+
       const reject = (message: string): void => {
         res
           .status(400)
@@ -231,53 +313,46 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
             renderLoginPage({
               request: sealedRequest,
               clientName: request.clientName,
+              accountName: user.name,
+              manageProfilesUrl: dashboardRedirect(authorizePath(request)),
+              profiles,
+              selectedNames: labels,
               error: message,
             }),
           );
       };
 
-      const labels = asList(body.label);
-      const usernames = asList(body.username);
-      const passwords = asList(body.password);
-      const instituteCodes = asList(body.instituteCode);
-
-      // The form renders three fixed fieldsets and enables them in order, so
-      // a mismatch here means a hand-crafted POST, not a parent's mistake.
-      if (
-        usernames.length === 0 ||
-        new Set([labels.length, usernames.length, passwords.length, instituteCodes.length]).size !== 1
-      ) {
-        reject("Hiányos űrlap: minden gyerekhez név, felhasználónév, jelszó és intézménykód kell.");
+      if (labels.length === 0 || labels.length !== passwords.length || labels.length > profiles.length) {
+        reject("Hiányos űrlap: minden gyerekhez név és KRÉTA-jelszó kell.");
         return;
       }
 
       const credentials: Array<LoginCredentials & { label: string }> = [];
       const seen = new Set<string>();
-      for (let index = 0; index < usernames.length; index += 1) {
+      for (let index = 0; index < labels.length; index += 1) {
         const label = (labels[index] ?? "").trim();
-        const username = (usernames[index] ?? "").trim();
         const password = passwords[index] ?? "";
-        const rawCode = (instituteCodes[index] ?? "").trim();
-        if (!label || !username || !password || !rawCode) {
-          reject("Hiányos adat: minden kitöltött gyerekhez mind a négy mező kell.");
+        if (!label || !password) {
+          reject("Hiányos adat: minden kitöltött gyerekhez név és KRÉTA-jelszó kell.");
           return;
         }
-        if (seen.has(label.toLowerCase())) {
+        const normalizedLabel = normalizeChildName(label);
+        if (seen.has(normalizedLabel)) {
           reject(`Kétszer szerepel ugyanaz a név: ${label}. Adj mindegyik gyereknek külön nevet.`);
           return;
         }
-        seen.add(label.toLowerCase());
-        try {
-          credentials.push({
-            label,
-            username,
-            password,
-            instituteCode: normalizeInstituteCode(rawCode),
-          });
-        } catch (error) {
-          reject(error instanceof KretaError ? error.message : "Érvénytelen intézménykód.");
+        seen.add(normalizedLabel);
+        const profile = profileForName(profiles, label);
+        if (!profile) {
+          reject(`Nincs „${label}” nevű gyerekprofil ebben a Google-fiókban.`);
           return;
         }
+        credentials.push({
+          label: profile.childName,
+          username: profile.kretaUsername,
+          password,
+          instituteCode: profile.instituteCode,
+        });
       }
 
       const children: SealedChild[] = [];

@@ -14,7 +14,7 @@ import ArrowMark from "../components/ArrowMark.astro";
     <div>
       <h2 id="password-title">A belépéskor a KRÉTA-jelszavad átmegy az Üzenőfüzet szerverén.</h2>
       <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak a belépéshez használjuk, majd eldobjuk.</p>
-      <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. Ez tárolásmentes hitelesítőadat-kezelés, nem „zero knowledge”.</p>
+      <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. A jelszó kezelése átmeneti, nem „zero knowledge”.</p>
       <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> Futtasd a nyílt forrású változatot a saját gépeden, így a KRÉTA-jelszó nem megy át a mi szerverünkön.</aside>
       <a class="button secondary" href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">Helyi változat a GitHubon <ArrowMark direction="up-right" /></a>
     </div>
@@ -25,10 +25,10 @@ import ArrowMark from "../components/ArrowMark.astro";
       <h2 id="flow-title">Mi történik<br />a háttérben?</h2>
     </div>
     <ol>
-      <li><span>01</span><div><h3>Claude megnyitja a belépést</h3><p>A csatlakozó beállításakor a böngésződ az Üzenőfüzet hitelesítési oldalára visz.</p></div></li>
-      <li><span>02</span><div><h3>A szerver egyszer belép a KRÉTA-ba</h3><p>A megadott azonosítót és jelszót elküldi a KRÉTA beléptető rendszerének. A jelszót ezután eldobja.</p></div></li>
-      <li><span>03</span><div><h3>Claude egy lezárt tokent kap</h3><p>A KRÉTA frissítőtoken titkosítva kerül a Claude által őrzött kapcsolatba. A szerveren nincs felhasználónkénti KRÉTA-tokenadatbázis.</p></div></li>
-      <li><span>04</span><div><h3>A kérdések csak olvasnak</h3><p>A 20 rögzített eszköz naplót, órarendet, jegyet és más tanulói adatot olvas. Nem ír vissza a KRÉTA-ba.</p></div></li>
+      <li><span>01</span><div><h3>Egyszer elmented a gyerek profilját</h3><p>A Google-fiókodhoz a gyerek rendes neve, KRÉTA-felhasználóneve és intézménykódja kerül. Jelszó nem.</p></div></li>
+      <li><span>02</span><div><h3>Claude megnyitja a belépést</h3><p>Az Üzenőfüzet a Google-fiókod alapján előveszi a mentett profilokat. A belépőlapon már csak a gyerek nevét és a KRÉTA-jelszót kéri.</p></div></li>
+      <li><span>03</span><div><h3>A szerver egyszer belép a KRÉTA-ba</h3><p>A mentett azonosítót és a most megadott jelszót elküldi a KRÉTA beléptető rendszerének. A jelszót ezután eldobja.</p></div></li>
+      <li><span>04</span><div><h3>Claude egy lezárt tokent kap</h3><p>A KRÉTA frissítőtoken titkosítva kerül a Claude által őrzött kapcsolatba. A kérdések ezután csak olvasnak, nem írnak vissza a KRÉTA-ba.</p></div></li>
     </ol>
   </section>
 

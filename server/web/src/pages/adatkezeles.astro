@@ -5,10 +5,14 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout title="Adatkezelés – Üzenőfüzet" description="Az Üzenőfüzet rövid, közérthető adatkezelési tájékoztatója.">
   <article class="legal">
     <h1>Adatkezelés</h1>
-    <p class="intro">Két külön adatfolyam van: a Claude–KRÉTA kapcsolat és a nyilvános üzenetfal. Nem keverjük össze őket.</p>
+    <p class="intro">Három külön adatfolyam van: a privát gyerekprofil, a Claude–KRÉTA kapcsolat és a nyilvános üzenetfal. Nem keverjük össze őket.</p>
+
+    <h2>Privát gyerekprofil</h2>
+    <p>Google-belépés után a Firestore-ban, a fiókod technikai azonosítója alatt legfeljebb három profil menthető. A profil a gyerek rendes nevét, KRÉTA-felhasználónevét, intézménykódját, valamint a létrehozás és módosítás időpontját tartalmazza. A KRÉTA-jelszó és a KRÉTA-token nem kerül ebbe az adatbázisba.</p>
+    <p>A profilokat csak a szerver olvassa a hitelesített Google-fiókod nevében. A kapcsolati pulton szerkesztheted vagy törölheted őket.</p>
 
     <h2>Claude–KRÉTA kapcsolat</h2>
-    <p>A KRÉTA-azonosító és -jelszó a belépés idejére átmegy a szerveren. A jelszót nem tároljuk. A KRÉTA frissítőtoken titkosítva abba a hozzáférési tokenbe kerül, amelyet Claude őriz. Az Üzenőfüzetnek nincs felhasználónkénti KRÉTA-hitelesítőadat-adatbázisa.</p>
+    <p>A mentett KRÉTA-felhasználónevet és intézménykódot a szerver a gyerek neve alapján veszi elő. A KRÉTA-jelszó a belépés idejére átmegy a szerveren, de nem tároljuk. A KRÉTA frissítőtoken titkosítva abba a hozzáférési tokenbe kerül, amelyet Claude őriz; a profiladatbázisba ez sem kerül be.</p>
     <p>A szerver üzemeltetési naplói technikai adatokat — például időpontot, kért végpontot és hálózati adatokat — tartalmazhatnak. KRÉTA-jelszót szándékosan nem naplózunk.</p>
 
     <h2>Nyilvános üzenetfal</h2>
@@ -16,7 +20,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <p>A Firestore-ban a megjelenített nevet, az üzenetet, a fiók technikai azonosítóját és a létrehozás/módosítás időpontját tároljuk. A név, az üzenet és a dátum nyilvános. Egy fiókhoz egy bejegyzés tartozik.</p>
 
     <h2>Törlés</h2>
-    <p>A saját üzenetedet belépés után közvetlenül törölheted a listáról. A Claude–KRÉTA kapcsolatot Claude csatlakozóbeállításaiban tudod eltávolítani.</p>
+    <p>A saját üzenetedet belépés után közvetlenül törölheted a listáról. A gyerekprofilokat a kapcsolati pulton törölheted. A Claude–KRÉTA kapcsolatot Claude csatlakozóbeállításaiban tudod eltávolítani.</p>
 
     <h2>Szolgáltatók és kapcsolat</h2>
     <p>A tárhelyet, a futtatást, a hitelesítést és az üzenetfal adatbázisát a Google Cloud és Firebase biztosítja. A forráskód, a hibajelzés és a projekt kapcsolati felülete a <a href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">GitHub-tárolóban</a> érhető el.</p>

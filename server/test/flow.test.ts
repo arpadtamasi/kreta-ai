@@ -14,12 +14,54 @@ import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { KretaError } from "../src/kreta/institute.js";
 import type { LoginCredentials } from "../src/kreta/auth.js";
+import type { ChildProfile, ChildProfileInput, ChildProfileStore } from "../src/profiles/store.js";
 
 const REDIRECT_URI = "https://claude.ai/api/mcp/auth_callback";
 const PASSWORD = "sup3r-titk0s-jelszo";
 const SEALING_KEY = randomBytes(32).toString("base64");
 
 const loginCalls: LoginCredentials[] = [];
+
+class MemoryChildProfileStore implements ChildProfileStore {
+  readonly profiles: ChildProfile[] = [
+    {
+      id: "profile-lilla",
+      childName: "Lilla",
+      normalizedName: "lilla",
+      kretaUsername: "lilla-diak",
+      instituteCode: "klik123456",
+      createdAt: new Date(0).toISOString(),
+      updatedAt: new Date(0).toISOString(),
+    },
+    {
+      id: "profile-kata",
+      childName: "Kata",
+      normalizedName: "kata",
+      kretaUsername: "kata-diak",
+      instituteCode: "klik999999",
+      createdAt: new Date(1).toISOString(),
+      updatedAt: new Date(1).toISOString(),
+    },
+  ];
+
+  async list(uid: string) {
+    return uid === "parent-uid" ? this.profiles : [];
+  }
+
+  async save(_uid: string, input: ChildProfileInput & { id?: string }) {
+    const profile = {
+      ...input,
+      id: input.id ?? "profile-new",
+      createdAt: new Date(0).toISOString(),
+      updatedAt: new Date(0).toISOString(),
+    };
+    return profile;
+  }
+
+  async delete() {
+    return false;
+  }
+}
 
 /** Stands in for the KRÉTA IDP login: accepts one known parent, rejects the rest. */
 async function stubLogin(credentials: LoginCredentials) {
@@ -58,7 +100,17 @@ const config = loadConfig({
   OAUTH_ALLOWED_REDIRECT_URIS: REDIRECT_URI,
 } as NodeJS.ProcessEnv);
 
-const server = createApp({ config, loginImpl: stubLogin, fetchImpl: stubFetch }).listen(0);
+const server = createApp({
+  config,
+  loginImpl: stubLogin,
+  fetchImpl: stubFetch,
+  childProfileStore: new MemoryChildProfileStore(),
+  verifyFirebaseSessionCookie: async (cookie) => {
+    if (cookie === "parent-session") return { uid: "parent-uid", name: "Anna Példa" };
+    if (cookie === "other-session") return { uid: "other-uid", name: "Másik Szülő" };
+    throw new Error("invalid session");
+  },
+}).listen(0);
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 after(() => void server.close());
 
@@ -87,7 +139,10 @@ async function openLoginPage(clientId: string, challenge: string, state: string)
     code_challenge_method: "S256",
     state,
   });
-  const response = await fetch(`${base}/authorize?${query}`, { redirect: "manual" });
+  const response = await fetch(`${base}/authorize?${query}`, {
+    headers: { cookie: "__session=parent-session" },
+    redirect: "manual",
+  });
   assert.equal(response.status, 200);
   const html = await response.text();
   const match = /name="request" value="([^"]+)"/.exec(html);
@@ -97,19 +152,17 @@ async function openLoginPage(clientId: string, challenge: string, state: string)
 
 async function submitLogin(
   request: string,
-  children: Array<{ label: string; username: string; password: string; instituteCode: string }>,
+  children: Array<{ childName: string; password: string }>,
 ): Promise<Response> {
   const form = new URLSearchParams();
   form.set("request", request);
   for (const child of children) {
-    form.append("label", child.label);
-    form.append("username", child.username);
+    form.append("childName", child.childName);
     form.append("password", child.password);
-    form.append("instituteCode", child.instituteCode);
   }
   return fetch(`${base}/authorize/login`, {
     method: "POST",
-    headers: { "content-type": "application/x-www-form-urlencoded" },
+    headers: { "content-type": "application/x-www-form-urlencoded", cookie: "__session=parent-session", origin: base },
     body: form.toString(),
     redirect: "manual",
   });
@@ -154,7 +207,7 @@ async function callMcp(accessToken: string, body: unknown): Promise<Record<strin
 }
 
 /** Runs the whole happy path and returns everything the assertions need. */
-async function connect(children = [{ label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" }]) {
+async function connect(children = [{ childName: "Lilla", password: PASSWORD }]) {
   const { clientId, clientSecret } = await register();
   const { verifier, challenge } = pkce();
   const state = randomBytes(8).toString("hex");
@@ -222,12 +275,60 @@ test("/authorize requires PKCE, reporting the error to the client", async () => 
   assert.equal(location.searchParams.get("state"), "st");
 });
 
+test("/authorize identifies the parent first, then shows password-manager friendly fields", async () => {
+  const { clientId } = await register();
+  const query = new URLSearchParams({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: REDIRECT_URI,
+    code_challenge: pkce().challenge,
+    code_challenge_method: "S256",
+    state: "st",
+  });
+  const withoutSession = await fetch(`${base}/authorize?${query}`, { redirect: "manual" });
+  assert.equal(withoutSession.status, 302);
+  assert.match(withoutSession.headers.get("location") ?? "", /^\/dashboard\?return_to=/);
+
+  const withSession = await fetch(`${base}/authorize?${query}`, {
+    headers: { cookie: "__session=parent-session" },
+  });
+  assert.equal(withSession.status, 200);
+  const html = await withSession.text();
+  assert.match(html, /name="childName"/);
+  assert.match(html, /autocomplete="section-child-1 username"/);
+  assert.match(html, /autocomplete="section-child-1 current-password"/);
+  assert.match(html, /<link rel="stylesheet" href="\/authorize\.css">/);
+  assert.doesNotMatch(html, /<style>/);
+  assert.doesNotMatch(html, /name="username"/);
+  assert.doesNotMatch(html, /name="instituteCode"/);
+  assert.doesNotMatch(html, /pl\. Marci/);
+
+  const css = await fetch(`${base}/authorize.css`);
+  assert.equal(css.status, 200);
+  assert.match(css.headers.get("content-type") ?? "", /text\/css/);
+  assert.match(await css.text(), /\.password-wrap/);
+});
+
+test("an OAuth request is bound to the Google account that opened it", async () => {
+  const { clientId } = await register();
+  const request = await openLoginPage(clientId, pkce().challenge, "st");
+  const form = new URLSearchParams({ request, childName: "Lilla", password: PASSWORD });
+  const response = await fetch(`${base}/authorize/login`, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded", cookie: "__session=other-session", origin: base },
+    body: form,
+    redirect: "manual",
+  });
+  assert.equal(response.status, 302);
+  assert.match(response.headers.get("location") ?? "", /^\/dashboard\?return_to=/);
+});
+
 test("a wrong KRÉTA password re-renders the form with an error and issues no code", async () => {
   const { clientId } = await register();
   const { challenge } = pkce();
   const request = await openLoginPage(clientId, challenge, "st");
   const response = await submitLogin(request, [
-    { label: "Lilla", username: "lilla-diak", password: "rossz", instituteCode: "klik123456" },
+    { childName: "Lilla", password: "rossz" },
   ]);
   assert.equal(response.status, 400);
   const html = await response.text();
@@ -281,7 +382,7 @@ test("a code cannot be redeemed with another client's secret", async () => {
   const { verifier, challenge } = pkce();
   const request = await openLoginPage(clientId, challenge, "st");
   const redirected = await submitLogin(request, [
-    { label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" },
+    { childName: "Lilla", password: PASSWORD },
   ]);
   const code = new URL(redirected.headers.get("location")!).searchParams.get("code")!;
 
@@ -296,7 +397,7 @@ test("PKCE and replay protection hold at /token", async () => {
   const { verifier, challenge } = pkce();
   const request = await openLoginPage(clientId, challenge, "st");
   const redirected = await submitLogin(request, [
-    { label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" },
+    { childName: "Lilla", password: PASSWORD },
   ]);
   const code = new URL(redirected.headers.get("location")!).searchParams.get("code")!;
 
@@ -325,8 +426,8 @@ test("/mcp refuses a missing, forged or foreign token", async () => {
 
 test("several children connect in one go and are addressed by name", async () => {
   const { accessToken } = await connect([
-    { label: "Lilla", username: "lilla-diak", password: PASSWORD, instituteCode: "klik123456" },
-    { label: "Kata", username: "kata-diak", password: PASSWORD, instituteCode: "https://klik999999.e-kreta.hu" },
+    { childName: "Lilla", password: PASSWORD },
+    { childName: "Kata", password: PASSWORD },
   ]);
 
   const ambiguous = (await callMcp(accessToken, {
@@ -370,8 +471,8 @@ test("two children with the same name are refused rather than silently merged", 
   const { clientId } = await register();
   const request = await openLoginPage(clientId, pkce().challenge, "st");
   const response = await submitLogin(request, [
-    { label: "Lilla", username: "a", password: PASSWORD, instituteCode: "klik1" },
-    { label: "lilla", username: "b", password: PASSWORD, instituteCode: "klik2" },
+    { childName: "Lilla", password: PASSWORD },
+    { childName: "lilla", password: PASSWORD },
   ]);
   assert.equal(response.status, 400);
   assert.match(await response.text(), /Kétszer szerepel ugyanaz a név/);

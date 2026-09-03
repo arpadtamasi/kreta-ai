@@ -1,0 +1,371 @@
+<section class="profiles" id="gyerekek" aria-labelledby="profiles-title">
+  <div class="profiles-intro">
+    <h2 id="profiles-title">Gyerekek</h2>
+    <p>Itt egyszer kell megadnod a nevet, a KRÉTA-felhasználónevet és az intézményt. Csatlakoztatáskor már csak a nevet és a jelszót kéri az Üzenőfüzet.</p>
+    <p class="storage-note"><strong>Amit nem mentünk el:</strong> a KRÉTA-jelszót. Az csak a belépés pillanatában halad át a szerveren.</p>
+  </div>
+
+  <div class="profiles-manager">
+    <div class="signed-out" id="profiles-signed-out">
+      <h3>A profilok a Google-fiókodhoz tartoznak</h3>
+      <p>Így csak te látod, melyik névhez melyik KRÉTA-azonosító és intézmény tartozik.</p>
+      <button class="google-button" id="profiles-google-signin" type="button">
+        <svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.716v2.258h2.909c1.702-1.567 2.684-3.878 2.684-6.615Z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.91-2.258c-.805.54-1.835.86-3.046.86-2.344 0-4.328-1.585-5.037-3.714H.956v2.333A8.998 8.998 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.963 10.708A5.41 5.41 0 0 1 3.681 9c0-.593.102-1.17.282-1.708V4.959H.956A8.995 8.995 0 0 0 0 9c0 1.452.347 2.827.956 4.041l3.007-2.333Z"/><path fill="#EA4335" d="M9 3.578c1.322 0 2.508.454 3.441 1.346l2.582-2.582C13.463.89 11.426 0 9 0A8.998 8.998 0 0 0 .956 4.959l3.007 2.333C4.672 5.163 6.656 3.578 9 3.578Z"/></svg>
+        Belépés Google-fiókkal
+      </button>
+    </div>
+
+    <div class="signed-in" id="profiles-signed-in" hidden>
+      <div class="account-row">
+        <p><span>Belépve</span><strong id="profiles-account-name"></strong></p>
+        <div><button id="profiles-reauth" type="button" hidden>Google-belépés megerősítése</button><button id="profiles-signout" type="button">Kijelentkezés</button></div>
+      </div>
+      <p class="return-note" id="profiles-return-note" hidden>A profil mentése után visszaviszünk a Claude csatlakoztatásához.</p>
+      <ol class="profile-list" id="profile-list" aria-live="polite"></ol>
+      <template id="profile-template">
+        <li>
+          <div><strong class="profile-name"></strong><span class="profile-institute"></span></div>
+          <code class="profile-username"></code>
+          <div class="profile-actions"><button type="button" data-edit>Szerkesztés</button><button type="button" data-delete>Törlés</button></div>
+        </li>
+      </template>
+
+      <button class="add-profile" id="add-profile" type="button">+ Gyerekprofil hozzáadása</button>
+      <form class="profile-form" id="profile-form" hidden novalidate>
+        <input id="profile-id" type="hidden" />
+        <div class="form-title"><h3 id="profile-form-title">Gyerekprofil hozzáadása</h3><button id="cancel-profile" type="button">Mégse</button></div>
+        <label for="child-name">A gyerek rendes neve
+          <span>Ezt írod majd be a csatlakoztatáskor és Claude-nak is.</span>
+          <input id="child-name" name="childName" type="text" minlength="2" maxlength="80" autocomplete="off" required placeholder="pl. Lilla" />
+        </label>
+        <label for="kreta-username">KRÉTA-felhasználónév
+          <span>Az eKRÉTA belépési azonosítója. Csak a te profilodban tároljuk.</span>
+          <input id="kreta-username" name="kretaUsername" type="text" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" required />
+        </label>
+        <label for="institute-code">Intézménykód
+          <span>Például <code>klik123456</code> vagy az iskola <code>e-kreta.hu</code> címe.</span>
+          <input id="institute-code" name="instituteCode" type="text" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" required />
+        </label>
+        <button class="save-profile" type="submit">Profil mentése</button>
+      </form>
+    </div>
+    <p class="profiles-status" id="profiles-status" role="status" tabindex="-1"></p>
+  </div>
+</section>
+
+<script>
+  import { getApps, initializeApp } from "firebase/app";
+  import {
+    browserLocalPersistence,
+    getAuth,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    reauthenticateWithPopup,
+    setPersistence,
+    signInWithPopup,
+    signOut,
+    type User,
+  } from "firebase/auth";
+
+  interface Profile {
+    id: string;
+    childName: string;
+    kretaUsername: string;
+    instituteCode: string;
+  }
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBFaJ8tV0bC4yfff6pTj09M1Oc17S9KuPc",
+    authDomain: "uzenofuzet.firebaseapp.com",
+    projectId: "uzenofuzet",
+    storageBucket: "uzenofuzet.firebasestorage.app",
+    messagingSenderId: "652545082668",
+    appId: "1:652545082668:web:2ae336556523a75af4d889",
+  };
+
+  const auth = getAuth(getApps()[0] ?? initializeApp(firebaseConfig));
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+
+  const signedOut = document.querySelector<HTMLElement>("#profiles-signed-out")!;
+  const signedIn = document.querySelector<HTMLElement>("#profiles-signed-in")!;
+  const signInButton = document.querySelector<HTMLButtonElement>("#profiles-google-signin")!;
+  const signOutButton = document.querySelector<HTMLButtonElement>("#profiles-signout")!;
+  const reauthButton = document.querySelector<HTMLButtonElement>("#profiles-reauth")!;
+  const accountName = document.querySelector<HTMLElement>("#profiles-account-name")!;
+  const status = document.querySelector<HTMLElement>("#profiles-status")!;
+  const list = document.querySelector<HTMLOListElement>("#profile-list")!;
+  const template = document.querySelector<HTMLTemplateElement>("#profile-template")!;
+  const addButton = document.querySelector<HTMLButtonElement>("#add-profile")!;
+  const form = document.querySelector<HTMLFormElement>("#profile-form")!;
+  const formTitle = document.querySelector<HTMLElement>("#profile-form-title")!;
+  const cancelButton = document.querySelector<HTMLButtonElement>("#cancel-profile")!;
+  const idInput = document.querySelector<HTMLInputElement>("#profile-id")!;
+  const nameInput = document.querySelector<HTMLInputElement>("#child-name")!;
+  const usernameInput = document.querySelector<HTMLInputElement>("#kreta-username")!;
+  const instituteInput = document.querySelector<HTMLInputElement>("#institute-code")!;
+  const returnNote = document.querySelector<HTMLElement>("#profiles-return-note")!;
+  let profiles: Profile[] = [];
+  let formOpener: HTMLElement | null = null;
+
+  const candidateReturn = new URLSearchParams(location.search).get("return_to") ?? "";
+  const returnTo = candidateReturn.startsWith("/authorize?") && candidateReturn.length <= 12_000
+    ? candidateReturn
+    : "";
+  returnNote.hidden = !returnTo;
+
+  function setStatus(message: string, kind = "") {
+    status.textContent = message;
+    status.dataset.kind = kind;
+  }
+
+  async function authHeaders(user: User): Promise<Record<string, string>> {
+    return { authorization: `Bearer ${await user.getIdToken()}` };
+  }
+
+  async function establishSession(user: User): Promise<void> {
+    const response = await fetch("/api/session", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ idToken: await user.getIdToken(true) }),
+    });
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({})) as { error?: string };
+      throw new Error(data.error ?? "A Google-munkamenetet nem sikerült létrehozni.");
+    }
+  }
+
+  function showForm(profile?: Profile, opener?: HTMLElement) {
+    formOpener = opener?.isConnected && !opener.hidden ? opener : null;
+    idInput.value = profile?.id ?? "";
+    nameInput.value = profile?.childName ?? "";
+    usernameInput.value = profile?.kretaUsername ?? "";
+    instituteInput.value = profile?.instituteCode ?? "";
+    formTitle.textContent = profile ? `${profile.childName} szerkesztése` : "Gyerekprofil hozzáadása";
+    form.hidden = false;
+    addButton.hidden = true;
+    nameInput.focus();
+  }
+
+  function hideForm(restoreFocus = true) {
+    const target = formOpener;
+    formOpener = null;
+    form.hidden = true;
+    form.reset();
+    idInput.value = "";
+    addButton.hidden = profiles.length >= 3;
+    if (restoreFocus) {
+      if (target?.isConnected && !target.hidden) target.focus();
+      else status.focus();
+    }
+  }
+
+  function renderProfiles(user: User) {
+    list.replaceChildren();
+    if (profiles.length === 0) {
+      const empty = document.createElement("li");
+      empty.className = "empty";
+      empty.textContent = "Még nincs gyerekprofilod. Add meg az elsőt; nagyjából egy perc.";
+      list.append(empty);
+      showForm();
+      return;
+    }
+
+    for (const profile of profiles) {
+      const fragment = template.content.cloneNode(true) as DocumentFragment;
+      fragment.querySelector<HTMLElement>(".profile-name")!.textContent = profile.childName;
+      fragment.querySelector<HTMLElement>(".profile-institute")!.textContent = profile.instituteCode;
+      fragment.querySelector<HTMLElement>(".profile-username")!.textContent = profile.kretaUsername;
+      const editButton = fragment.querySelector<HTMLButtonElement>("[data-edit]")!;
+      editButton.addEventListener("click", () => showForm(profile, editButton));
+      fragment.querySelector<HTMLButtonElement>("[data-delete]")!.addEventListener("click", async () => {
+        if (!confirm(`Törlöd ${profile.childName} gyerekprofilját?`)) return;
+        const response = await fetch(`/api/profiles/${encodeURIComponent(profile.id)}`, {
+          method: "DELETE",
+          headers: await authHeaders(user),
+        });
+        if (!response.ok) {
+          setStatus("A profilt nem sikerült törölni. Próbáld újra.", "error");
+          return;
+        }
+        setStatus(`${profile.childName} profilját töröltük.`, "success");
+        await loadProfiles(user, false);
+      });
+      list.append(fragment);
+    }
+    hideForm(false);
+  }
+
+  async function loadProfiles(user: User, continueOAuth = true) {
+    const response = await fetch("/api/profiles", { headers: await authHeaders(user), cache: "no-store" });
+    const data = await response.json() as { profiles?: Profile[]; error?: string };
+    if (!response.ok || !data.profiles) throw new Error(data.error ?? "A gyerekprofilokat nem sikerült betölteni.");
+    profiles = data.profiles;
+    renderProfiles(user);
+    if (returnTo && profiles.length > 0 && continueOAuth) {
+      setStatus("Kész. Visszalépünk a Claude csatlakoztatásához…");
+      location.assign(returnTo);
+    }
+  }
+
+  signInButton.addEventListener("click", async () => {
+    signInButton.disabled = true;
+    setStatus("Google-belépés…");
+    try {
+      await setPersistence(auth, browserLocalPersistence);
+      await signInWithPopup(auth, provider);
+    } catch {
+      setStatus("A Google-belépés nem sikerült vagy megszakadt.", "error");
+      signInButton.disabled = false;
+    }
+  });
+
+  signOutButton.addEventListener("click", async () => {
+    await Promise.allSettled([signOut(auth), fetch("/api/session", { method: "DELETE" })]);
+    profiles = [];
+    list.replaceChildren();
+    setStatus("Kijelentkeztél.");
+  });
+
+  reauthButton.addEventListener("click", async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    reauthButton.disabled = true;
+    setStatus("Google-belépés megerősítése…");
+    try {
+      await reauthenticateWithPopup(user, provider);
+      await establishSession(user);
+      reauthButton.hidden = true;
+      await loadProfiles(user);
+      if (!returnTo) setStatus("A belépést megerősítettük.", "success");
+    } catch {
+      setStatus("A Google-belépés megerősítése nem sikerült vagy megszakadt.", "error");
+    } finally {
+      reauthButton.disabled = false;
+    }
+  });
+
+  addButton.addEventListener("click", () => showForm(undefined, addButton));
+  cancelButton.addEventListener("click", () => hideForm());
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const submit = form.querySelector<HTMLButtonElement>("button[type=submit]")!;
+    submit.disabled = true;
+    setStatus("Profil mentése…");
+    try {
+      const user = auth.currentUser;
+      if (!user) throw new Error("A mentéshez jelentkezz be Google-fiókkal.");
+      const response = await fetch("/api/profiles", {
+        method: "PUT",
+        headers: { "content-type": "application/json", ...await authHeaders(user) },
+        body: JSON.stringify({
+          ...(idInput.value ? { id: idInput.value } : {}),
+          childName: nameInput.value,
+          kretaUsername: usernameInput.value,
+          instituteCode: instituteInput.value,
+        }),
+      });
+      const data = await response.json() as { error?: string };
+      if (!response.ok) throw new Error(data.error ?? "A profilt nem sikerült elmenteni.");
+      let canContinue = true;
+      try {
+        await establishSession(user);
+        reauthButton.hidden = true;
+      } catch {
+        canContinue = false;
+        reauthButton.hidden = false;
+      }
+      await loadProfiles(user, canContinue);
+      if (!returnTo || !canContinue) {
+        setStatus("A gyerekprofilt elmentettük.", "success");
+        status.focus();
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "A profilt nem sikerült elmenteni.", "error");
+    } finally {
+      submit.disabled = false;
+    }
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    signedOut.hidden = Boolean(user);
+    signedIn.hidden = !user;
+    signInButton.disabled = false;
+    if (!user) return;
+    accountName.textContent = user.displayName || "Google-fiók";
+    setStatus("Profilok betöltése…");
+    try {
+      let canContinue = true;
+      try {
+        await establishSession(user);
+        reauthButton.hidden = true;
+      } catch {
+        canContinue = false;
+        reauthButton.hidden = false;
+      }
+      await loadProfiles(user, canContinue);
+      if (!canContinue && returnTo) {
+        setStatus("A Claude-csatlakozáshoz erősítsd meg újra a Google-belépést.", "error");
+      } else if (!returnTo) {
+        setStatus("");
+      }
+    } catch (error) {
+      setStatus(error instanceof Error ? error.message : "A profilokat nem sikerült betölteni.", "error");
+    }
+  });
+</script>
+
+<style>
+  .profiles { display: grid; grid-template-columns: 37% 63%; border-bottom: 1px solid var(--blue-soft); }
+  .profiles-intro { padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
+  .profiles-intro h2 { margin: 0 0 2rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4.5rem, 7vw, 8rem); font-weight: 600; line-height: .78; letter-spacing: -.035em; text-transform: uppercase; }
+  .profiles-intro p { max-width: 32rem; color: var(--ink-muted); line-height: 1.7; }
+  .storage-note { margin-top: 2rem; padding-top: 1.3rem; border-top: 1px solid var(--blue-soft); font-size: .78rem; }
+  .storage-note strong { color: var(--ink); }
+  .profiles-manager { min-width: 0; padding: clamp(3rem, 6vw, 6rem) var(--page-pad); }
+  .signed-out { max-width: 42rem; }
+  .signed-out h3 { margin: 0 0 .8rem; color: var(--blue); font-size: clamp(1.4rem, 2.3vw, 2.2rem); letter-spacing: -.035em; }
+  .signed-out p { margin: 0 0 2rem; color: var(--ink-muted); line-height: 1.65; }
+  .google-button { display: inline-flex; min-height: 3.55rem; align-items: center; gap: .8rem; padding: .9rem 1.25rem; border: 2px solid var(--blue); border-radius: 0; color: var(--ink); background: var(--paper-bright); font-weight: 800; cursor: pointer; }
+  .google-button svg { width: 1.15rem; height: 1.15rem; }
+  .account-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1.25rem; border-bottom: 2px solid var(--blue); }
+  .account-row p { margin: 0; }
+  .account-row span { display: block; color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .62rem; text-transform: uppercase; }
+  .account-row strong { display: block; margin-top: .25rem; color: var(--blue); }
+  .account-row > div { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .8rem; }
+  .account-row button, .profile-actions button, .form-title button { display: inline-flex; min-height: 2.75rem; align-items: center; padding: .3rem .2rem; border: 0; color: var(--blue); background: transparent; font-size: .7rem; font-weight: 800; text-decoration: underline; text-underline-offset: .25rem; cursor: pointer; }
+  .return-note { margin: 1rem 0 0; padding: .8rem 1rem; color: #2f260d; background: #fff4c9; font-size: .76rem; line-height: 1.5; }
+  .profile-list { margin: 0 0 1rem; padding: 0; list-style: none; }
+  .profile-list li { display: grid; grid-template-columns: 1fr minmax(9rem, .8fr) auto; gap: 1rem; align-items: center; min-height: 5.5rem; padding: 1.2rem 0; border-bottom: 1px solid var(--blue-soft); }
+  .profile-list strong, .profile-list span { display: block; }
+  .profile-list strong { font-size: .95rem; }
+  .profile-list span { margin-top: .25rem; color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .63rem; }
+  .profile-list code { overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
+  .profile-actions { display: flex; gap: .8rem; }
+  .profile-actions button[data-delete] { color: #a62f22; }
+  .profile-list .empty { display: block; padding: 1.6rem 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.6; }
+  .add-profile { width: 100%; min-height: 3.4rem; border: 1px dashed var(--blue); border-radius: 0; color: var(--blue); background: transparent; font-weight: 800; cursor: pointer; }
+  .profile-form { margin-top: 1.5rem; border-top: 2px solid var(--blue); }
+  .form-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--blue-soft); }
+  .form-title h3 { margin: 0; font-size: 1rem; }
+  .profile-form label { display: block; padding: 1rem 0; color: var(--ink); font-size: .8rem; font-weight: 800; }
+  .profile-form label + label { border-top: 1px solid var(--blue-soft); }
+  .profile-form label > span { display: block; margin: .3rem 0 .6rem; color: var(--ink-muted); font-size: .7rem; font-weight: 450; line-height: 1.5; }
+  .profile-form input { width: 100%; min-height: 3rem; padding: 0 .8rem; border: 1px solid #8799af; border-radius: 0; color: var(--ink); background: var(--paper-bright); caret-color: var(--blue); }
+  .save-profile { width: 100%; min-height: 3.55rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-weight: 800; cursor: pointer; }
+  .save-profile:disabled, .google-button:disabled { cursor: wait; opacity: .6; }
+  .profiles-status { min-height: 1.4rem; margin: 1rem 0 0; color: var(--ink-muted); font-size: .75rem; }
+  .profiles-status:focus-visible { outline: 3px solid var(--orange); outline-offset: .35rem; }
+  .profiles-status[data-kind="error"] { color: #a62f22; }
+  .profiles-status[data-kind="success"] { color: var(--green); }
+  @media (max-width: 800px) {
+    .profiles { grid-template-columns: 1fr; }
+    .profiles-intro { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
+  }
+  @media (max-width: 560px) {
+    .profile-list li { grid-template-columns: 1fr; gap: .5rem; padding: 1.3rem 0; }
+    .profile-actions { margin-top: .4rem; }
+  }
+</style>

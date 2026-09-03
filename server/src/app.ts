@@ -1,4 +1,6 @@
 import express, { type Express, type Request } from "express";
+import { createSessionRouter } from "./auth/router.js";
+import type { CreateSessionCookie, VerifyIdToken, VerifySessionCookie } from "./auth/types.js";
 import type { Config } from "./config.js";
 import type { login } from "./kreta/auth.js";
 import { RotationCache } from "./kreta/rotationCache.js";
@@ -11,8 +13,10 @@ import { BRAND } from "./brand.js";
 import { getApps, initializeApp } from "firebase-admin/app";
 import { getAuth } from "firebase-admin/auth";
 import { getFirestore } from "firebase-admin/firestore";
-import { createPledgeRouter, type VerifyIdToken } from "./pledges/router.js";
+import { createPledgeRouter } from "./pledges/router.js";
 import { FirestorePledgeStore, type PledgeStore } from "./pledges/store.js";
+import { createChildProfileRouter } from "./profiles/router.js";
+import { FirestoreChildProfileStore, type ChildProfileStore } from "./profiles/store.js";
 
 export interface AppDeps {
   config: Config;
@@ -21,7 +25,10 @@ export interface AppDeps {
   fetchImpl?: typeof fetch;
   rotationCache?: RotationCache;
   pledgeStore?: PledgeStore;
+  childProfileStore?: ChildProfileStore;
   verifyFirebaseIdToken?: VerifyIdToken;
+  createFirebaseSessionCookie?: CreateSessionCookie;
+  verifyFirebaseSessionCookie?: VerifySessionCookie;
 }
 
 export function createApp(deps: AppDeps): Express {
@@ -48,18 +55,51 @@ export function createApp(deps: AppDeps): Express {
   });
 
   const firebaseApp = getApps()[0] ?? initializeApp();
+  const firebaseAuth = getAuth(firebaseApp);
   const pledgeStore = deps.pledgeStore ?? new FirestorePledgeStore(getFirestore(firebaseApp));
+  const childProfileStore = deps.childProfileStore ?? new FirestoreChildProfileStore(getFirestore(firebaseApp));
   const verifyFirebaseIdToken: VerifyIdToken =
     deps.verifyFirebaseIdToken ??
     (async (token) => {
-      const decoded = await getAuth(firebaseApp).verifyIdToken(token);
+      const decoded = await firebaseAuth.verifyIdToken(token);
       return { uid: decoded.uid, name: decoded.name };
     });
+  const createFirebaseSessionCookie: CreateSessionCookie =
+    deps.createFirebaseSessionCookie ??
+    (async (idToken, expiresInMs) => {
+      const decoded = await firebaseAuth.verifyIdToken(idToken);
+      const signedInAtMs = decoded.auth_time * 1000;
+      if (!Number.isFinite(signedInAtMs) || Date.now() - signedInAtMs > 5 * 60 * 1000) {
+        throw new Error("recent_sign_in_required");
+      }
+      return firebaseAuth.createSessionCookie(idToken, { expiresIn: expiresInMs });
+    });
+  const verifyFirebaseSessionCookie: VerifySessionCookie =
+    deps.verifyFirebaseSessionCookie ??
+    (async (cookie) => {
+      const decoded = await firebaseAuth.verifySessionCookie(cookie, true);
+      return { uid: decoded.uid, name: decoded.name };
+    });
+
   app.use("/api/pledges", createPledgeRouter({ store: pledgeStore, verifyIdToken: verifyFirebaseIdToken }));
+  app.use(
+    "/api/session",
+    createSessionRouter({
+      createSessionCookie: createFirebaseSessionCookie,
+      verifySessionCookie: verifyFirebaseSessionCookie,
+      issuerOf,
+    }),
+  );
+  app.use(
+    "/api/profiles",
+    createChildProfileRouter({ store: childProfileStore, verifyIdToken: verifyFirebaseIdToken }),
+  );
 
   app.use(
     createOAuthRouter({
       config,
+      childProfileStore,
+      verifySessionCookie: verifyFirebaseSessionCookie,
       // A code lives briefly, so remembering redeemed ones for a few times
       // its TTL is enough to cover every code that could still be replayed.
       codeReplayCache: new ReplayCache(config.authorizationCodeTtlSeconds * 5 * 1000),

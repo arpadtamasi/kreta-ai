@@ -21,11 +21,11 @@ Astro static frontend on Firebase Hosting at `uzenofuzet.web.app`, with the exis
 
 ## Positioning
 
-The hosted service discards the KRÉTA password after login and keeps no per-user credential database. It seals the KRÉTA refresh token into the credential held by Claude. This is storage-free, not zero-knowledge: the password passes through the service during login and the operator owns the sealing key.
+The hosted service uses a verified Google account to store up to three child profiles: the child's real name, KRÉTA username, and institution code. It never stores the KRÉTA password. After login, it seals the KRÉTA refresh token into the credential held by Claude. The password is transient, not zero-knowledge: it passes through the service during login and the operator owns the sealing key.
 
 ## Operating Context
 
-Parents discover the service on the landing page, add `https://uzenofuzet.web.app/mcp` as a Claude custom connector, and complete the KRÉTA login inside the OAuth flow. The dashboard is a connection/setup and service-status surface; the current architecture cannot inspect a user's Claude-side connector state.
+Parents discover the service on the landing page, sign in with Google on the dashboard, save each child's non-password KRÉTA profile, add `https://uzenofuzet.web.app/mcp` as a Claude custom connector, and complete the KRÉTA login with the child's familiar name plus password. The dashboard is a profile/setup and service-status surface; the current architecture cannot inspect a user's Claude-side connector state.
 
 ## Capabilities and Constraints
 
@@ -34,8 +34,8 @@ Parents discover the service on the landing page, add `https://uzenofuzet.web.ap
 - The hosted service must not claim official affiliation with eKRÉTA Zrt.
 - The KRÉTA student API is undocumented and may change without notice.
 - The deploy currently needs one Cloud Run instance because refresh-token rotation and authorization-code replay protection are held in memory.
-- KRÉTA credentials remain storage-free. Separately, the public advocacy wall uses Firebase Authentication and Firestore: one optional public message per verified Google account, keyed by Firebase user ID.
-- A Google account does not have to be connected to a student. The dashboard is a setup/status surface, not a personalized student-data store.
+- KRÉTA passwords and tokens remain outside the profile database. Firestore stores the child name, KRÉTA username and institution code under the verified parent's Firebase user ID. The profile can be edited or deleted on the dashboard.
+- The public advocacy wall remains a separate opt-in record: one optional public message per verified Google account, keyed by Firebase user ID. A Google account can still use the wall without creating a child profile.
 - Public launch requires a separate privacy/legal review because the service processes minors' educational data.
 
 ## Brand Commitments

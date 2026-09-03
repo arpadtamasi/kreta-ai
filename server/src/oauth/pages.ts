@@ -1,38 +1,70 @@
 /**
- * The one page this service renders: the KRÉTA login form that /authorize
- * serves to the parent's browser.
- *
- * This form is the whole reason the product can have a one-click connect
- * UX without holding a password. It is also, structurally, a third-party
- * page asking for a school credential — so it says so, in plain Hungarian,
- * above the fold rather than in a footer. Do not soften that copy.
+ * The credential page served during OAuth. The parent is already identified
+ * by a Google-backed session, so the password manager sees each child as an
+ * ordinary username/password pair: real name plus transient KRÉTA password.
  */
 import { BRAND } from "../brand.js";
 import { escapeHtml } from "../htmlEscape.js";
+import type { ChildProfile } from "../profiles/store.js";
 
 export const LOGIN_PAGE_STYLE = `
-  :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  :root { color-scheme: light; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #14181f; background: #eef2f7; }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #f4f5f7; color: #14181f; }
-  main { width: min(100%, 34rem); background: #fff; border: 1px solid #dde1e7; border-radius: 18px; padding: clamp(24px, 5vw, 40px); box-shadow: 0 18px 46px -32px rgb(20 24 31 / 45%); }
-  .mark { margin: 0 0 4px; font-weight: 800; letter-spacing: -.03em; font-size: 1.05rem; }
-  .tagline { margin: 0 0 24px; color: #626b78; font-size: .9rem; }
-  h1 { margin: 0 0 12px; font-size: 1.5rem; letter-spacing: -.02em; }
-  p { line-height: 1.5; }
-  .notice { margin: 0 0 24px; padding: 14px 16px; border: 1px solid #f0d9a8; border-radius: 10px; background: #fdf7ea; font-size: .88rem; line-height: 1.5; color: #4a3c1d; }
-  .notice strong { display: block; margin-bottom: 4px; }
+  [hidden] { display: none !important; }
+  body { margin: 0; min-width: 320px; min-height: 100vh; padding: clamp(18px, 4vw, 48px); background: #eef2f7; }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: 6px; background: #073896; }
+  main { width: min(100%, 42rem); margin: 0 auto; overflow: hidden; border-radius: 18px; background: #fff; box-shadow: 0 24px 70px -42px rgb(8 23 43 / 60%); }
+  .head { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding: 26px clamp(22px, 5vw, 40px) 22px; border-bottom: 1px solid #d9e1ec; }
+  .book { position: relative; width: 38px; height: 38px; border: 2px solid #113f7a; }
+  .book::before, .book::after { content: ""; position: absolute; top: 8px; bottom: 8px; width: 11px; border: 1.5px solid #113f7a; }
+  .book::before { left: 6px; border-right: 0; transform: skewY(8deg); }
+  .book::after { right: 6px; border-left: 0; transform: skewY(-8deg); }
+  .mark { margin: 0; color: #113f7a; font-size: 1.03rem; font-weight: 850; letter-spacing: -.025em; }
+  .tagline { margin: 3px 0 0; color: #626b78; font-size: .78rem; }
+  .content { padding: clamp(24px, 5vw, 40px); }
+  h1 { margin: 0; max-width: 19ch; font-size: clamp(1.65rem, 5vw, 2.25rem); line-height: 1.12; letter-spacing: -.035em; text-wrap: balance; }
+  .intro { max-width: 58ch; margin: 12px 0 24px; color: #596577; font-size: .93rem; line-height: 1.6; }
+  .account { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 0 22px; padding: 12px 14px; border: 1px solid #d9e1ec; border-radius: 10px; background: #f6f8fb; }
+  .account p { margin: 0; color: #596577; font-size: .75rem; line-height: 1.45; }
+  .account strong { display: block; color: #14181f; font-size: .86rem; }
+  a { color: #073896; font-weight: 700; text-underline-offset: 3px; }
+  .account a { flex: 0 0 auto; font-size: .75rem; }
+  .notice { margin: 0 0 24px; padding: 15px 16px; border: 1px solid #e7c56b; border-radius: 10px; background: #fff9e8; color: #493b16; font-size: .84rem; line-height: 1.55; }
+  .notice strong { display: block; margin-bottom: 4px; color: #2f260d; }
+  .error { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #e5a69d; border-radius: 10px; background: #fff0ee; color: #84261d; font-size: .86rem; line-height: 1.5; }
   fieldset { margin: 0 0 16px; padding: 18px; border: 1px solid #dde1e7; border-radius: 12px; }
-  legend { padding: 0 6px; font-weight: 700; font-size: .85rem; color: #404854; }
-  label { display: block; margin-bottom: 12px; font-size: .85rem; font-weight: 600; color: #404854; }
-  label:last-child { margin-bottom: 0; }
-  input { display: block; width: 100%; margin-top: 5px; min-height: 42px; padding: 0 12px; border: 1px solid #c3cad4; border-radius: 8px; font: inherit; background: #fff; color: inherit; }
-  input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid rgb(26 115 232 / 38%); outline-offset: 2px; }
-  .hint { font-weight: 400; color: #77808d; }
-  button { min-height: 44px; border: 0; border-radius: 8px; font: inherit; font-weight: 700; cursor: pointer; }
-  .primary { width: 100%; background: #1a56db; color: #fff; }
-  .secondary { width: 100%; margin-bottom: 16px; background: #eef1f6; color: #2a3140; }
-  .error { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #f0bcb6; border-radius: 10px; background: #fdeeec; color: #8c221a; font-size: .9rem; line-height: 1.5; }
-  footer { margin-top: 24px; color: #77808d; font-size: .75rem; line-height: 1.5; }
+  legend { padding: 0 7px; color: #113f7a; font-size: .78rem; font-weight: 800; }
+  label { display: block; color: #303946; font-size: .82rem; font-weight: 750; }
+  label + label { margin-top: 15px; }
+  .hint { display: block; margin-top: 3px; color: #667387; font-size: .72rem; font-weight: 450; line-height: 1.45; }
+  .password-wrap { position: relative; display: block; }
+  input { display: block; width: 100%; min-height: 46px; margin-top: 7px; padding: 0 12px; border: 1px solid #b8c4d2; border-radius: 8px; color: #14181f; background: #fff; font: inherit; caret-color: #073896; }
+  input[type="password"], input.password-visible { padding-right: 78px; }
+  input::placeholder { color: #69778a; opacity: 1; }
+  input:hover { border-color: #7f8fa4; }
+  input:focus-visible, button:focus-visible, a:focus-visible { outline: 3px solid #d64a35; outline-offset: 2px; }
+  .reveal { position: absolute; right: 1px; bottom: 1px; min-height: 44px; padding: 0 10px; border: 0; border-radius: 7px; color: #113f7a; background: #eef2f7; font-size: .7rem; font-weight: 800; }
+  button { min-height: 46px; border: 0; border-radius: 8px; font: inherit; font-weight: 800; cursor: pointer; }
+  button:disabled { cursor: wait; opacity: .65; }
+  .primary { width: 100%; color: #fff; background: #073896; }
+  .primary:hover { background: #113f7a; }
+  .primary:active { background: #0b121c; }
+  .secondary { width: 100%; margin-bottom: 16px; color: #113f7a; background: #eaf0f7; }
+  .secondary:hover, .reveal:hover { background: #dce6f2; }
+  .form-note { margin: 14px 0 0; color: #69778a; font-size: .72rem; line-height: 1.5; text-align: center; }
+  footer { padding: 18px clamp(22px, 5vw, 40px) 22px; border-top: 1px solid #d9e1ec; color: #69778a; background: #f6f8fb; font-size: .7rem; line-height: 1.55; }
+  ::selection { color: #fff; background: #073896; }
+  @media (max-width: 480px) {
+    body { padding: 6px 0 0; background: #fff; }
+    body::before { height: 5px; }
+    main { border-radius: 0; box-shadow: none; }
+    .head { padding-top: 23px; }
+    .account { align-items: flex-start; flex-direction: column; }
+    fieldset { padding: 15px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
+  }
 `;
 
 export const LOGIN_PAGE_SCRIPT = `
@@ -46,21 +78,46 @@ export const LOGIN_PAGE_SCRIPT = `
     if (!document.querySelector("fieldset.extra[hidden]")) add.hidden = true;
     next.querySelector("input")?.focus();
   });
+
+  for (const toggle of document.querySelectorAll("[data-password-toggle]")) {
+    toggle.addEventListener("click", () => {
+      const input = document.getElementById(toggle.dataset.passwordToggle);
+      if (!(input instanceof HTMLInputElement)) return;
+      const visible = input.type === "text";
+      input.type = visible ? "password" : "text";
+      input.classList.toggle("password-visible", !visible);
+      toggle.textContent = visible ? "Mutasd" : "Rejtsd el";
+      toggle.setAttribute("aria-pressed", String(!visible));
+    });
+  }
+
+  document.querySelector("form")?.addEventListener("submit", (event) => {
+    const button = event.currentTarget.querySelector("button[type=submit]");
+    if (!(button instanceof HTMLButtonElement)) return;
+    button.disabled = true;
+    button.textContent = "Kapcsolódás…";
+  });
 `;
 
-function childFieldset(index: number, legend: string): string {
+function childFieldset(index: number, profiles: ChildProfile[], selectedName?: string): string {
   const optional = index > 0;
+  const visible = !optional || Boolean(selectedName);
+  const value = selectedName ?? (index === 0 && profiles.length === 1 ? profiles[0]?.childName : "") ?? "";
+  const suffix = index + 1;
+  const legend = index === 0 ? "Gyerek" : `${suffix}. gyerek`;
   return `
-<fieldset${optional ? ' class="extra" hidden disabled' : ""}>
+<fieldset${optional ? ' class="extra"' : ""}${visible ? "" : " hidden disabled"}>
   <legend>${escapeHtml(legend)}</legend>
-  <label>Név <span class="hint">— ahogy Claude-ban hivatkozol rá</span>
-    <input name="label" type="text" autocomplete="off" ${optional ? "" : "required"} placeholder="pl. Lilla"></label>
-  <label>KRÉTA felhasználónév
-    <input name="username" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" ${optional ? "" : "required"}></label>
-  <label>KRÉTA jelszó
-    <input name="password" type="password" autocomplete="off" ${optional ? "" : "required"}></label>
-  <label>Intézménykód <span class="hint">— pl. klik123456 vagy https://klik123456.e-kreta.hu</span>
-    <input name="instituteCode" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" ${optional ? "" : "required"}></label>
+  <label for="child-${suffix}">A gyerek rendes neve
+    <span class="hint">Ezen a néven mentetted a kapcsolati pulton.</span>
+    <input id="child-${suffix}" name="childName" type="text" list="child-profiles" autocomplete="section-child-${suffix} username" ${visible ? "required" : ""} value="${escapeHtml(value)}" placeholder="Válassz a mentett nevek közül"></label>
+  <label for="password-${suffix}">KRÉTA-jelszó
+    <span class="hint">Ezt nem mentjük el; csak a KRÉTA-belépéshez használjuk.</span>
+  </label>
+  <span class="password-wrap">
+    <input id="password-${suffix}" name="password" type="password" autocomplete="section-child-${suffix} current-password" ${visible ? "required" : ""}>
+    <button class="reveal" type="button" data-password-toggle="password-${suffix}" aria-pressed="false">Mutasd</button>
+  </span>
 </fieldset>`;
 }
 
@@ -68,14 +125,26 @@ export interface LoginPageParams {
   /** Opaque, sealed continuation of the in-flight authorization request. */
   request: string;
   clientName: string | undefined;
+  accountName?: string | undefined;
+  manageProfilesUrl?: string | undefined;
+  profiles: ChildProfile[];
+  selectedNames?: string[] | undefined;
   error?: string | undefined;
 }
 
 export function renderLoginPage(params: LoginPageParams): string {
   const client = params.clientName?.trim() || "egy MCP-kliens";
+  const account = params.accountName?.replace(/\s+/gu, " ").trim() || "Google-fiókkal belépve";
   const error = params.error
     ? `<p class="error" role="alert">${escapeHtml(params.error)}</p>`
     : "";
+  const count = Math.min(params.profiles.length, 3);
+  const fieldsets = Array.from({ length: count }, (_, index) =>
+    childFieldset(index, params.profiles, params.selectedNames?.[index]),
+  ).join("");
+  const options = params.profiles
+    .map((profile) => `<option value="${escapeHtml(profile.childName)}"></option>`)
+    .join("");
 
   return `<!doctype html>
 <html lang="hu">
@@ -88,29 +157,32 @@ export function renderLoginPage(params: LoginPageParams): string {
 </head>
 <body>
 <main>
-<p class="mark">${escapeHtml(BRAND.name)}</p>
-<p class="tagline">${escapeHtml(BRAND.tagline)}</p>
-<h1>Csatlakoztatás: ${escapeHtml(client)}</h1>
-${error}
-<p class="notice">
-  <strong>Ez nem a KRÉTA oldala.</strong>
-  A ${escapeHtml(BRAND.name)} szervere jelentkezik be helyetted a KRÉTA-ba, és utána
-  csak a kapott belépési jogosultságot tartja meg — <b>a jelszavadat nem tárolja
-  sehol</b>, se adatbázisban, se naplóban. Ha ez nem elég neked, ne itt add meg:
-  a projekt helyben futó változata a saját gépeden marad.
-</p>
-<form method="post" action="/authorize/login" autocomplete="off">
-  <input type="hidden" name="request" value="${escapeHtml(params.request)}">
-  ${childFieldset(0, "Gyerek")}
-  ${childFieldset(1, "2. gyerek")}
-  ${childFieldset(2, "3. gyerek")}
-  <button type="button" class="secondary" id="add">+ Még egy gyerek</button>
-  <button type="submit" class="primary">Csatlakoztatás</button>
-</form>
-<footer>
-  ${escapeHtml(BRAND.disclaimer)}
-  Csak olvasás: a kapcsolat semmit nem módosít és nem töröl a KRÉTA-ban.
-</footer>
+  <header class="head">
+    <span class="book" aria-hidden="true"></span>
+    <div><p class="mark">${escapeHtml(BRAND.name)}</p><p class="tagline">${escapeHtml(BRAND.tagline)}</p></div>
+  </header>
+  <div class="content">
+    <h1>${escapeHtml(client)} csatlakoztatása</h1>
+    <p class="intro">Válaszd ki, melyik gyerek KRÉTA-adatait olvashatja Claude, majd add meg a hozzá tartozó jelszót.</p>
+    <div class="account">
+      <p><strong>${escapeHtml(account)}</strong>Ez a Google-fiók adja a mentett gyerekprofilokat.</p>
+      <a href="${escapeHtml(params.manageProfilesUrl ?? "/dashboard#gyerekek")}">Profilok kezelése</a>
+    </div>
+    ${error}
+    <p class="notice">
+      <strong>A jelszó átmegy az Üzenőfüzet szerverén.</strong>
+      A KRÉTA nem ad más belépési lehetőséget külső alkalmazásoknak. A jelszót nem tároljuk és nem naplózzuk; a belépés után eldobjuk.
+    </p>
+    <form method="post" action="/authorize/login" autocomplete="on">
+      <input type="hidden" name="request" value="${escapeHtml(params.request)}">
+      <datalist id="child-profiles">${options}</datalist>
+      ${fieldsets}
+      ${count > 1 ? '<button type="button" class="secondary" id="add">+ Még egy gyerek</button>' : ""}
+      <button type="submit" class="primary">Kapcsolódás Claude-hoz</button>
+      <p class="form-note">A KRÉTA-felhasználónevet és az intézményt a mentett profilból vesszük elő.</p>
+    </form>
+  </div>
+  <footer>${escapeHtml(BRAND.disclaimer)} Csak olvasás: a kapcsolat semmit nem módosít és nem töröl a KRÉTA-ban.</footer>
 </main>
 <script src="/authorize.js" defer></script>
 </body>
@@ -130,10 +202,9 @@ export function renderErrorPage(title: string, detail: string): string {
 </head>
 <body>
 <main>
-<p class="mark">${escapeHtml(BRAND.name)}</p>
-<h1>${escapeHtml(title)}</h1>
-<p>${escapeHtml(detail)}</p>
-<footer>${escapeHtml(BRAND.disclaimer)}</footer>
+  <header class="head"><span class="book" aria-hidden="true"></span><div><p class="mark">${escapeHtml(BRAND.name)}</p></div></header>
+  <div class="content"><h1>${escapeHtml(title)}</h1><p class="intro">${escapeHtml(detail)}</p><a href="/dashboard">Vissza a kapcsolati pulthoz</a></div>
+  <footer>${escapeHtml(BRAND.disclaimer)}</footer>
 </main>
 </body>
 </html>`;

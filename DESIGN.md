@@ -138,7 +138,7 @@ components:
     typography: "{typography.credential-body}"
     rounded: "{rounded.credential-sheet}"
     padding: "clamp(24px, 5vw, 40px)"
-    width: "min(100%, 34rem)"
+    width: "min(100%, 42rem)"
 ---
 
 # Design System: Üzenőfüzet
@@ -241,7 +241,7 @@ The page inset is fluid from 1.25rem to 4.5rem. Major bands normally use 4–9re
 
 Ledger layouts align information with thin 1px washed-cobalt rules and stronger 2px cobalt starts. The transcript's 28px grid, red margin rule, top ruler, and four-column lesson rows make it the signature spatial component. On mobile, lesson topics wrap into a third-column continuation; registry rows and three-column prompt/value bands become stacked records instead of horizontally compressed tables.
 
-The `/authorize` route is intentionally separate: a viewport-centered sheet capped at 34rem, with 24px outer padding and 24–40px inner padding. Additional child fieldsets disclose progressively and remain in the single-column form flow.
+The `/authorize` route is intentionally separate: a viewport-centered sheet capped at 42rem, with 18–48px outer padding and 24–40px inner padding. It displays the active Google account and turns each saved child into a familiar name/password pair. Additional child fieldsets disclose progressively and remain in the single-column form flow.
 
 ### Named Rules
 
@@ -320,7 +320,7 @@ The Google-authenticated public wall is a dark, two-register composition: advoca
 
 ### Credential Sheet
 
-The backend-served form uses the local credential tokens rather than the Astro site's fonts and square geometry. It is a centered, rounded white sheet containing an explicit amber trust notice, rounded fieldsets, up to three progressively disclosed child groups, a muted secondary action, a full-width blue submit action, and a compact disclaimer. Preserve this as a contained operational exception; the warning remains above the fields.
+The backend-served form uses the local credential tokens rather than the Astro site's fonts and square geometry. It is a centered, rounded white sheet containing the active Google account, an explicit amber trust notice, rounded fieldsets, up to three progressively disclosed name/password pairs, a muted secondary action, a full-width blue submit action, and a compact disclaimer. Preserve this as a contained operational exception; the warning remains above the fields.
 
 ### Authored Marks
 
