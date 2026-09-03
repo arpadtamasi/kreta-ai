@@ -1,4 +1,4 @@
-# Padtárs — hosztolt KRÉTA MCP-szerver
+# Diri — hosztolt KRÉTA MCP-szerver
 
 Custom Connector Claude-hoz, ami a KRÉTA tanulói adatokat **csak olvasásra**
 teszi elérhetővé — és **nem tárol semmilyen hitelesítő adatot**: se jelszót,
@@ -90,13 +90,13 @@ npm test
 Cloud Runra:
 
 ```bash
-gcloud run deploy padtars \
+gcloud run deploy diri \
   --source . \
   --region europe-west1 \
   --allow-unauthenticated \
   --max-instances=1 \
   --set-env-vars OAUTH_ISSUER=https://<a-te-domained> \
-  --set-secrets TOKEN_SEALING_KEY=padtars-sealing-key:latest
+  --set-secrets TOKEN_SEALING_KEY=diri-sealing-key:latest
 ```
 
 A `--max-instances=1` **nem véletlen**: két folyamat közül csak az egyik

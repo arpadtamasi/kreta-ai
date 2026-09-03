@@ -1,5 +1,5 @@
 {
-  "name": "padtars-server",
+  "name": "diri-server",
   "version": "0.1.0",
   "private": true,
   "description": "Hosted, read-only KRÉTA MCP server: OAuth 2.1 AS whose /authorize is the KRÉTA login, with sealed, storage-free tokens.",
