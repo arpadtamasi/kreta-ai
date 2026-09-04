@@ -53,8 +53,8 @@ const calls = [
 
     <section class="facts" aria-label="Összefoglaló">
       <article><span>01</span><h2>Csak olvasás</h2><p>Az alkalmazás kizárólag <code>GET</code> kéréseket küld a Classroom API-nak. Nem ad be feladatot, nem ír és nem módosít jegyet, nem töröl semmit.</p></article>
-      <article><span>02</span><h2>Gyerekenként külön engedély</h2><p>A hozzáférést a tanuló adja meg a Google saját oldalán, a saját iskolai fiókjával. A szülő fiókja csak a szülői pultot védi, a tanuló adataihoz nem ad jogot.</p></article>
-      <article><span>03</span><h2>Bármikor visszavonható</h2><p>Az engedély az Admin konzolban letiltható, a tanuló fiókjából visszavonható, a szülő pedig a pulton törölheti a kapcsolatot.</p></article>
+      <article><span>02</span><h2>Gyerekenként külön engedély</h2><p>A hozzáférést a tanuló adja meg a Google saját oldalán, a saját iskolai fiókjával. A szülő fiókja csak az Üzenőfüzet főoldalát védi, a tanuló adataihoz nem ad jogot.</p></article>
+      <article><span>03</span><h2>Bármikor visszavonható</h2><p>Az engedély az Admin konzolban letiltható, a tanuló fiókjából visszavonható, a szülő pedig az Üzenőfüzet főoldalán törölheti a kapcsolatot.</p></article>
     </section>
 
     <section class="block identity" aria-labelledby="identity-title">
@@ -70,7 +70,7 @@ const calls = [
         </dl>
         <div class="actions">
           <button data-copy="approval" data-done="A kliensazonosítót és a kért hozzáféréseket a vágólapra másoltuk." type="button">Adminadatok másolása</button>
-          <a href="https://support.google.com/a/answer/7281227?hl=hu" rel="noreferrer">Google rendszergazdai útmutató</a>
+          <a href="https://support.google.com/a/answer/7281227?hl=hu" target="_blank" rel="noreferrer noopener">Google rendszergazdai útmutató</a>
         </div>
         <p class="copy-status" id="admin-copy-status" role="status" aria-live="polite"></p>
       </div>
@@ -155,7 +155,7 @@ const calls = [
       <h2 id="data-title">Mi kerül tárolásra</h2>
       <div class="block-body">
         <p>A Google által kiadott refresh tokent lejáró AES-256-GCM titkosítással a szülő privát profiljában tároljuk; a lezáró kulcsot a Google Secret Manager őrzi. A Claude-nak kiadott token nem tartalmaz Google-hitelesítő adatot, csak profilhivatkozást.</p>
-        <p>A szülői pulton a kapcsolatból csak a csatlakoztatott iskolai e-mail-cím és az állapot látszik. A szolgáltatás Google Cloud Runon fut az EU-ban (europe-west1). A teljes leírás az <a href="/adatkezeles">adatkezelési tájékoztatóban</a> és a <a href="/hogy-mukodik">Hogy működik?</a> oldalon olvasható.</p>
+        <p>Az Üzenőfüzet főoldalán a kapcsolatból csak a csatlakoztatott iskolai e-mail-cím és az állapot látszik. A szolgáltatás Google Cloud Runon fut az EU-ban (europe-west1). A teljes leírás az <a href="/adatkezeles">adatkezelési tájékoztatóban</a> és a <a href="/hogy-mukodik">Hogy működik?</a> oldalon olvasható.</p>
       </div>
     </section>
 
@@ -164,8 +164,8 @@ const calls = [
       <div class="block-body">
         <ul class="no-list">
           <li><strong>Az Admin konzolból:</strong> az Alkalmazáshozzáférés kezelése listán a kliensazonosítót blokkolhatod; ettől a további lekérdezések azonnal elakadnak.</li>
-          <li><strong>A tanuló fiókjából:</strong> a <a href="https://myaccount.google.com/permissions" rel="noreferrer">Google-fiók engedélyeinél</a> a hozzáférés bármikor visszavonható.</li>
-          <li><strong>A szülői pultról:</strong> a kapcsolat törlésekor megkíséreljük a Google-engedély visszavonását, és töröljük a helyi titkosított tokent.</li>
+          <li><strong>A tanuló fiókjából:</strong> a <a href="https://myaccount.google.com/permissions" target="_blank" rel="noreferrer noopener">Google-fiók engedélyeinél</a> a hozzáférés bármikor visszavonható.</li>
+          <li><strong>Az Üzenőfüzet főoldaláról:</strong> a kapcsolat törlésekor megkíséreljük a Google-engedély visszavonását, és töröljük a helyi titkosított tokent.</li>
         </ul>
       </div>
     </section>
@@ -174,7 +174,7 @@ const calls = [
       <h2 id="contact-title">Kérdés esetén</h2>
       <div class="block-body">
         <p>Az Üzenőfüzet független, nyílt forrású projekt: nem áll kapcsolatban az eKRÉTA Zrt.-vel, és nem hivatalos KRÉTA-termék. A teljes forráskód — a Classroom-hívásokkal együtt — átnézhető, kérdés vagy kifogás pedig ott jelezhető.</p>
-        <p class="actions"><a class="button" href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">Forráskód a GitHubon</a></p>
+        <p class="actions"><a class="button" href="https://github.com/arpadtamasi/uzenofuzet" target="_blank" rel="noreferrer noopener">Forráskód a GitHubon</a></p>
       </div>
     </section>
   </div>

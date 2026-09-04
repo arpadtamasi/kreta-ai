@@ -26,6 +26,7 @@ export const LOGIN_PAGE_STYLE = `
   .account a { flex: 0 0 auto; font-size: .75rem; }
   .notice { margin: 0 0 24px; padding: 15px 16px; border: 1px solid #e7c56b; border-radius: 10px; background: #fff9e8; color: #493b16; font-size: .84rem; line-height: 1.55; }
   .notice strong { display: block; margin-bottom: 4px; color: #2f260d; }
+  .notice-link { display: flex; min-height: 44px; align-items: center; margin: 6px 0 0; }
   .error { margin: 0 0 20px; padding: 14px 16px; border: 1px solid #e5a69d; border-radius: 10px; background: #fff0ee; color: #84261d; font-size: .86rem; line-height: 1.5; }
   fieldset { margin: 0 0 16px; padding: 18px; border: 1px solid #dde1e7; border-radius: 12px; }
   legend { padding: 0 7px; color: #113f7a; font-size: .78rem; font-weight: 800; }
@@ -107,7 +108,7 @@ export function renderConsentPage(input: {
     <h1>Kapcsolódhat a ${escapeHtml(input.clientName)}?</h1>
     <p class="intro">Az Üzenőfüzet kizárólag olvasási hozzáférést ad a már összekapcsolt gyerekek iskolai adataihoz.</p>
     ${input.parentName ? `<div class="account"><p>Bejelentkezve<strong>${escapeHtml(input.parentName)}</strong></p></div>` : ""}
-    <div class="notice"><strong>Érintett gyerekprofilok</strong>${children}</div>
+    <div class="notice"><strong>Érintett gyerekprofilok</strong>${children}<p class="notice-link"><a href="/hogy-mukodik">Mit kap meg Claude, és mit nem?</a></p></div>
     <form method="post" action="/authorize">
       <input type="hidden" name="authorization_request" value="${escapeHtml(input.authorizationRequest)}">
       <button class="secondary" type="submit" name="decision" value="deny">Mégse</button>

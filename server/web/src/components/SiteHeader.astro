@@ -25,6 +25,9 @@ const pathname = Astro.url.pathname;
   nav { display: flex; align-items: center; gap: clamp(1rem, 3vw, 2.75rem); }
   .site-header :global(.brand) { margin-right: clamp(1.5rem, 3vw, 3.2rem); padding: .72rem .9rem; border: 2px solid var(--blue); }
   nav a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
     color: var(--ink-muted);
     font-size: .9rem;
     font-weight: 700;
