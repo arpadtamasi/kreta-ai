@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { randomBytes } from "node:crypto";
 import { test } from "node:test";
-import { createConnection, openConnectionCredential } from "../src/profiles/connection.js";
+import { createConnection, nextRefreshDelayMs, openConnectionCredential } from "../src/profiles/connection.js";
 import { refreshDueConnections } from "../src/profiles/refresher.js";
 import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore, ClassroomConnection } from "../src/profiles/store.js";
 import { Sealer } from "../src/seal.js";
@@ -80,7 +80,21 @@ test("a due keep-alive connection rotates and stores the new encrypted token", a
   assert.equal(store.connection?.version, 3);
   assert.equal(store.connection?.state, "active");
   assert.equal(openConnectionCredential(sealer, store.connection!, now).refreshToken, "refresh-new");
-  assert.equal(Date.parse(store.connection!.nextRefreshAt!), now + 25 * 60_000);
+  const scheduled = Date.parse(store.connection!.nextRefreshAt!) - now;
+  assert.ok(
+    scheduled > 21 * 60_000 && scheduled <= 25 * 60_000,
+    `the next refresh stays under the 25-minute ceiling, jittered: ${scheduled}ms`,
+  );
+});
+
+test("refreshes are spread out, so connections made together do not pile onto one run", () => {
+  const delays = new Set([0.01, 0.25, 0.5, 0.99].map((value) => nextRefreshDelayMs(() => value)));
+  assert.equal(delays.size, 4, "different draws must land on different minutes");
+  for (const delay of delays) {
+    assert.ok(delay > 21 * 60_000, "never so early that the rotation burns tokens for nothing");
+    assert.ok(delay <= 25 * 60_000, "never later than the current ceiling: the access token lives 30 minutes");
+  }
+  assert.equal(nextRefreshDelayMs(() => 0), 25 * 60_000, "an unjittered draw keeps the documented interval");
 });
 
 test("two overlapping workers never present the same single-use refresh token twice", async () => {

@@ -35,7 +35,7 @@ export function choiceFor(profile?: Profile): KeepAliveChoice {
 
 export function describeChoice(choice: KeepAliveChoice, from = new Date()): string {
   if (choice === "trial") return "A kapcsolat 30 perc múlva magától Offline lesz.";
-  if (choice === "none") return "Amíg le nem állítod, 25 percenként megújítjuk a kapcsolatot.";
+  if (choice === "none") return "Amíg le nem állítod, legfeljebb 25 percenként megújítjuk a kapcsolatot.";
   const deadline = deadlineFor(choice, from)!;
-  return `${new Date(deadline).toLocaleDateString("hu-HU")}-ig tartjuk online, 25 percenként megújítva.`;
+  return `${new Date(deadline).toLocaleDateString("hu-HU")}-ig tartjuk online, legfeljebb 25 percenként megújítva.`;
 }

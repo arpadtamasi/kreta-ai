@@ -40,7 +40,7 @@ használható. Ezért két üzemmód van:
 
 - **30 perces próba:** nincs háttérfrissítés, lejáratkor a titkosított
   kapcsolat is törlődik.
-- **Online tartás:** a szülő kifejezett jelölésére a szerver 25 percenként
+- **Online tartás:** a szülő kifejezett jelölésére a szerver legfeljebb 25 percenként (szórva)
   frissít, és az új tokenpárt verzióellenőrzéssel visszaírja. Opcionális
   végdátum adható.
 
@@ -216,7 +216,7 @@ redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
 | `src/pledges/store.ts` | az üzenőfal Firestore-adattára |
 | `src/profiles/router.ts` | a Google-fiókhoz kötött gyerekprofilok API-ja |
 | `src/profiles/store.ts` | a privát profilok, titkosított kapcsolatok és frissítési sor Firestore-adattára |
-| `src/profiles/refresher.ts` | 25 perces tokenrotáció, határidő és 30 perces próbatakarítás |
+| `src/profiles/refresher.ts` | Szórt, legfeljebb 25 perces tokenrotáció, határidő és 30 perces próbatakarítás |
 | `src/auth/router.ts` | rövid Google ID tokenből `HttpOnly` OAuth-munkamenet |
 | `src/institutes/` | hitelesített adapter az eKRÉTA intézménykereső HTML-válaszához |
 | `web/` | Astro landing, dashboard és tájékoztató oldalak |

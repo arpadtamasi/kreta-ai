@@ -19,6 +19,7 @@ export async function refreshDueConnections(options: {
   refreshImpl?: (refreshToken: string, fetchImpl?: typeof fetch) => Promise<KretaTokens>;
   now?: number;
   limit?: number;
+  random?: () => number;
 }): Promise<RefreshConnectionsResult> {
   const now = options.now ?? Date.now();
   const due = await options.store.listDueConnections(new Date(now), options.limit ?? 40);
@@ -62,7 +63,7 @@ export async function refreshDueConnections(options: {
 
     try {
       const tokens = await doRefresh(credential.refreshToken, options.fetchImpl);
-      const next = renewConnection(options.sealer, claimed, tokens, now);
+      const next = renewConnection(options.sealer, claimed, tokens, now, options.random);
       if (await options.store.updateConnection(uid, profile.id, claimed.version, next)) {
         result.refreshed += 1;
       } else {

@@ -4,11 +4,20 @@ import type { ChildConnection, ConnectionMode } from "./store.js";
 
 export const TRIAL_CONNECTION_MS = 30 * 60 * 1000;
 export const KEEP_ALIVE_REFRESH_MS = 25 * 60 * 1000;
+// A frissítéseket szórjuk, mert az ötpercenkénti job különben minden együtt
+// létrehozott kapcsolatot ugyanabban a percben tolna rá a KRÉTA-ra. A szórás
+// csak korábbra húz: a 30 perces access token miatt későbbre nem tolhatunk.
+export const KEEP_ALIVE_JITTER_MS = 4 * 60 * 1000;
 // Every stored credential expires by itself if the refresher stops. The
 // 60-minute window tolerates one missed 25-minute run without turning the
 // opt-in storage into an indefinitely readable database secret.
 export const KEEP_ALIVE_CREDENTIAL_MS = 60 * 60 * 1000;
 export const REFRESH_RETRY_MS = 5 * 60 * 1000;
+
+/** 21–25 perc: mindig a 25 perces határ alatt, de nem mindig ugyanakkor. */
+export function nextRefreshDelayMs(random: () => number = Math.random): number {
+  return KEEP_ALIVE_REFRESH_MS - Math.floor(random() * KEEP_ALIVE_JITTER_MS);
+}
 
 export interface StoredKretaCredential {
   accessToken: string;
@@ -45,6 +54,7 @@ export function createConnection(
   mode: ConnectionMode,
   keepAliveUntil?: string,
   now: number = Date.now(),
+  random: () => number = Math.random,
 ): ChildConnection {
   const expiresAt = mode === "keep_alive"
     ? now + KEEP_ALIVE_CREDENTIAL_MS
@@ -58,7 +68,7 @@ export function createConnection(
     refreshedAt: timestamp,
     expiresAt: new Date(expiresAt).toISOString(),
     ...(mode === "keep_alive"
-      ? { nextRefreshAt: new Date(now + KEEP_ALIVE_REFRESH_MS).toISOString() }
+      ? { nextRefreshAt: new Date(now + nextRefreshDelayMs(random)).toISOString() }
       : {}),
     ...(mode === "keep_alive" && keepAliveUntil ? { keepAliveUntil } : {}),
     version: 1,
@@ -71,6 +81,7 @@ export function renewConnection(
   previous: ChildConnection,
   tokens: KretaTokens,
   now: number = Date.now(),
+  random: () => number = Math.random,
 ): ChildConnection {
   const expiresAt = previous.mode === "keep_alive"
     ? now + KEEP_ALIVE_CREDENTIAL_MS
@@ -83,7 +94,7 @@ export function renewConnection(
     refreshedAt: new Date(now).toISOString(),
     expiresAt: new Date(expiresAt).toISOString(),
     ...(previous.mode === "keep_alive"
-      ? { nextRefreshAt: new Date(now + KEEP_ALIVE_REFRESH_MS).toISOString() }
+      ? { nextRefreshAt: new Date(now + nextRefreshDelayMs(random)).toISOString() }
       : {}),
     ...(previous.keepAliveUntil ? { keepAliveUntil: previous.keepAliveUntil } : {}),
     version: previous.version + 1,

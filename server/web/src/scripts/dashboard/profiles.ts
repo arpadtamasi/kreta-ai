@@ -73,7 +73,7 @@ export function kretaDetail(profile: Profile): string {
       ? "A kapcsolat lejárt. Add meg újra a KRÉTA-jelszót az online kapcsoláshoz."
       : "Nincs élő kapcsolat. Add meg a KRÉTA-jelszót az online kapcsoláshoz.";
   }
-  const parts = [profile.connection.keepAlive ? "25 percenként frissül" : "30 perces próba"];
+  const parts = [profile.connection.keepAlive ? "kb. 25 percenként frissül" : "30 perces próba"];
   if (profile.connection.keepAlive && profile.connection.keepAliveUntil) {
     parts.push(`${day(profile.connection.keepAliveUntil)}-ig tartjuk online`);
   }
