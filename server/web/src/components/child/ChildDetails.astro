@@ -3,8 +3,6 @@
 ---
 
 <section class="details" id="child-details" hidden>
-  <button class="edit-profile" id="child-edit" type="button">Profil szerkesztése</button>
-
   <div class="sources">
     <div class="tabs" role="tablist" aria-label="Csatlakozók">
       <button class="tab" id="tab-kreta" type="button" role="tab" aria-controls="panel-kreta" aria-selected="true">
@@ -23,7 +21,11 @@
         <div><dt>Intézmény</dt><dd id="child-institute"></dd></div>
       </dl>
       <p class="detail" id="child-kreta-detail"></p>
-      <button class="source-action" id="child-kreta-connect" type="button">Online kapcsolás</button>
+      <div class="panel-actions">
+        <button class="source-action" id="child-kreta-connect" type="button">Online kapcsolás</button>
+        <button class="edit-profile" id="child-edit" type="button">Adatok módosítása</button>
+      </div>
+      <p class="hint">A név, a KRÉTA-felhasználónév, az intézmény és az online tartás egy űrlapon szerkeszthető. A KRÉTA-jelszót minden mentéskor újra be kell írni, mert nem tároljuk.</p>
 
       <div class="source-danger" id="danger-kreta">
         <div class="danger-head">
@@ -107,9 +109,11 @@
 </section>
 
 <style>
+  .panel-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+
   .edit-profile {
-    min-height: 2.6rem;
-    margin: .9rem 0 1.4rem;
+    min-height: 2.9rem;
+    margin-top: .9rem;
     padding: .45rem 1rem;
     border: 1px solid var(--blue);
     border-radius: 0;
@@ -236,6 +240,8 @@
 
   @media (max-width: 620px) {
     .facts > div { grid-template-columns: 1fr; gap: .2rem; }
+    .panel-actions { align-items: stretch; flex-direction: column; }
+    .panel-actions button { width: 100%; }
     .tab { padding: .55rem .7rem; }
     .tab-name { font-size: .76rem; }
     .danger-head { align-items: stretch; flex-direction: column; gap: .7rem; }

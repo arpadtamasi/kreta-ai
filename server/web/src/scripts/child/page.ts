@@ -191,7 +191,7 @@ export function startChildPage(): void {
     form.dataset.mode = mode;
     // Új gyereknél az oldal címe már kimondja, mi történik; ne ismételjük meg.
     formTitle.hidden = mode === "new";
-    formTitle.textContent = mode === "connect" ? "Online kapcsolás" : "Profil szerkesztése";
+    formTitle.textContent = mode === "connect" ? "Online kapcsolás" : "Profil és KRÉTA-belépés";
     formIntro.textContent = mode === "connect"
       ? "A KRÉTA-jelszó csak a kapcsolat létrehozásához kell; nem mentjük el."
       : "A KRÉTA-jelszó csak a kapcsolat létrehozásához kell; nem mentjük el. A profil a te Google-fiókodhoz tartozik.";

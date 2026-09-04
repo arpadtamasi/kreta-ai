@@ -27,7 +27,12 @@ test("the page carries the identifiers, both connections and the editor", () => 
   assert.match(details, /id="child-institute"/);
   assert.match(details, /id="child-kreta-connect"/);
   assert.match(details, /id="child-classroom-connect"/);
-  assert.match(details, /id="child-edit"[^>]*>Profil szerkesztése</);
+  assert.match(details, /id="child-edit"[^>]*>Adatok módosítása</);
+  assert.ok(
+    details.indexOf('id="child-edit"') > details.indexOf('id="panel-kreta"') &&
+      details.indexOf('id="child-edit"') < details.indexOf('id="panel-classroom"'),
+    "the editor asks for the KRÉTA password on every save, so it belongs to the KRÉTA tab",
+  );
   assert.match(pageModule, /kretaDetail\(profile\)/);
   assert.match(pageModule, /classroomDetail\(profile\)/);
   assert.match(pageModule, /openEditor\("connect"\)/);
