@@ -49,8 +49,8 @@ function firstString(value: unknown): string | undefined {
   return undefined;
 }
 
-function dashboardRedirect(returnTo: string): string {
-  return `/dashboard?${new URLSearchParams({ return_to: returnTo }).toString()}#gyerekek`;
+function setupRedirect(returnTo: string): string {
+  return `/?${new URLSearchParams({ return_to: returnTo }).toString()}#gyerekek`;
 }
 
 export function createOAuthRouter(deps: OAuthRouterDeps): Router {
@@ -175,7 +175,7 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
         if (!sessionCookie) throw new Error("missing_session");
         user = await deps.verifySessionCookie(sessionCookie);
       } catch {
-        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(req.originalUrl));
+        res.set("Cache-Control", "no-store").redirect(302, setupRedirect(req.originalUrl));
         return;
       }
 
@@ -186,7 +186,7 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
         )
       );
       if (profiles.length === 0) {
-        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(req.originalUrl));
+        res.set("Cache-Control", "no-store").redirect(302, setupRedirect(req.originalUrl));
         return;
       }
 
@@ -261,7 +261,7 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
         user = await deps.verifySessionCookie(sessionCookie);
         if (user.uid !== authorizationRequest.uid) throw new Error("session_mismatch");
       } catch {
-        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(authorizationRequest.returnTo));
+        res.set("Cache-Control", "no-store").redirect(302, setupRedirect(authorizationRequest.returnTo));
         return;
       }
 
@@ -288,7 +288,7 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
         )
       );
       if (profiles.length === 0) {
-        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(authorizationRequest.returnTo));
+        res.set("Cache-Control", "no-store").redirect(302, setupRedirect(authorizationRequest.returnTo));
         return;
       }
 

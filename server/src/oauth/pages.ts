@@ -76,7 +76,7 @@ export function renderErrorPage(title: string, detail: string): string {
 <body>
 <main>
   <header class="head"><span class="book" aria-hidden="true"></span><div><p class="mark">${escapeHtml(BRAND.name)}</p></div></header>
-  <div class="content"><h1>${escapeHtml(title)}</h1><p class="intro">${escapeHtml(detail)}</p><a href="/dashboard">Vissza a kapcsolati pulthoz</a></div>
+  <div class="content"><h1>${escapeHtml(title)}</h1><p class="intro">${escapeHtml(detail)}</p><a href="/">Vissza az Üzenőfüzethez</a></div>
   <footer>${escapeHtml(BRAND.disclaimer)}</footer>
 </main>
 </body>

@@ -72,7 +72,7 @@ export function createClassroomRouter(deps: ClassroomRouterDeps): Router {
   }
 
   const redirect = (req: Request, res: Response, result: string, returnTo?: string): void => {
-    const target = new URL("/dashboard", issuerOf(req, deps.config));
+    const target = new URL("/", issuerOf(req, deps.config));
     target.searchParams.set("classroom", result);
     if (returnTo) target.searchParams.set("return_to", returnTo);
     target.hash = "gyerekek";

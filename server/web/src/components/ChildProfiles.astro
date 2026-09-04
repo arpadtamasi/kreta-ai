@@ -1,720 +1,122 @@
-<section class="profiles" id="gyerekek" aria-labelledby="profiles-title">
-  <div class="profiles-intro">
-    <h2 id="profiles-title">Gyerekek</h2>
-    <p>Itt adod hozzá a gyereket, majd külön kapcsolhatod a KRÉTA-hoz és a Google Classroomhoz. Minden gyerek a saját iskolai Google-fiókját használhatja.</p>
-    <p class="storage-note"><strong>Két külön Google-lépés:</strong> a szülői fiók a profilokat védi; a gyerek iskolai fiókja csak a saját Classroom-adataihoz ad olvasási jogot. A KRÉTA-jelszót nem mentjük el.</p>
-  </div>
+---
+/** A gyerekek munkafelülete: belépés, napi lista, Kezelés panel és szerkesztő. */
+import ChildList from "./dashboard/ChildList.astro";
+import ChildManagePanel from "./dashboard/ChildManagePanel.astro";
+import ClassroomAdminHelp from "./dashboard/ClassroomAdminHelp.astro";
+import ProfileEditor from "./dashboard/ProfileEditor.astro";
+---
 
-  <div class="profiles-manager">
-    <div class="signed-out" id="profiles-signed-out">
-      <h3>A profilok a Google-fiókodhoz tartoznak</h3>
-      <p>Így csak te látod, melyik névhez melyik KRÉTA-azonosító és intézmény tartozik.</p>
+<section class="profiles" id="gyerekek" aria-label="Gyerekek és kapcsolatok">
+  <div class="signed-out" id="profiles-signed-out">
+    <div class="signin">
       <button class="google-button" id="profiles-google-signin" type="button">
         <svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.64 9.205c0-.638-.057-1.252-.164-1.841H9v3.482h4.844a4.14 4.14 0 0 1-1.797 2.716v2.258h2.909c1.702-1.567 2.684-3.878 2.684-6.615Z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.91-2.258c-.805.54-1.835.86-3.046.86-2.344 0-4.328-1.585-5.037-3.714H.956v2.333A8.998 8.998 0 0 0 9 18Z"/><path fill="#FBBC05" d="M3.963 10.708A5.41 5.41 0 0 1 3.681 9c0-.593.102-1.17.282-1.708V4.959H.956A8.995 8.995 0 0 0 0 9c0 1.452.347 2.827.956 4.041l3.007-2.333Z"/><path fill="#EA4335" d="M9 3.578c1.322 0 2.508.454 3.441 1.346l2.582-2.582C13.463.89 11.426 0 9 0A8.998 8.998 0 0 0 .956 4.959l3.007 2.333C4.672 5.163 6.656 3.578 9 3.578Z"/></svg>
         Belépés Google-fiókkal
       </button>
+      <p>A gyerekek KRÉTA- és Classroom-adatai egy helyen, csak olvasásra. A lista a Google-fiókodhoz tartozik; minden gyerek a saját iskolai Google-fiókját használhatja.</p>
     </div>
 
-    <div class="signed-in" id="profiles-signed-in" hidden>
-      <div class="account-row">
-        <p><span>Belépve</span><strong id="profiles-account-name"></strong></p>
-        <button id="profiles-signout" type="button">Kijelentkezés</button>
+    <div class="preview" role="img" aria-label="Előnézet egy Claude-beszélgetésből: a szülő megkérdezi, mi a helyzet a gyerekekkel, Claude pedig összefoglalja a dicséretet, az elmaradt házit és a holnapi teendőt.">
+      <span class="preview-label">Így néz ki Claude-ban</span>
+      <p class="ask">Mi a helyzet a gyerekekkel?</p>
+      <div class="answer">
+        <p><strong>Marci</strong> ma tanórai dicséretet kapott angolból. A szerdára kért emelt biológia olvasás még megoldatlan.</p>
+        <p><strong>Benedek</strong> kémiaóráról felszereléshiányt kapott — holnapra vinnie kell a munkafüzetet.</p>
       </div>
-      <section class="return-panel" id="profiles-return-panel" hidden aria-labelledby="profiles-return-title">
-        <div>
-          <h3 id="profiles-return-title">Még egy lépés</h3>
-          <p id="profiles-return-note">A Google-fiókodat ellenőrizzük, hogy folytatható-e a csatlakoztatás…</p>
-        </div>
-        <button id="profiles-reauth" type="button" hidden>Kapcsolódás folytatása</button>
-      </section>
-      <ol class="profile-list" id="profile-list" aria-live="polite"></ol>
-      <template id="profile-template">
-        <li>
-          <div><strong class="profile-name"></strong><span class="profile-institute"></span></div>
-          <code class="profile-username"></code>
-          <div class="source-connections">
-            <button class="connection-state" type="button" data-connection aria-pressed="false"><i></i><span>KRÉTA · Offline</span><small>Kapcsolódás</small></button>
-            <button class="connection-state classroom-state" type="button" data-classroom aria-pressed="false"><i></i><span>Classroom · nincs</span><small>Iskolai Google-fiók kapcsolása</small></button>
-          </div>
-          <div class="profile-actions"><button type="button" data-edit>Szerkesztés</button><button type="button" data-delete>Törlés</button></div>
-        </li>
-      </template>
-
-      <button class="add-profile" id="add-profile" type="button">+ Gyerekprofil hozzáadása</button>
-      <form class="profile-form" id="profile-form" hidden novalidate>
-        <input id="profile-id" type="hidden" />
-        <div class="form-title"><h3 id="profile-form-title">Gyerekprofil hozzáadása</h3><button id="cancel-profile" type="button">Mégse</button></div>
-        <label class="profile-detail" for="child-name">A gyerek rendes neve
-          <span>A jelszókezelő ezt párosíthatja a KRÉTA-jelszóval; Claude-nak is ezen a néven hivatkozhatsz rá.</span>
-          <input id="child-name" name="childName" type="text" minlength="2" maxlength="80" autocomplete="username" required placeholder="pl. Lilla" />
-        </label>
-        <label class="profile-detail" for="kreta-username">KRÉTA-felhasználónév
-          <span>Az eKRÉTA belépési azonosítója. Csak a te profilodban tároljuk.</span>
-          <input id="kreta-username" name="kretaUsername" type="text" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" required />
-        </label>
-        <label class="profile-detail" for="institute-code">Intézmény
-          <span id="institute-help">Írj be legalább 3 karaktert az iskola nevéből vagy kódjából, majd válassz a találatok közül. A kód kézzel is megadható.</span>
-          <input id="institute-code" name="instituteCode" type="text" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" list="institute-options" aria-describedby="institute-help institute-search-status" aria-busy="false" required placeholder="pl. Budenz vagy klik034802001" />
-        </label>
-        <datalist id="institute-options"></datalist>
-        <p class="institute-status" id="institute-search-status" role="status" aria-live="polite"></p>
-        <label for="kreta-password">KRÉTA-jelszó
-          <span>A kapcsolat most készül el. A jelszó átmegy a szerveren, de nem mentjük el.</span>
-          <input id="kreta-password" name="password" type="password" maxlength="512" autocomplete="current-password" required />
-        </label>
-        <label class="keep-alive" for="keep-alive">
-          <input id="keep-alive" name="keepAlive" type="checkbox" />
-          <span><strong>Maradjon online</strong>Az Üzenőfüzet 25 percenként megújítja a KRÉTA-kapcsolatot. Ehhez a forgó tokent titkosítva tároljuk; a jelszót nem.</span>
-        </label>
-        <p class="trial-note" id="trial-note">Ha ezt nem jelölöd be, a kapcsolat csak 30 perces próbára lesz online.</p>
-        <label class="deadline" id="keep-alive-deadline" for="keep-alive-until" hidden>Maradjon online eddig <span>Opcionális. A megadott nap végén a kapcsolat Offline lesz, a gyerekprofil megmarad.</span>
-          <input id="keep-alive-until" name="keepAliveUntil" type="date" />
-        </label>
-        <button class="save-profile" type="submit">Kapcsolat létrehozása</button>
-      </form>
+      <span class="preview-note">Példa. A saját gyerekeid adataival válaszol.</span>
     </div>
-    <p class="profiles-status" id="profiles-status" role="status" tabindex="-1"></p>
   </div>
+
+  <div class="signed-in" id="profiles-signed-in" hidden>
+    <section class="return-panel" id="profiles-return-panel" hidden aria-labelledby="profiles-return-title">
+      <div>
+        <h3 id="profiles-return-title">Még egy lépés</h3>
+        <p id="profiles-return-note">A Google-fiókodat ellenőrizzük, hogy folytatható-e a csatlakoztatás…</p>
+      </div>
+      <button id="profiles-reauth" type="button" hidden>Kapcsolódás folytatása</button>
+    </section>
+
+    <ChildList />
+  </div>
+
+  <p class="profiles-status" id="profiles-status" role="status" tabindex="-1"></p>
+  <ClassroomAdminHelp />
+  <ChildManagePanel />
+  <ProfileEditor />
 </section>
 
 <script>
-  import { getApps, initializeApp } from "firebase/app";
-  import {
-    browserLocalPersistence,
-    getAuth,
-    GoogleAuthProvider,
-    onAuthStateChanged,
-    reauthenticateWithPopup,
-    setPersistence,
-    signInWithPopup,
-    signOut,
-    type User,
-  } from "firebase/auth";
-
-  interface Profile {
-    id: string;
-    childName: string;
-    kretaUsername: string;
-    instituteCode: string;
-    connection: {
-      status: "active" | "attention" | "expired" | "disconnected";
-      keepAlive: boolean;
-      connectedAt: string | null;
-      refreshedAt: string | null;
-      expiresAt: string | null;
-      keepAliveUntil: string | null;
-    };
-    classroom: {
-      status: "connected" | "expired" | "disconnected";
-      email: string | null;
-      connectedAt: string | null;
-      expiresAt: string | null;
-    };
-  }
-
-  interface InstituteSuggestion {
-    code: string;
-    name: string;
-  }
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBFaJ8tV0bC4yfff6pTj09M1Oc17S9KuPc",
-    authDomain: "uzenofuzet.firebaseapp.com",
-    projectId: "uzenofuzet",
-    storageBucket: "uzenofuzet.firebasestorage.app",
-    messagingSenderId: "652545082668",
-    appId: "1:652545082668:web:2ae336556523a75af4d889",
-  };
-
-  const auth = getAuth(getApps()[0] ?? initializeApp(firebaseConfig));
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: "select_account" });
-
-  const signedOut = document.querySelector<HTMLElement>("#profiles-signed-out")!;
-  const signedIn = document.querySelector<HTMLElement>("#profiles-signed-in")!;
-  const signInButton = document.querySelector<HTMLButtonElement>("#profiles-google-signin")!;
-  const signOutButton = document.querySelector<HTMLButtonElement>("#profiles-signout")!;
-  const reauthButton = document.querySelector<HTMLButtonElement>("#profiles-reauth")!;
-  const accountName = document.querySelector<HTMLElement>("#profiles-account-name")!;
-  const status = document.querySelector<HTMLElement>("#profiles-status")!;
-  const list = document.querySelector<HTMLOListElement>("#profile-list")!;
-  const template = document.querySelector<HTMLTemplateElement>("#profile-template")!;
-  const addButton = document.querySelector<HTMLButtonElement>("#add-profile")!;
-  const form = document.querySelector<HTMLFormElement>("#profile-form")!;
-  const formTitle = document.querySelector<HTMLElement>("#profile-form-title")!;
-  const cancelButton = document.querySelector<HTMLButtonElement>("#cancel-profile")!;
-  const idInput = document.querySelector<HTMLInputElement>("#profile-id")!;
-  const nameInput = document.querySelector<HTMLInputElement>("#child-name")!;
-  const usernameInput = document.querySelector<HTMLInputElement>("#kreta-username")!;
-  const instituteInput = document.querySelector<HTMLInputElement>("#institute-code")!;
-  const instituteOptions = document.querySelector<HTMLDataListElement>("#institute-options")!;
-  const instituteStatus = document.querySelector<HTMLElement>("#institute-search-status")!;
-  const passwordInput = document.querySelector<HTMLInputElement>("#kreta-password")!;
-  const keepAliveInput = document.querySelector<HTMLInputElement>("#keep-alive")!;
-  const keepAliveDeadline = document.querySelector<HTMLElement>("#keep-alive-deadline")!;
-  const keepAliveUntilInput = document.querySelector<HTMLInputElement>("#keep-alive-until")!;
-  const returnPanel = document.querySelector<HTMLElement>("#profiles-return-panel")!;
-  const returnTitle = document.querySelector<HTMLElement>("#profiles-return-title")!;
-  const returnNote = document.querySelector<HTMLElement>("#profiles-return-note")!;
-  let profiles: Profile[] = [];
-  let formOpener: HTMLElement | null = null;
-  let instituteTimer: number | undefined;
-  let instituteRequest: AbortController | null = null;
-  let instituteRequestNumber = 0;
-  const instituteChoices = new Map<string, InstituteSuggestion>();
-
-  const candidateReturn = new URLSearchParams(location.search).get("return_to") ?? "";
-  const returnTo = candidateReturn.startsWith("/authorize?") && candidateReturn.length <= 12_000
-    ? candidateReturn
-    : "";
-  const classroomResult = new URLSearchParams(location.search).get("classroom") ?? "";
-  returnPanel.hidden = !returnTo;
-
-  function setStatus(message: string, kind = "") {
-    status.textContent = message;
-    status.dataset.kind = kind;
-  }
-
-  function showReturnAction() {
-    if (!returnTo) return;
-    returnPanel.hidden = false;
-    returnTitle.textContent = "Még egy lépés";
-    returnNote.textContent = "A gyerekprofiljaid készen vannak. Erősítsd meg a Google-fiókodat; utána automatikusan visszaviszünk a Claude-hoz.";
-    reauthButton.textContent = "Kapcsolódás folytatása";
-    reauthButton.hidden = false;
-  }
-
-  function hideReturnAction() {
-    reauthButton.hidden = true;
-    if (!returnTo) returnPanel.hidden = true;
-  }
-
-  function showProfileRequired() {
-    if (!returnTo) return;
-    returnPanel.hidden = false;
-    returnTitle.textContent = "Előbb adj hozzá egy gyereket";
-    returnNote.textContent = "A profil mentése után automatikusan folytatjuk a Claude csatlakoztatását.";
-    hideReturnAction();
-  }
-
-  function isOnline(profile: Profile): boolean {
-    return (profile.connection.status === "active" || profile.connection.status === "attention") &&
-      Boolean(profile.connection.expiresAt) &&
-      Date.now() < Date.parse(profile.connection.expiresAt!) &&
-      (!profile.connection.keepAliveUntil || Date.now() < Date.parse(profile.connection.keepAliveUntil));
-  }
-
-  function isClassroomConnected(profile: Profile): boolean {
-    return profile.classroom.status === "connected" &&
-      Boolean(profile.classroom.expiresAt) &&
-      Date.now() < Date.parse(profile.classroom.expiresAt!);
-  }
-
-  function hasClaudeSource(profile: Profile): boolean {
-    return isOnline(profile) || isClassroomConnected(profile);
-  }
-
-  function showClassroomResult(): boolean {
-    if (!classroomResult) return false;
-    const outcomes: Record<string, { message: string; kind: string }> = {
-      connected: { message: "A gyerek Google Classroom-fiókját összekapcsoltuk.", kind: "success" },
-      cancelled: { message: "A Classroom engedélyezését megszakítottad; nem változtattunk semmin.", kind: "" },
-      blocked: { message: "Az iskola Google-rendszergazdája letiltotta ezt az alkalmazást. Az iskolai admin tudja engedélyezni.", kind: "error" },
-      profile_missing: { message: "A gyerekprofil közben megszűnt. Indítsd újra az összekapcsolást.", kind: "error" },
-      invalid_state: { message: "A Classroom engedélyezési kérés lejárt vagy már felhasználták. Indítsd újra.", kind: "error" },
-      failed: { message: "A Classroom összekapcsolása nem sikerült. Ellenőrizd, hogy a gyerek iskolai Google-fiókját választottad-e.", kind: "error" },
-    };
-    const outcome = outcomes[classroomResult] ?? outcomes.failed!;
-    setStatus(outcome.message, outcome.kind);
-    const clean = new URL(location.href);
-    clean.searchParams.delete("classroom");
-    history.replaceState(null, "", `${clean.pathname}${clean.search}${clean.hash}`);
-    status.focus();
-    return true;
-  }
-
-  function showConnectionRequired() {
-    if (!returnTo) return;
-    returnPanel.hidden = false;
-    returnTitle.textContent = "Előbb kapcsolj adatforrást a gyerekhez";
-    returnNote.textContent = "Kapcsold Online a KRÉTA-t vagy kösd össze a gyerek iskolai Google-fiókját a Classroommal; utána automatikusan folytatjuk a Claude csatlakoztatását.";
-    hideReturnAction();
-  }
-
-  async function authHeaders(user: User): Promise<Record<string, string>> {
-    return { authorization: `Bearer ${await user.getIdToken()}` };
-  }
-
-  async function establishSession(user: User): Promise<void> {
-    const response = await fetch("/api/session", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ idToken: await user.getIdToken(true) }),
-    });
-    if (!response.ok) {
-      const data = await response.json().catch(() => ({})) as { error?: string };
-      throw new Error(data.error ?? "A Google-munkamenetet nem sikerült létrehozni.");
-    }
-  }
-
-  function resetInstituteSearch(message = "") {
-    window.clearTimeout(instituteTimer);
-    instituteRequest?.abort();
-    instituteRequest = null;
-    instituteRequestNumber += 1;
-    instituteChoices.clear();
-    instituteOptions.replaceChildren();
-    instituteInput.setAttribute("aria-busy", "false");
-    instituteStatus.textContent = message;
-    instituteStatus.dataset.kind = "";
-  }
-
-  function instituteChoiceLabel(suggestion: InstituteSuggestion): string {
-    return `${suggestion.name} — ${suggestion.code}`;
-  }
-
-  function normalizedInstituteQuery(value: string): string {
-    return value.normalize("NFKC").replace(/\s+/gu, " ").trim();
-  }
-
-  async function searchInstitutes(query: string) {
-    const user = auth.currentUser;
-    if (!user) return;
-    const requestNumber = ++instituteRequestNumber;
-    instituteRequest?.abort();
-    instituteRequest = new AbortController();
-    instituteInput.setAttribute("aria-busy", "true");
-    instituteStatus.textContent = "Intézmények keresése…";
-    instituteStatus.dataset.kind = "";
-
-    try {
-      const response = await fetch("/api/institutes", {
-        method: "POST",
-        headers: { "content-type": "application/json", ...await authHeaders(user) },
-        body: JSON.stringify({ q: query }),
-        cache: "no-store",
-        signal: instituteRequest.signal,
-      });
-      const data = await response.json() as { suggestions?: InstituteSuggestion[]; error?: string };
-      if (!response.ok || !data.suggestions) {
-        throw new Error(data.error ?? "Az intézménykereső most nem elérhető.");
-      }
-      if (requestNumber !== instituteRequestNumber || normalizedInstituteQuery(instituteInput.value) !== query) return;
-
-      instituteChoices.clear();
-      instituteOptions.replaceChildren();
-      for (const suggestion of data.suggestions) {
-        const label = instituteChoiceLabel(suggestion);
-        instituteChoices.set(label, suggestion);
-        const option = document.createElement("option");
-        option.value = label;
-        instituteOptions.append(option);
-      }
-      instituteStatus.textContent = data.suggestions.length > 0
-        ? `${data.suggestions.length} találat. Válassz egy intézményt a mező javaslatai közül.`
-        : "Nincs találat. Az intézménykódot kézzel is beírhatod.";
-    } catch (error) {
-      if (error instanceof DOMException && error.name === "AbortError") return;
-      if (requestNumber !== instituteRequestNumber) return;
-      instituteChoices.clear();
-      instituteOptions.replaceChildren();
-      instituteStatus.textContent = error instanceof Error
-        ? error.message
-        : "Az intézménykereső most nem elérhető. A kódot kézzel is beírhatod.";
-      instituteStatus.dataset.kind = "error";
-    } finally {
-      if (requestNumber === instituteRequestNumber) {
-        instituteInput.setAttribute("aria-busy", "false");
-        instituteRequest = null;
-      }
-    }
-  }
-
-  instituteInput.addEventListener("input", () => {
-    const chosen = instituteChoices.get(instituteInput.value);
-    if (chosen) {
-      resetInstituteSearch(`Kiválasztva: ${chosen.name} (${chosen.code}).`);
-      instituteInput.value = chosen.code;
-      return;
-    }
-
-    window.clearTimeout(instituteTimer);
-    instituteRequest?.abort();
-    instituteChoices.clear();
-    instituteOptions.replaceChildren();
-    const query = normalizedInstituteQuery(instituteInput.value);
-    if (query.length < 3 || query.includes("://") || query.toLocaleLowerCase("hu-HU").endsWith(".e-kreta.hu")) {
-      resetInstituteSearch();
-      return;
-    }
-    instituteTimer = window.setTimeout(() => void searchInstitutes(query), 280);
-  });
-
-  function showForm(profile?: Profile, opener?: HTMLElement, connect = false) {
-    resetInstituteSearch();
-    formOpener = opener?.isConnected && !opener.hidden ? opener : null;
-    idInput.value = profile?.id ?? "";
-    nameInput.value = profile?.childName ?? "";
-    usernameInput.value = profile?.kretaUsername ?? "";
-    instituteInput.value = profile?.instituteCode ?? "";
-    passwordInput.value = "";
-    keepAliveInput.checked = profile?.connection.keepAlive || false;
-    keepAliveUntilInput.value = profile?.connection.keepAliveUntil?.slice(0, 10) ?? "";
-    keepAliveDeadline.hidden = !keepAliveInput.checked;
-    formTitle.textContent = profile
-      ? `${profile.childName} ${connect ? "online kapcsolása" : "szerkesztése"}`
-      : "Gyerekprofil hozzáadása és kapcsolása";
-    form.dataset.mode = connect ? "connect" : profile ? "edit" : "new";
-    form.querySelector<HTMLButtonElement>(".save-profile")!.textContent = connect
-      ? "Online kapcsolás"
-      : "Mentés és kapcsolás";
-    form.hidden = false;
-    addButton.hidden = true;
-    (connect ? passwordInput : nameInput).focus();
-  }
-
-  function hideForm(restoreFocus = true) {
-    resetInstituteSearch();
-    const target = formOpener;
-    formOpener = null;
-    form.hidden = true;
-    form.reset();
-    delete form.dataset.mode;
-    idInput.value = "";
-    addButton.hidden = profiles.length >= 3;
-    if (restoreFocus) {
-      if (target?.isConnected && !target.hidden) target.focus();
-      else status.focus();
-    }
-  }
-
-  function renderProfiles(user: User) {
-    list.replaceChildren();
-    if (profiles.length === 0) {
-      const empty = document.createElement("li");
-      empty.className = "empty";
-      empty.textContent = "Még nincs gyerekprofilod. Add meg az elsőt; nagyjából egy perc.";
-      list.append(empty);
-      showProfileRequired();
-      showForm();
-      return;
-    }
-
-    for (const profile of profiles) {
-      const fragment = template.content.cloneNode(true) as DocumentFragment;
-      fragment.querySelector<HTMLElement>(".profile-name")!.textContent = profile.childName;
-      fragment.querySelector<HTMLElement>(".profile-institute")!.textContent = profile.instituteCode;
-      fragment.querySelector<HTMLElement>(".profile-username")!.textContent = profile.kretaUsername;
-      const connectionButton = fragment.querySelector<HTMLButtonElement>("[data-connection]")!;
-      const online = isOnline(profile);
-      connectionButton.classList.toggle("online", online);
-      connectionButton.setAttribute("aria-pressed", String(online));
-      connectionButton.querySelector<HTMLElement>("span")!.textContent = online ? "KRÉTA · Online" : "KRÉTA · Offline";
-      const detail = connectionButton.querySelector<HTMLElement>("small")!;
-      detail.textContent = online
-        ? profile.connection.keepAlive
-          ? profile.connection.keepAliveUntil
-            ? `25 percenként · ${new Date(profile.connection.keepAliveUntil).toLocaleDateString("hu-HU")}-ig`
-            : "25 percenként frissül"
-          : "30 perces próba"
-        : "Kattints a kapcsolódáshoz";
-      connectionButton.addEventListener("click", async () => {
-        if (!isOnline(profile)) {
-          showForm(profile, connectionButton, true);
-          return;
-        }
-        connectionButton.disabled = true;
-        setStatus(`${profile.childName} kapcsolatának leállítása…`);
-        const response = await fetch(`/api/profiles/${encodeURIComponent(profile.id)}/connection`, {
-          method: "DELETE",
-          headers: await authHeaders(user),
-        });
-        if (!response.ok) {
-          setStatus("A kapcsolatot nem sikerült leállítani. Próbáld újra.", "error");
-          connectionButton.disabled = false;
-          return;
-        }
-        setStatus(`${profile.childName} Offline. A gyerekprofil megmaradt.`, "success");
-        await loadProfiles(user, false);
-      });
-      const classroomButton = fragment.querySelector<HTMLButtonElement>("[data-classroom]")!;
-      const classroomConnected = isClassroomConnected(profile);
-      classroomButton.classList.toggle("online", classroomConnected);
-      classroomButton.setAttribute("aria-pressed", String(classroomConnected));
-      classroomButton.querySelector<HTMLElement>("span")!.textContent = classroomConnected
-        ? "Classroom · kapcsolva"
-        : "Classroom · nincs";
-      classroomButton.querySelector<HTMLElement>("small")!.textContent = classroomConnected
-        ? profile.classroom.email ?? "Iskolai Google-fiók"
-        : profile.classroom.status === "expired"
-          ? "Lejárt · kapcsold újra"
-          : "Iskolai Google-fiók kapcsolása";
-      classroomButton.addEventListener("click", async () => {
-        classroomButton.disabled = true;
-        if (classroomConnected) {
-          if (!confirm(`Leválasztod ${profile.childName} Classroom-fiókját?`)) {
-            classroomButton.disabled = false;
-            return;
-          }
-          setStatus(`${profile.childName} Classroom-kapcsolatának törlése…`);
-          const response = await fetch(`/api/classroom/${encodeURIComponent(profile.id)}/connection`, {
-            method: "DELETE",
-            headers: await authHeaders(user),
-          });
-          if (!response.ok) {
-            setStatus("A Classroom-kapcsolatot nem sikerült törölni. Próbáld újra.", "error");
-            classroomButton.disabled = false;
-            return;
-          }
-          setStatus(`${profile.childName} Classroom-fiókját leválasztottuk. A gyerekprofil megmaradt.`, "success");
-          await loadProfiles(user, false);
-          return;
-        }
-        setStatus(`${profile.childName} iskolai Google-belépésének megnyitása…`);
-        try {
-          const response = await fetch("/api/classroom/authorize", {
-            method: "POST",
-            headers: { "content-type": "application/json", ...await authHeaders(user) },
-            body: JSON.stringify({ profileId: profile.id, ...(returnTo ? { returnTo } : {}) }),
-          });
-          const data = await response.json() as { authorizationUrl?: string; error?: string };
-          if (!response.ok || !data.authorizationUrl) {
-            throw new Error(data.error ?? "A Classroom összekapcsolását nem sikerült elindítani.");
-          }
-          location.assign(data.authorizationUrl);
-        } catch (error) {
-          setStatus(error instanceof Error ? error.message : "A Classroom összekapcsolását nem sikerült elindítani.", "error");
-          classroomButton.disabled = false;
-        }
-      });
-      const editButton = fragment.querySelector<HTMLButtonElement>("[data-edit]")!;
-      editButton.addEventListener("click", () => showForm(profile, editButton));
-      fragment.querySelector<HTMLButtonElement>("[data-delete]")!.addEventListener("click", async () => {
-        if (!confirm(`Törlöd ${profile.childName} gyerekprofilját?`)) return;
-        const response = await fetch(`/api/profiles/${encodeURIComponent(profile.id)}`, {
-          method: "DELETE",
-          headers: await authHeaders(user),
-        });
-        if (!response.ok) {
-          setStatus("A profilt nem sikerült törölni. Próbáld újra.", "error");
-          return;
-        }
-        setStatus(`${profile.childName} profilját töröltük.`, "success");
-        await loadProfiles(user, false);
-      });
-      list.append(fragment);
-    }
-    if (returnTo && !profiles.some(hasClaudeSource)) showConnectionRequired();
-    hideForm(false);
-  }
-
-  async function loadProfiles(user: User, continueOAuth = true) {
-    const response = await fetch("/api/profiles", { headers: await authHeaders(user), cache: "no-store" });
-    const data = await response.json() as { profiles?: Profile[]; error?: string };
-    if (!response.ok || !data.profiles) throw new Error(data.error ?? "A gyerekprofilokat nem sikerült betölteni.");
-    profiles = data.profiles;
-    renderProfiles(user);
-    if (returnTo && profiles.some(hasClaudeSource) && continueOAuth) {
-      setStatus("Kész. Visszalépünk a Claude csatlakoztatásához…");
-      location.assign(returnTo);
-    }
-  }
-
-  signInButton.addEventListener("click", async () => {
-    signInButton.disabled = true;
-    setStatus("Google-belépés…");
-    try {
-      await setPersistence(auth, browserLocalPersistence);
-      await signInWithPopup(auth, provider);
-    } catch {
-      setStatus("A Google-belépés nem sikerült vagy megszakadt.", "error");
-      signInButton.disabled = false;
-    }
-  });
-
-  signOutButton.addEventListener("click", async () => {
-    await Promise.allSettled([signOut(auth), fetch("/api/session", { method: "DELETE" })]);
-    profiles = [];
-    list.replaceChildren();
-    setStatus("Kijelentkeztél.");
-  });
-
-  reauthButton.addEventListener("click", async () => {
-    const user = auth.currentUser;
-    if (!user) return;
-    reauthButton.disabled = true;
-    reauthButton.textContent = "Google-belépés megnyitása…";
-    setStatus("A folytatáshoz erősítsd meg a Google-fiókodat…");
-    try {
-      await reauthenticateWithPopup(user, provider);
-      await establishSession(user);
-      hideReturnAction();
-      await loadProfiles(user);
-      if (!returnTo) setStatus("A belépést megerősítettük.", "success");
-    } catch {
-      showReturnAction();
-      setStatus("A Google-belépés megszakadt. A kapcsolódás folytatásához próbáld újra.", "error");
-    } finally {
-      reauthButton.disabled = false;
-    }
-  });
-
-  addButton.addEventListener("click", () => showForm(undefined, addButton));
-  cancelButton.addEventListener("click", () => hideForm());
-  keepAliveInput.addEventListener("change", () => {
-    keepAliveDeadline.hidden = !keepAliveInput.checked;
-    if (!keepAliveInput.checked) keepAliveUntilInput.value = "";
-  });
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    if (!form.reportValidity()) return;
-    const submit = form.querySelector<HTMLButtonElement>("button[type=submit]")!;
-    submit.disabled = true;
-    setStatus("Profil mentése…");
-    try {
-      const user = auth.currentUser;
-      if (!user) throw new Error("A mentéshez jelentkezz be Google-fiókkal.");
-      const response = await fetch("/api/profiles", {
-        method: "PUT",
-        headers: { "content-type": "application/json", ...await authHeaders(user) },
-        body: JSON.stringify({
-          ...(idInput.value ? { id: idInput.value } : {}),
-          childName: nameInput.value,
-          kretaUsername: usernameInput.value,
-          instituteCode: instituteInput.value,
-          password: passwordInput.value,
-          keepAlive: keepAliveInput.checked,
-          keepAliveUntil: keepAliveInput.checked && keepAliveUntilInput.value
-            ? new Date(`${keepAliveUntilInput.value}T23:59:59`).toISOString()
-            : null,
-        }),
-      });
-      const data = await response.json() as { error?: string };
-      if (!response.ok) throw new Error(data.error ?? "A profilt nem sikerült elmenteni.");
-      let canContinue = true;
-      try {
-        await establishSession(user);
-        hideReturnAction();
-      } catch {
-        canContinue = false;
-        showReturnAction();
-      }
-      await loadProfiles(user, canContinue);
-      if (!returnTo || !canContinue) {
-        setStatus("A gyerekprofilt elmentettük.", "success");
-        status.focus();
-      }
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "A profilt nem sikerült elmenteni.", "error");
-    } finally {
-      submit.disabled = false;
-    }
-  });
-
-  onAuthStateChanged(auth, async (user) => {
-    signedOut.hidden = Boolean(user);
-    signedIn.hidden = !user;
-    signInButton.disabled = false;
-    if (!user) return;
-    accountName.textContent = user.displayName || "Google-fiók";
-    setStatus("Profilok betöltése…");
-    try {
-      let canContinue = true;
-      try {
-        await establishSession(user);
-        hideReturnAction();
-      } catch {
-        canContinue = false;
-        showReturnAction();
-      }
-      await loadProfiles(user, canContinue);
-      if (!canContinue && returnTo && profiles.some(hasClaudeSource)) {
-        setStatus("");
-      } else if (!returnTo && !showClassroomResult()) {
-        setStatus("");
-      }
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "A profilokat nem sikerült betölteni.", "error");
-    }
-  });
+  import { startDashboard } from "../scripts/dashboard/main";
+  startDashboard();
 </script>
 
 <style>
-  .profiles { display: grid; grid-template-columns: 37% 63%; border-bottom: 1px solid var(--blue-soft); }
-  .profiles-intro { padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
-  .profiles-intro h2 { margin: 0 0 2rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4.5rem, 7vw, 8rem); font-weight: 600; line-height: .78; letter-spacing: -.035em; text-transform: uppercase; }
-  .profiles-intro p { max-width: 32rem; color: var(--ink-muted); line-height: 1.7; }
-  .storage-note { margin-top: 2rem; padding-top: 1.3rem; border-top: 1px solid var(--blue-soft); font-size: .78rem; }
-  .storage-note strong { color: var(--ink); }
-  .profiles-manager { min-width: 0; padding: clamp(3rem, 6vw, 6rem) var(--page-pad); }
-  .signed-out { max-width: 42rem; }
-  .signed-out h3 { margin: 0 0 .8rem; color: var(--blue); font-size: clamp(1.4rem, 2.3vw, 2.2rem); letter-spacing: -.035em; }
-  .signed-out p { margin: 0 0 2rem; color: var(--ink-muted); line-height: 1.65; }
-  .google-button { display: inline-flex; min-height: 3.55rem; align-items: center; gap: .8rem; padding: .9rem 1.25rem; border: 2px solid var(--blue); border-radius: 0; color: var(--ink); background: var(--paper-bright); font-weight: 800; cursor: pointer; }
-  .google-button svg { width: 1.15rem; height: 1.15rem; }
-  .account-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-bottom: 1.25rem; border-bottom: 2px solid var(--blue); }
-  .account-row p { margin: 0; }
-  .account-row span { display: block; color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .62rem; text-transform: uppercase; }
-  .account-row strong { display: block; margin-top: .25rem; color: var(--blue); }
-  .account-row button, .profile-actions button, .form-title button { display: inline-flex; min-height: 2.75rem; align-items: center; padding: .3rem .2rem; border: 0; color: var(--blue); background: transparent; font-size: .7rem; font-weight: 800; text-decoration: underline; text-underline-offset: .25rem; cursor: pointer; }
-  .return-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.25rem; align-items: center; margin: 1rem 0 0; padding: 1.25rem; border-block: 2px solid var(--blue); color: var(--ink); background: #fff4c9; }
+  .profiles {
+    min-width: 0;
+    padding: 0 clamp(1.25rem, 3vw, 2.25rem) 1rem;
+  }
+
+  .signed-out {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 1.5rem clamp(1.5rem, 4vw, 3rem);
+    align-items: start;
+    padding-block: 1.6rem 1.9rem;
+  }
+
+  .google-button {
+    display: inline-flex;
+    min-height: 3.1rem;
+    align-items: center;
+    gap: .8rem;
+    padding: .8rem 1.1rem;
+    border: 2px solid var(--blue);
+    border-radius: 0;
+    color: var(--ink);
+    background: var(--paper-bright);
+    font-size: .8rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .google-button svg { width: 1.15rem; height: 1.15rem; flex: 0 0 auto; }
+  .google-button:hover { background: var(--paper); }
+  .google-button:disabled { cursor: wait; opacity: .6; }
+
+  .signin p { max-width: 26rem; margin: .9rem 0 0; color: var(--ink-muted); font-size: .78rem; line-height: 1.55; }
+
+  .preview { border-left: 1px solid var(--blue-soft); padding-left: clamp(1rem, 2.5vw, 1.75rem); }
+  .preview-label { display: block; color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .6rem; letter-spacing: .08em; text-transform: uppercase; }
+  .preview .ask { margin: .7rem 0 0; color: var(--blue-strong); font-size: .85rem; font-weight: 800; line-height: 1.45; }
+  .preview .answer { margin-top: .55rem; padding-left: .85rem; border-left: 2px solid var(--blue-soft); }
+  .preview .answer p { margin: 0; color: var(--ink-muted); font-size: .78rem; line-height: 1.55; }
+  .preview .answer p + p { margin-top: .45rem; }
+  .preview .answer strong { color: var(--ink); }
+  .preview-note { display: block; margin-top: .6rem; color: var(--ink-muted); font-size: .68rem; }
+
+  .return-panel { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1.25rem; align-items: center; margin: 0 0 .75rem; padding: 1rem 1.15rem; border-block: 2px solid var(--blue); color: var(--ink); background: #fff4c9; }
   .return-panel[hidden] { display: none; }
-  .return-panel h3 { margin: 0 0 .35rem; color: var(--blue); font-size: 1rem; }
-  .return-panel p { max-width: 44rem; margin: 0; font-size: .76rem; line-height: 1.55; }
-  .return-panel button { min-height: 3.55rem; padding: .8rem 1rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-size: .72rem; font-weight: 800; cursor: pointer; }
+  .return-panel h3 { margin: 0 0 .3rem; color: var(--blue); font-size: .95rem; }
+  .return-panel p { max-width: 44rem; margin: 0; font-size: .78rem; line-height: 1.5; }
+  .return-panel button { min-height: 3.1rem; padding: .8rem 1rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-size: .78rem; font-weight: 800; cursor: pointer; }
   .return-panel button:disabled { cursor: wait; opacity: .65; }
-  .profile-list { margin: 0 0 1rem; padding: 0; list-style: none; }
-  .profile-list li { display: grid; grid-template-columns: 1fr minmax(8rem, .65fr) minmax(13rem, 1.15fr) auto; gap: 1rem; align-items: center; min-height: 5.5rem; padding: 1.2rem 0; border-bottom: 1px solid var(--blue-soft); }
-  .profile-list strong, .profile-list span { display: block; }
-  .profile-list strong { font-size: .95rem; }
-  .profile-list span { margin-top: .25rem; color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .63rem; }
-  .profile-list code { overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
-  .connection-state { display: grid; grid-template-columns: .7rem 1fr; column-gap: .55rem; align-items: center; min-height: 3rem; padding: .45rem .6rem; border: 1px solid var(--blue-soft); border-radius: 0; color: var(--ink-muted); background: transparent; text-align: left; cursor: pointer; }
-  .source-connections { display: grid; gap: .45rem; }
-  .connection-state i { grid-row: 1 / span 2; width: .7rem; height: .7rem; border: 1px solid currentColor; background: transparent; }
-  .connection-state span { margin: 0; color: inherit; font-family: "Manrope Variable", Manrope, system-ui, sans-serif; font-size: .72rem; font-weight: 800; }
-  .connection-state small { color: inherit; font-family: "IBM Plex Mono", monospace; font-size: .52rem; line-height: 1.35; }
-  .connection-state.online { border-color: #8eb8a9; color: var(--green); background: #eef8f4; }
-  .connection-state.online i { background: var(--green); }
-  .classroom-state.online { border-color: #92a9cf; color: var(--blue); background: #edf3fb; }
-  .classroom-state.online i { background: var(--blue); }
-  .connection-state:disabled { cursor: wait; opacity: .6; }
-  .profile-actions { display: flex; gap: .8rem; }
-  .profile-actions button[data-delete] { color: #a62f22; }
-  .profile-list .empty { display: block; padding: 1.6rem 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.6; }
-  .add-profile { width: 100%; min-height: 3.4rem; border: 1px dashed var(--blue); border-radius: 0; color: var(--blue); background: transparent; font-weight: 800; cursor: pointer; }
-  .profile-form { margin-top: 1.5rem; border-top: 2px solid var(--blue); }
-  .profile-form[data-mode="connect"] .profile-detail,
-  .profile-form[data-mode="connect"] .institute-status { display: none; }
-  .form-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.1rem 0; border-bottom: 1px solid var(--blue-soft); }
-  .form-title h3 { margin: 0; font-size: 1rem; }
-  .profile-form label { display: block; padding: 1rem 0; color: var(--ink); font-size: .8rem; font-weight: 800; }
-  .profile-form label + label { border-top: 1px solid var(--blue-soft); }
-  .profile-form label > span { display: block; margin: .3rem 0 .6rem; color: var(--ink-muted); font-size: .7rem; font-weight: 450; line-height: 1.5; }
-  .profile-form input:not([type="checkbox"]) { width: 100%; min-height: 3rem; padding: 0 .8rem; border: 1px solid #8799af; border-radius: 0; color: var(--ink); background: var(--paper-bright); caret-color: var(--blue); }
-  .institute-status { min-height: 1.2rem; margin: -.45rem 0 1rem; color: var(--ink-muted); font-size: .68rem; line-height: 1.5; }
-  .institute-status[data-kind="error"] { color: #a62f22; }
-  .profile-form label.keep-alive { display: grid; grid-template-columns: 1.15rem 1fr; gap: .8rem; align-items: start; }
-  .keep-alive input { width: 1.15rem; height: 1.15rem; margin: .15rem 0 0; accent-color: var(--blue-strong); }
-  .profile-form label.keep-alive > span { margin: 0; }
-  .keep-alive strong { display: block; margin-bottom: .2rem; color: var(--ink); font-size: .8rem; }
-  .trial-note { margin: -.35rem 0 1rem; padding: .75rem .9rem; color: #5a4816; background: #fff4c9; font-size: .68rem; line-height: 1.5; }
-  .profile-form label.deadline { padding-top: 0; }
-  .save-profile { width: 100%; min-height: 3.55rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-weight: 800; cursor: pointer; }
-  .save-profile:disabled, .google-button:disabled { cursor: wait; opacity: .6; }
-  .profiles-status { min-height: 1.4rem; margin: 1rem 0 0; color: var(--ink-muted); font-size: .75rem; }
+
+  .profiles-status { min-height: 1.2rem; margin: .55rem 0 0; color: var(--ink-muted); font-size: .78rem; line-height: 1.45; }
   .profiles-status:focus-visible { outline: 3px solid var(--red); outline-offset: .35rem; }
   .profiles-status[data-kind="error"] { color: #a62f22; }
   .profiles-status[data-kind="success"] { color: var(--green); }
-  @media (max-width: 800px) {
-    .profiles { grid-template-columns: 1fr; }
-    .profiles-intro { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
+
+  @media (max-width: 900px) {
+    .signed-out { grid-template-columns: 1fr; }
+    .preview { padding: 1rem 0 0; border-left: 0; border-top: 1px solid var(--blue-soft); }
   }
+
+  @media (max-width: 680px) {
+    .google-button { justify-content: center; }
+  }
+
   @media (max-width: 560px) {
     .return-panel { grid-template-columns: 1fr; }
     .return-panel button { width: 100%; }
-    .profile-list li { grid-template-columns: 1fr; gap: .5rem; padding: 1.3rem 0; }
-    .profile-actions { margin-top: .4rem; }
   }
 </style>
