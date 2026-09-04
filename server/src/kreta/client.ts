@@ -1,5 +1,5 @@
 /**
- * Read-only KRÉTA Student API client, ported from python/kreta_client.py.
+ * Read-only KRÉTA Student API client.
  *
  * One instance serves one child for one MCP request: it holds no password,
  * only the encrypted profile's opened token pair. Only relative, fixed API

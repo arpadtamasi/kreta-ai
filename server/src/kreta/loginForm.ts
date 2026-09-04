@@ -1,9 +1,9 @@
 /**
  * Minimal extractor for the KRÉTA IDP login form.
  *
- * The Python client uses BeautifulSoup for this; pulling a full HTML parser
- * into the server for one ASP.NET form would be a heavier dependency than
- * the job needs, so this reads exactly what the login POST requires: the
+ * Pulling a full HTML parser into the server for one ASP.NET form would be a
+ * heavier dependency than the job needs, so this reads exactly what the
+ * login POST requires: the
  * form's action and its input elements (crucially the anti-forgery token and
  * `ReturnUrl`, which the IDP rejects the submission without).
  *

@@ -695,16 +695,16 @@
   .profile-form input:not([type="checkbox"]) { width: 100%; min-height: 3rem; padding: 0 .8rem; border: 1px solid #8799af; border-radius: 0; color: var(--ink); background: var(--paper-bright); caret-color: var(--blue); }
   .institute-status { min-height: 1.2rem; margin: -.45rem 0 1rem; color: var(--ink-muted); font-size: .68rem; line-height: 1.5; }
   .institute-status[data-kind="error"] { color: #a62f22; }
-  .keep-alive { display: grid !important; grid-template-columns: 1.15rem 1fr; gap: .8rem; align-items: start; }
+  .profile-form label.keep-alive { display: grid; grid-template-columns: 1.15rem 1fr; gap: .8rem; align-items: start; }
   .keep-alive input { width: 1.15rem; height: 1.15rem; margin: .15rem 0 0; accent-color: var(--blue-strong); }
-  .keep-alive > span { margin: 0 !important; }
+  .profile-form label.keep-alive > span { margin: 0; }
   .keep-alive strong { display: block; margin-bottom: .2rem; color: var(--ink); font-size: .8rem; }
   .trial-note { margin: -.35rem 0 1rem; padding: .75rem .9rem; color: #5a4816; background: #fff4c9; font-size: .68rem; line-height: 1.5; }
-  .deadline { padding-top: 0 !important; }
+  .profile-form label.deadline { padding-top: 0; }
   .save-profile { width: 100%; min-height: 3.55rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-weight: 800; cursor: pointer; }
   .save-profile:disabled, .google-button:disabled { cursor: wait; opacity: .6; }
   .profiles-status { min-height: 1.4rem; margin: 1rem 0 0; color: var(--ink-muted); font-size: .75rem; }
-  .profiles-status:focus-visible { outline: 3px solid var(--orange); outline-offset: .35rem; }
+  .profiles-status:focus-visible { outline: 3px solid var(--red); outline-offset: .35rem; }
   .profiles-status[data-kind="error"] { color: #a62f22; }
   .profiles-status[data-kind="success"] { color: var(--green); }
   @media (max-width: 800px) {

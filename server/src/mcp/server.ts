@@ -1,7 +1,6 @@
 /**
- * The MCP server: the same read-only KRÉTA tools the local Python server
- * exposes (python/kreta_mcp_server.py), served over streamable HTTP against
- * a sealed session instead of a local .env.
+ * The hosted MCP server: read-only KRÉTA and Classroom tools served over
+ * streamable HTTP against a sealed user session.
  *
  * The tool surface is deliberately a fixed table of student GET endpoints.
  * There is no "call any KRÉTA path" tool, no write verb, and no attachment

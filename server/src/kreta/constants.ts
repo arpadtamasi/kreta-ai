@@ -1,7 +1,6 @@
 /**
- * KRÉTA IDP and mobile-API constants, kept identical to the local Python
- * client (python/kreta_smoke_test.py) so both implementations speak to the
- * same endpoints with the same fixed, official-mobile-client identity.
+ * KRÉTA IDP and mobile-API constants used by the hosted integration to speak
+ * to the fixed endpoints with the official mobile client's identity.
  *
  * The client id and redirect URI belong to the official student mobile app.
  * They are not ours and cannot be replaced: KRÉTA has no third-party client

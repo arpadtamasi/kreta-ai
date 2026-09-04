@@ -1,6 +1,6 @@
 /**
- * Response shaping and argument validation, ported from
- * python/kreta_mcp_server.py so both servers answer with the same envelope.
+ * Response shaping and argument validation for the hosted MCP tools.
+ * Every tool response uses the same stable envelope.
  *
  * Every list answer is capped and reports whether it was truncated: a school
  * year of evaluations or timetable items would otherwise flood the model's

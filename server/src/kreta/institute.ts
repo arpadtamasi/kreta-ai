@@ -1,4 +1,4 @@
-/** Institute-code normalization, ported from python/kreta_smoke_test.py. */
+/** Institute-code normalization for eKRÉTA hostnames and URLs. */
 
 const INSTITUTE_CODE_PATTERN = /^[A-Za-z0-9-]{2,40}$/;
 
