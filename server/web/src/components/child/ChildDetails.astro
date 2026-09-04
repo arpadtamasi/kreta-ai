@@ -51,6 +51,12 @@
       </dl>
       <p class="detail" id="child-classroom-detail"></p>
       <button class="source-action" id="child-classroom-connect" type="button">Classroom összekapcsolása</button>
+      <div class="session-issue" id="child-session-issue" hidden>
+        <strong>A Google-munkamenet lejárt</strong>
+        <p>A Classroom összekapcsolásához élő Google-belépés kell, mert a visszatérő lépésnél ezt ellenőrizzük. Lépj be újra, és folytatjuk.</p>
+        <button id="child-session-fix" type="button">Belépés megújítása</button>
+      </div>
+
       <p class="hint" id="child-classroom-hint">A Google oldalán a gyerek iskolai fiókját válaszd. Ha „Access blocked” üzenet fogad, ott nyomd meg a <strong>Request Access</strong> gombot: a kérés az iskola rendszergazdájához kerül.</p>
 
       <div class="blocked" id="child-classroom-blocked" hidden>
@@ -171,6 +177,25 @@
 
   .source-action:hover { background: var(--blue); }
   .source-action:disabled { cursor: wait; opacity: .65; }
+
+  .session-issue { margin-top: 1rem; padding: .9rem 1.1rem 1.1rem; border: 1px solid #d7a49a; background: #fff6f4; }
+  .session-issue strong { display: block; color: #a62f22; font-size: .82rem; }
+  .session-issue p { max-width: 44rem; margin: .3rem 0 0; color: #6e2018; font-size: .8rem; line-height: 1.6; }
+
+  .session-issue button {
+    min-height: 2.8rem;
+    margin-top: .8rem;
+    padding: .5rem 1.1rem;
+    border: 2px solid #a62f22;
+    border-radius: 0;
+    color: white;
+    background: #a62f22;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .session-issue button:disabled { cursor: wait; opacity: .65; }
 
   .hint { max-width: 46rem; margin: .6rem 0 0; color: var(--ink-muted); font-size: .76rem; line-height: 1.6; }
   .hint strong { color: var(--ink); }

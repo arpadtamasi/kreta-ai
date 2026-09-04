@@ -129,3 +129,20 @@ test("the page reveals itself only once the right title is in place", () => {
   assert.match(pageModule, /title\.textContent = "Gyerek hozzáadása";/);
   assert.doesNotMatch(pageModule, /loading\.hidden = true;\n    body\.hidden = false;\n    try/);
 });
+
+test("a lapsed Google session is raised where it blocks, with a way out", () => {
+  assert.match(details, /id="child-session-issue"/);
+  assert.match(details, /id="child-session-fix"[^>]*>Belépés megújítása</);
+  assert.ok(
+    details.indexOf('id="child-session-issue"') > details.indexOf('id="panel-classroom"'),
+    "only the Classroom round trip needs the session cookie",
+  );
+  assert.match(pageModule, /async function ensureSession\(user: User\): Promise<boolean>/);
+  assert.match(pageModule, /if \(!sessionReady && !await ensureSession\(user\)\)/, "retry before leaving for Google");
+  assert.match(pageModule, /signInWithPopup\(auth, provider\)/);
+  assert.doesNotMatch(
+    pageModule,
+    /A Google-munkamenetet nem sikerült megújítani/,
+    "no dead error line at the bottom of the page on load",
+  );
+});
