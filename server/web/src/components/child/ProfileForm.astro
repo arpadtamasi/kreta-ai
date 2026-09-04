@@ -1,33 +1,43 @@
 ---
 /** Gyerekprofil hozzáadása, szerkesztése és KRÉTA-online kapcsolása. */
+import ArrowMark from "../ArrowMark.astro";
 ---
 
 <section class="editor" id="child-editor" hidden aria-labelledby="profile-form-title">
   <h2 id="profile-form-title">Gyerek hozzáadása</h2>
-  <p id="profile-form-intro">A KRÉTA-jelszó csak a kapcsolat létrehozásához kell; nem mentjük el.</p>
+  <p id="profile-form-intro">A profil a te Google-fiókodhoz tartozik.</p>
+
+  <aside class="trust-notice">
+    <p><strong>A KRÉTA-jelszó átmegy az Üzenőfüzet szerverén.</strong> Nem mentjük el — de ha ezt nem tudod elfogadni, ne lépj tovább.</p>
+    <a href="/hogy-mukodik#jelszo">Mi történik pontosan?<ArrowMark /></a>
+  </aside>
 
   <form id="profile-form" novalidate>
     <input id="profile-id" type="hidden" />
 
-    <label class="profile-detail" for="child-name">A gyerek rendes neve
-      <span>A jelszókezelő ezt párosíthatja a KRÉTA-jelszóval; Claude-nak is ezen a néven hivatkozhatsz rá.</span>
+    <label class="field profile-detail" for="child-name">
+      <span class="field-label">A gyerek rendes neve</span>
+      <span class="field-help">A jelszókezelő ezt párosíthatja a KRÉTA-jelszóval; Claude-nak is ezen a néven hivatkozhatsz rá.</span>
       <input id="child-name" name="childName" type="text" minlength="2" maxlength="80" autocomplete="username" required placeholder="pl. Lilla" />
     </label>
 
-    <label class="profile-detail" for="kreta-username">KRÉTA-felhasználónév
-      <span>Az eKRÉTA belépési azonosítója. Csak a te profilodban tároljuk.</span>
+    <label class="field profile-detail" for="kreta-username">
+      <span class="field-label">KRÉTA-felhasználónév</span>
+      <span class="field-help">Az eKRÉTA belépési azonosítója. Csak a te profilodban tároljuk.</span>
       <input id="kreta-username" name="kretaUsername" type="text" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" required />
     </label>
 
-    <label class="profile-detail" for="institute-code">Intézmény
-      <span id="institute-help">Írj be legalább 3 karaktert az iskola nevéből vagy kódjából, majd válassz a találatok közül. A kód kézzel is megadható.</span>
+    <label class="field profile-detail" for="institute-code">
+      <span class="field-label">Intézmény</span>
+      <span class="field-help" id="institute-help">Írj be legalább 3 karaktert az iskola nevéből vagy kódjából, majd válassz a találatok közül. A kód kézzel is megadható.</span>
       <input id="institute-code" name="instituteCode" type="text" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" list="institute-options" aria-describedby="institute-help institute-search-status" aria-busy="false" required placeholder="pl. Budenz vagy klik034802001" />
     </label>
     <datalist id="institute-options"></datalist>
     <p class="institute-status" id="institute-search-status" role="status" aria-live="polite"></p>
 
-    <label for="kreta-password">KRÉTA-jelszó
-      <span>A kapcsolat most készül el. A jelszó átmegy a szerveren, de nem mentjük el.</span>
+    <label class="field" for="kreta-password">
+      <span class="field-label">KRÉTA-jelszó</span>
+      <span class="field-help">A kapcsolat most készül el. A jelszó átmegy a szerveren, de nem mentjük el.</span>
       <input id="kreta-password" name="password" type="password" maxlength="512" autocomplete="current-password" required />
     </label>
 
@@ -50,13 +60,50 @@
 </section>
 
 <style>
-  .editor { padding-top: 1.5rem; }
-  h2 { margin: 0; font-size: 1.05rem; letter-spacing: -.025em; }
+  .editor { padding-top: .2rem; }
+  h2 { margin: 0; color: var(--blue); font-size: .95rem; letter-spacing: -.025em; }
   #profile-form-intro { max-width: 44rem; margin: .35rem 0 .5rem; color: var(--ink-muted); font-size: .8rem; line-height: 1.55; }
 
-  label { display: block; max-width: 34rem; padding: 1rem 0; color: var(--ink); font-size: .85rem; font-weight: 800; }
-  label + label { border-top: 1px solid var(--blue-soft); }
-  label > span { display: block; margin: .3rem 0 .6rem; color: var(--ink-muted); font-size: .78rem; font-weight: 450; line-height: 1.5; }
+  /* A bizalmi határ a mezők előtt áll, nem alattuk. Négyzetes, 2px-es kobalt
+     keret — a rendszer „fontos kút” jelölése, nem lebegő kártya. */
+  .trust-notice {
+    max-width: 46rem;
+    margin: 1rem 0 .25rem;
+    padding: 1rem 1.15rem;
+    border: 2px solid var(--blue);
+    background: var(--paper-bright);
+  }
+  .trust-notice p { margin: 0; color: var(--ink); font-size: .85rem; line-height: 1.6; }
+  .trust-notice strong { color: var(--blue); }
+  .trust-notice a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    gap: .5rem;
+    margin-top: .35rem;
+    color: var(--blue-strong);
+    font-size: .85rem;
+    font-weight: 800;
+    text-underline-offset: .35rem;
+  }
+
+  /* Ugyanaz a kétoszlopos rács, mint a fül nézetsoraiban: bal oldalt a
+     megnevezés, jobb oldalt az érték — csak most szerkeszthető. */
+  .field {
+    display: grid;
+    grid-template-columns: minmax(10rem, .7fr) minmax(0, 1fr);
+    column-gap: 1.5rem;
+    max-width: 46rem;
+    padding: .8rem 0;
+    border-bottom: 1px solid var(--blue-soft);
+    color: var(--ink);
+    font-size: .85rem;
+    font-weight: 800;
+  }
+
+  .field-label { grid-column: 1; align-self: start; }
+  .field-help { grid-column: 1; margin-top: .3rem; color: var(--ink-muted); font-size: .74rem; font-weight: 450; line-height: 1.5; }
+  .field input { grid-column: 2; grid-row: 1 / span 2; align-self: start; }
 
   input:not([type="checkbox"]):not([type="radio"]) {
     width: 100%;
@@ -72,10 +119,10 @@
   #profile-form[data-mode="connect"] .profile-detail,
   #profile-form[data-mode="connect"] .institute-status { display: none; }
 
-  .institute-status { max-width: 34rem; min-height: 1.2rem; margin: -.5rem 0 .9rem; color: var(--ink-muted); font-size: .78rem; line-height: 1.5; }
+  .institute-status { max-width: 46rem; min-height: 1.2rem; margin: .5rem 0 0; color: var(--ink-muted); font-size: .78rem; line-height: 1.5; }
   .institute-status[data-kind="error"] { color: #a62f22; }
 
-  .keep-alive { max-width: 34rem; margin: 1.25rem 0 0; padding: .25rem 1.1rem 1rem; border: 1px solid var(--blue-soft); }
+  .keep-alive { max-width: 46rem; margin: 1.25rem 0 0; padding: .25rem 1.1rem 1rem; border: 1px solid var(--blue-soft); }
   legend { padding: 0 .45rem; color: var(--blue); font-size: .8rem; font-weight: 800; }
   .keep-alive-lead { margin: .6rem 0 .9rem; color: var(--ink-muted); font-size: .78rem; line-height: 1.55; }
 
@@ -126,6 +173,11 @@
     text-decoration: underline;
     text-underline-offset: .25rem;
     cursor: pointer;
+  }
+
+  @media (max-width: 620px) {
+    .field { grid-template-columns: 1fr; }
+    .field input { grid-column: 1; grid-row: auto; margin-top: .5rem; }
   }
 
   @media (max-width: 560px) {

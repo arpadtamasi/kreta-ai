@@ -13,7 +13,8 @@ const classroomRouter = read("../src/classroom/router.ts");
 
 test("the child has a page of its own instead of a scrolling modal", () => {
   assert.match(page, /<ChildDetails \/>/);
-  assert.match(page, /<ProfileForm \/>/);
+  assert.match(details, /<ProfileForm \/>/, "the editor is an in-place mode of the KRÉTA tab");
+  assert.doesNotMatch(page, /<ProfileForm \/>/);
   assert.match(page, /<ClassroomAdminHelp \/>/);
   assert.match(page, /id="child-back"/);
   assert.doesNotMatch(page, /<dialog/);

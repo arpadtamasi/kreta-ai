@@ -53,6 +53,8 @@ export function startChildPage(): void {
   const adminHelp = document.querySelector<HTMLDetailsElement>("#classroom-admin-help")!;
 
   const editor = document.querySelector<HTMLElement>("#child-editor")!;
+  const kretaView = document.querySelector<HTMLElement>("#kreta-view")!;
+  const tabsRow = document.querySelector<HTMLElement>(".tabs")!;
   const form = document.querySelector<HTMLFormElement>("#profile-form")!;
   const formTitle = document.querySelector<HTMLElement>("#profile-form-title")!;
   const formIntro = document.querySelector<HTMLElement>("#profile-form-intro")!;
@@ -227,13 +229,19 @@ export function startChildPage(): void {
     formIntro.textContent = mode === "connect" ? "" : "A profil a te Google-fiókodhoz tartozik.";
     formIntro.hidden = mode === "connect";
     submitButton.textContent = mode === "connect" ? "Online kapcsolás" : "Mentés és kapcsolás";
+    details.hidden = false;
+    selectTab("kreta");
+    // Új gyereknél még nincs mit fülekre bontani: csak az űrlap kell.
+    tabsRow.hidden = mode === "new";
+    kretaView.hidden = true;
     editor.hidden = false;
-    details.hidden = mode !== "new" ? true : details.hidden;
     (mode === "connect" ? passwordInput : nameInput).focus();
   }
 
   function closeEditor() {
     editor.hidden = true;
+    kretaView.hidden = false;
+    tabsRow.hidden = false;
     instituteSearch.reset();
     form.reset();
     delete form.dataset.mode;

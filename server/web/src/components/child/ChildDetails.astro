@@ -1,5 +1,7 @@
 ---
-/** Egy gyerek két külön csatlakozója egymás mellett, saját leválasztással. */
+/** Egy gyerek két külön csatlakozója egymás mellett, saját leválasztással.
+ *  A KRÉTA-fül helyben vált szerkesztő módba: ugyanazok a sorok, mezőkkel. */
+import ProfileForm from "./ProfileForm.astro";
 ---
 
 <section class="details" id="child-details" hidden>
@@ -16,6 +18,7 @@
     </div>
 
     <section class="panel" id="panel-kreta" role="tabpanel" aria-labelledby="tab-kreta">
+      <div id="kreta-view">
       <dl class="facts">
         <div><dt>KRÉTA-felhasználónév</dt><dd id="child-username"></dd></div>
         <div><dt>Intézmény</dt><dd id="child-institute"></dd></div>
@@ -43,6 +46,9 @@
           </div>
         </div>
       </div>
+      </div>
+
+      <ProfileForm />
     </section>
 
     <section class="panel" id="panel-classroom" role="tabpanel" aria-labelledby="tab-classroom" hidden>
