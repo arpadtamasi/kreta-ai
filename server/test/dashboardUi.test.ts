@@ -211,11 +211,22 @@ test("school admins get a readable, copyable Classroom approval handoff", () => 
 
 test("the client logic lives in modules, not in the profiles component", () => {
   assert.match(container, /import \{ startDashboard \} from "\.\.\/scripts\/dashboard\/main";/);
-  assert.ok(container.split("\n").length < 130, "ChildProfiles.astro should stay a thin container");
+  assert.ok(container.split("\n").length < 150, "ChildProfiles.astro should stay a thin container");
   assert.doesNotMatch(container, /firebase\/auth/);
   assert.doesNotMatch(container, /fetch\(/);
 });
 
 test("component scripts stay external files, because production CSP forbids inline script", () => {
   assert.match(astroConfig, /build: \{ assetsInlineLimit: 0 \}/);
+});
+
+test("the landing block never flashes while the Google session is still unknown", () => {
+  assert.match(container, /id="profiles-loading"/);
+  assert.match(container, /<div class="signed-out" id="profiles-signed-out" hidden>/);
+  assert.match(container, /<div class="signed-in" id="profiles-signed-in" hidden>/);
+  assert.match(container, /<noscript>/);
+  assert.match(mainModule, /function showAuthState\(user: User \| null\)/);
+  assert.match(mainModule, /loading\.hidden = true;/);
+  assert.match(mainModule, /onAuthStateChanged\(auth, async \(user\) => \{\n    showAuthState\(user\);/);
+  assert.match(mainModule, /if \(authResolved\) return;/, "a blocked Firebase must still reveal the sign-in");
 });

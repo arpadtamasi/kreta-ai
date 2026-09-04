@@ -16,6 +16,7 @@ import { createManagePanel } from "./managePanel";
 import { claudeSummary, hasClaudeSource, type Profile } from "./profiles";
 
 export function startDashboard(): void {
+  const loading = document.querySelector<HTMLElement>("#profiles-loading")!;
   const signedOut = document.querySelector<HTMLElement>("#profiles-signed-out")!;
   const signedIn = document.querySelector<HTMLElement>("#profiles-signed-in")!;
   const signInButton = document.querySelector<HTMLButtonElement>("#profiles-google-signin")!;
@@ -34,6 +35,7 @@ export function startDashboard(): void {
 
   let profiles: Profile[] = [];
   let editorPrompted = false;
+  let authResolved = false;
 
   const candidateReturn = new URLSearchParams(location.search).get("return_to") ?? "";
   const returnTo = candidateReturn.startsWith("/authorize?") && candidateReturn.length <= 12_000
@@ -50,6 +52,21 @@ export function startDashboard(): void {
   function getUser(): User | null {
     return auth.currentUser;
   }
+
+  /** Amíg a Firebase nem mondta meg, be van-e lépve, egyik állapotot sem mutatjuk. */
+  function showAuthState(user: User | null) {
+    authResolved = true;
+    loading.hidden = true;
+    signedOut.hidden = Boolean(user);
+    signedIn.hidden = !user;
+  }
+
+  // Ha a Firebase nem válaszol, a belépés akkor is elérhető marad.
+  window.setTimeout(() => {
+    if (authResolved) return;
+    loading.hidden = true;
+    signedOut.hidden = false;
+  }, 3000);
 
   /** A fejléc lépései mondják meg, hol tart a szülő és mi a következő teendő. */
   function updateSteps(signedIn: boolean) {
@@ -240,8 +257,7 @@ export function startDashboard(): void {
   });
 
   onAuthStateChanged(auth, async (user) => {
-    signedOut.hidden = Boolean(user);
-    signedIn.hidden = !user;
+    showAuthState(user);
     signInButton.disabled = false;
     signOutButton.hidden = !user;
     accountName.hidden = !user;
