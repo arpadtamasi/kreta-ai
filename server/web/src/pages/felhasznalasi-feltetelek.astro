@@ -1,46 +1,62 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import LegalLayout from "../layouts/LegalLayout.astro";
+import type { LegalSection } from "../layouts/LegalLayout.astro";
+
+const sections: LegalSection[] = [
+  { id: "helyzet", title: "A szolgáltatás helyzete" },
+  { id: "jogosult-hasznalat", title: "Jogosult használat" },
+  { id: "kapcsolatok", title: "KRÉTA- és Classroom-kapcsolat" },
+  { id: "fiokbiztonsag", title: "Fiókbiztonság és megszüntetés" },
+  { id: "felelosseg", title: "Elérhetőség és felelősség" },
+  { id: "adatkezeles", title: "Adatkezelés, változások és kapcsolat" },
+];
+
+/** A szakaszcím egyetlen forrása a fenti lista; elgépelt id build-időben elhasal. */
+const t = (id: string): string => {
+  const section = sections.find((item) => item.id === id);
+  if (!section) throw new Error(`Ismeretlen szakasz: ${id}`);
+  return section.title;
+};
+
+const related = [
+  { href: "/adatkezeles", label: "Adatkezelési tájékoztató" },
+  { href: "/hogy-mukodik", label: "Hogy működik?" },
+];
 ---
 
-<BaseLayout title="Felhasználási feltételek – Üzenőfüzet" description="Az Üzenőfüzet szolgáltatás felhasználási feltételei.">
-  <article class="legal">
-    <h1>Felhasználási feltételek</h1>
-    <p class="intro">Az Üzenőfüzet egy független, nyílt forráskódú segédeszköz, amely a felhasználó kifejezett kérésére, csak olvasásra tesz elérhetővé KRÉTA- és Google Classroom-adatokat egy támogatott MCP-kliensben.</p>
+<LegalLayout
+  title="Felhasználási feltételek – Üzenőfüzet"
+  description="Az Üzenőfüzet szolgáltatás felhasználási feltételei."
+  heading="Felhasználási feltételek"
+  sections={sections}
+  related={related}
+  updated="Hatályos: 2026. szeptember 4."
+>
+  <p class="intro" slot="intro">Az Üzenőfüzet egy független, nyílt forráskódú segédeszköz, amely a felhasználó kifejezett kérésére, csak olvasásra tesz elérhetővé KRÉTA- és Google Classroom-adatokat egy támogatott MCP-kliensben (például Claude-ban).</p>
 
-    <h2>A szolgáltatás helyzete</h2>
-    <p>Az Üzenőfüzet nem az eKRÉTA Zrt., a Google vagy az Anthropic hivatalos terméke, és ezek a szervezetek nem hagyták jóvá vagy szponzorálták. A szolgáltatás a külső rendszerek és a felhasználó által választott MCP-kliens elérhetőségétől is függ.</p>
+  <h2 id="helyzet">{t("helyzet")}</h2>
+  <p><strong>Az Üzenőfüzet nem az eKRÉTA Zrt., a Google vagy az Anthropic hivatalos terméke</strong>, és ezek a szervezetek nem hagyták jóvá vagy szponzorálták. A szolgáltatás a külső rendszerek és a felhasználó által választott MCP-kliens elérhetőségétől is függ.</p>
 
-    <h2>Jogosult használat</h2>
-    <p>Csak olyan fiókot kapcsolhatsz össze, amelyhez jogszerű hozzáférésed van, és amelynek kezelésére jogosult vagy. Gyermek fiókja esetén a kapcsolást a gyermek törvényes képviselőjeként vagy az ő megfelelő hozzájárulásával végezheted, az iskola és a Google Workspace-szervezet szabályainak betartásával.</p>
-    <p>Tilos más fiókjához jogosulatlanul hozzáférni, a szolgáltatás védelmét megkerülni, a rendszert túlterhelni, vagy az adatokat jogellenes célra felhasználni.</p>
+  <h2 id="jogosult-hasznalat">{t("jogosult-hasznalat")}</h2>
+  <p><strong>Csak olyan fiókot kapcsolhatsz össze, amelyhez jogszerű hozzáférésed van</strong>, és amelynek kezelésére jogosult vagy. Gyermek fiókja esetén a kapcsolást a gyermek törvényes képviselőjeként vagy az ő megfelelő hozzájárulásával végezheted, az iskola és a Google Workspace-szervezet szabályainak betartásával. Azt, hogy a mi oldalunkon mi védi a kiskorú adatait, az adatkezelési tájékoztató <a href="/adatkezeles#kiskoruak">Kiskorúak adatai</a> szakasza írja le.</p>
+  <p>Tilos:</p>
+  <ul>
+    <li>más fiókjához jogosulatlanul hozzáférni,</li>
+    <li>a szolgáltatás védelmét megkerülni,</li>
+    <li>a rendszert túlterhelni,</li>
+    <li>az adatokat jogellenes célra felhasználni.</li>
+  </ul>
 
-    <h2>KRÉTA- és Classroom-kapcsolat</h2>
-    <p>A KRÉTA-jelszó a kapcsolódáskor átmegy az Üzenőfüzet szerverén, de nem tároljuk. A létrejött KRÉTA-tokeneket és a Google Classroom refresh tokent titkosítva tároljuk. A Classroomhoz kizárólag olvasási jogosultságokat kérünk; az Üzenőfüzet nem ad be, nem módosít és nem töröl tanórai tartalmat.</p>
-    <p>Az MCP-kliens csak akkor kér le adatot, amikor erre utasítod. Az MCP- vagy AI-kliensben megjelenő adatok további kezelésére az adott kliens saját feltételei és adatkezelési szabályai is vonatkoznak.</p>
+  <h2 id="kapcsolatok">{t("kapcsolatok")}</h2>
+  <p><strong>A KRÉTA-jelszó a kapcsolódáskor átmegy az Üzenőfüzet szerverén, de nem tároljuk.</strong> A létrejött KRÉTA-tokeneket és a Google Classroom megújító tokenjét (refresh token) titkosítva tároljuk. A Classroomhoz kizárólag olvasási jogosultságokat kérünk: <strong>az Üzenőfüzet nem ad be, nem módosít és nem töröl tanórai tartalmat.</strong></p>
+  <p>Az MCP-kliens csak akkor kér le adatot, amikor erre utasítod. Az MCP- vagy AI-kliensben megjelenő adatok további kezelésére az adott kliens saját feltételei és adatkezelési szabályai is vonatkoznak.</p>
 
-    <h2>Fiókbiztonság és megszüntetés</h2>
-    <p>Te felelsz a használt fiókok és eszközök biztonságáért. A kapcsolati pulton a KRÉTA- és Classroom-kapcsolat külön megszüntethető, a gyermekprofil pedig törölhető. Visszaélés, biztonsági kockázat vagy jogszabályi kötelezettség esetén a szolgáltatáshoz való hozzáférés korlátozható.</p>
+  <h2 id="fiokbiztonsag">{t("fiokbiztonsag")}</h2>
+  <p><strong>Te felelsz a használt fiókok és eszközök biztonságáért.</strong> Az Üzenőfüzet főoldalán a KRÉTA- és Classroom-kapcsolat külön megszüntethető, a gyermekprofil pedig törölhető. Visszaélés, biztonsági kockázat vagy jogszabályi kötelezettség esetén a szolgáltatáshoz való hozzáférés korlátozható.</p>
 
-    <h2>Elérhetőség és felelősség</h2>
-    <p>A szolgáltatást jelenlegi állapotában biztosítjuk. Nem garantálható a folyamatos elérhetőség, a külső rendszerek változatlansága vagy az adatok hibamentes értelmezése. Fontos iskolai döntés előtt mindig ellenőrizd az adatot a KRÉTA vagy a Google Classroom hivatalos felületén.</p>
+  <h2 id="felelosseg">{t("felelosseg")}</h2>
+  <p>A szolgáltatást jelenlegi állapotában biztosítjuk. Nem garantálható a folyamatos elérhetőség, a külső rendszerek változatlansága vagy az adatok hibamentes értelmezése. <strong>Fontos iskolai döntés előtt mindig ellenőrizd az adatot a KRÉTA vagy a Google Classroom hivatalos felületén.</strong></p>
 
-    <h2>Adatkezelés, változások és kapcsolat</h2>
-    <p>Az adatok kezelését az <a href="/adatkezeles">adatkezelési tájékoztató</a> ismerteti. A feltételek a szolgáltatás vagy a jogi környezet változásakor frissíthetők; a hatályos változat mindig ezen az oldalon érhető el. Kérdést vagy hibát a projekt <a href="https://github.com/arpadtamasi/kreta-ai/issues" rel="noreferrer">GitHub-kapcsolati felületén</a> jelezhetsz.</p>
-
-    <p class="updated">Hatályos: 2026. szeptember 4.</p>
-  </article>
-</BaseLayout>
-
-<style>
-  .legal { max-width: 58rem; margin: 0 auto; padding: clamp(4rem, 9vw, 8rem) var(--page-pad); }
-  h1 { max-width: 13ch; margin: 0 0 1.5rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 9vw, 8rem); font-weight: 600; line-height: .82; text-transform: uppercase; }
-  .intro { margin-bottom: 4rem; color: var(--blue); font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 650; line-height: 1.45; }
-  h2 { margin: 3rem 0 .8rem; padding-top: 1rem; border-top: 2px solid var(--blue); color: var(--blue); font-size: 1.15rem; }
-  p { color: var(--ink-muted); line-height: 1.75; }
-  a { color: var(--blue); font-weight: 750; }
-  .updated { margin-top: 4rem; font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
-
-  @media (max-width: 480px) {
-    h1 { font-size: clamp(3rem, 15vw, 4rem); overflow-wrap: anywhere; }
-  }
-</style>
+  <h2 id="adatkezeles">{t("adatkezeles")}</h2>
+  <p>Az adatok kezelését az <a href="/adatkezeles">adatkezelési tájékoztató</a> ismerteti. A feltételek a szolgáltatás vagy a jogi környezet változásakor frissíthetők; a hatályos változat mindig ezen az oldalon érhető el. Kérdést vagy hibát a projekt <a href="https://github.com/arpadtamasi/uzenofuzet/issues" target="_blank" rel="noreferrer noopener">GitHub-kapcsolati felületén</a> jelezhetsz.</p>
+</LegalLayout>

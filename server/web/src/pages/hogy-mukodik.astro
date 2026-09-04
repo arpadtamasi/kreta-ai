@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import ArrowMark from "../components/ArrowMark.astro";
 import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro";
 ---
 
@@ -45,10 +46,21 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
     <p><strong>Ez a bonyolultság a KRÉTA belépési modelljéből következik.</strong> Ha nem kéred, semmi nem frissül a háttérben: 30 perc után a próba Offline lesz.</p>
   </section>
 
+  <section class="why next" aria-labelledby="next-title">
+    <h2 id="next-title">Kész vagy?</h2>
+    <div>
+      <p>Ha a fenti bizalmi határt elfogadod, egy gyerek hozzáadása nagyjából egy perc. Ha még nem, előbb olvasd el, mit tárolunk pontosan.</p>
+      <div class="next-actions">
+        <a class="button" href="/gyerek">Gyerek hozzáadása<ArrowMark /></a>
+        <a class="button secondary" href="/adatkezeles">Adatkezelés részletesen<ArrowMark /></a>
+      </div>
+    </div>
+  </section>
+
   <section class="why admin" aria-labelledby="admin-title">
     <h2 id="admin-title">Ha az iskola tiltja</h2>
     <div>
-      <p>Ha az iskola Google Workspace-e még nem engedélyezte az Üzenőfüzetet, a Classroom összekapcsolása elakad. Ilyenkor az alábbi adatokat kell elküldeni az iskolai Google-rendszergazdának; a műhelyben ugyanez az összefoglaló nyílik meg magától.</p>
+      <p>Ha az iskola Google Workspace-e még nem engedélyezte az Üzenőfüzetet, a Classroom összekapcsolása elakad. Ilyenkor az alábbi adatokat kell elküldeni az iskolai Google-rendszergazdának; az Üzenőfüzet főoldalán ugyanez az összefoglaló nyílik meg magától.</p>
       <p>A rendszergazdának szánt teljes leírás — kért hozzáférések, hívott végpontok, engedélyezés és visszavonás — külön oldalon él: <a href="/iskolai-admin">Iskolai admin csatlakozás</a>. Ezt a linket elég elküldeni az iskolának.</p>
       <ClassroomAdminHelp variant="page" />
     </div>
@@ -57,35 +69,49 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
 </BaseLayout>
 
 <style>
-  .page-hero { display: grid; grid-template-columns: 37% 63%; min-height: 34rem; padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
-  h1 { grid-column: 1; margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 8vw, 9rem); font-weight: 600; line-height: .76; letter-spacing: -.035em; text-transform: uppercase; }
-  .page-hero > p:last-child { grid-column: 2; grid-row: 1 / span 2; align-self: end; max-width: 51rem; margin: 0; color: var(--blue); font-size: clamp(1.35rem, 2.2vw, 2.2rem); font-weight: 650; line-height: 1.35; }
-  .password { display: grid; grid-template-columns: 1fr 5fr; gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 9vw, 9rem) var(--page-pad); color: white; background: var(--ink); }
+  /* A két hasáb alja egy vonalra ül: ez a 37/63 osztás értelme. Korábban egy
+     üres második sorra volt igazítva, amitől 113px holt hely maradt alul. */
+  .page-hero { display: grid; grid-template-columns: 37% 63%; align-items: end; padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  h1 { grid-column: 1; margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 8vw, 9rem); font-weight: 600; line-height: 1.05; letter-spacing: -.035em; text-transform: uppercase; }
+  .page-hero > p:last-child { grid-column: 2; max-width: 51rem; margin: 0; color: var(--blue); font-size: clamp(1.35rem, 2.2vw, 2.2rem); font-weight: 650; line-height: 1.35; }
+  .password { display: grid; grid-template-columns: 1fr 5fr; gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 9vw, 9rem) var(--page-pad); color: white; background: var(--ink); scroll-margin-top: 1.5rem; }
   .warning-mark { width: clamp(5rem, 9vw, 9rem); aspect-ratio: 1; display: grid; place-items: center; align-self: start; border: 5px solid var(--red); border-radius: 50%; color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: clamp(3rem, 6vw, 6rem); transform: rotate(-5deg); }
   .password h2 { max-width: 67rem; margin: 0 0 1.6rem; font-size: clamp(2.1rem, 4.2vw, 4.7rem); letter-spacing: -.045em; line-height: 1.05; }
-  .password p { max-width: 64rem; color: #bac6d5; line-height: 1.75; }
+  .password p { max-width: 33rem; color: #bac6d5; line-height: 1.75; }
   .password .large { color: white; font-size: clamp(1.15rem, 1.7vw, 1.6rem); line-height: 1.55; }
-  aside { max-width: 64rem; margin: 2rem 0; padding: 1.3rem 1.5rem; border: 1px solid rgba(242, 200, 75, .65); color: #f3e8bd; background: #172433; line-height: 1.65; }
+  aside { max-width: 33rem; margin: 2rem 0; padding: 1.3rem 1.5rem; border: 1px solid rgba(242, 200, 75, .65); color: #f3e8bd; background: #172433; line-height: 1.65; }
   .flow { display: grid; grid-template-columns: 37% 63%; }
   .flow > div { padding: clamp(4rem, 8vw, 8rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
-  .flow h2 { margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 6vw, 7rem); font-weight: 600; line-height: .76; text-transform: uppercase; }
+  .flow h2 { margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 6vw, 7rem); font-weight: 600; line-height: 1.05; text-transform: uppercase; }
   .flow ol { margin: 0; padding: 0; list-style: none; }
   .flow li { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: 2rem var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
-  .flow li > span { color: var(--red); font-family: "IBM Plex Mono", monospace; }
+  /* 16px-en a vermilion 4.0:1 a papíron — bukó AA. 1.2rem/700 már nagy
+     szövegnek számít (küszöb 3:1), és a sorszám amúgy is jelölés. */
+  .flow li > span { color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: 1.2rem; font-weight: 700; line-height: 1.2; }
   .flow h3 { margin: 0 0 .45rem; font-size: 1rem; }
-  .flow li p { max-width: 45rem; margin: 0; color: var(--ink-muted); font-size: .84rem; line-height: 1.65; }
-  .why { display: grid; grid-template-columns: 37% minmax(0, 1fr); gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .flow li p { max-width: 32rem; margin: 0; color: var(--ink-muted); font-size: .95rem; line-height: 1.65; }
+  /* Csak a hasábok közé kell térköz. A sorköz korábban a második bekezdést is
+     szétlökte, amit egy -2rem-es margóval kellett visszahúzni. */
+  .why { display: grid; grid-template-columns: 37% minmax(0, 1fr); column-gap: clamp(2rem, 5vw, 6rem); row-gap: 0; padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
   .why h2 { margin: 0; color: var(--blue); font-size: clamp(2rem, 4vw, 4rem); letter-spacing: -.045em; line-height: 1.04; }
-  .why p { grid-column: 2; max-width: 50rem; margin: 0; color: var(--ink-muted); line-height: 1.75; }
-  .why p + p { margin-top: -2rem; }
-  .classroom { border-bottom-color: var(--blue); background: var(--paper-bright); }
+  .why p { grid-column: 2; max-width: 33rem; margin: 0; color: var(--ink-muted); line-height: 1.75; }
+  .why p + p { margin-top: 1.1rem; }
+  .classroom { border-bottom-color: var(--blue); }
+  /* A záró sáv 2px-es kobalt indítást kap: a rendszerben ez jelöli a
+     szakasz kezdetét. A paper-bright tónusváltás 1.5%-os volt, láthatatlan. */
+  .next { border-top: 2px solid var(--blue); border-bottom-color: var(--blue); }
+  .next > div { grid-column: 2; max-width: 60rem; }
+  /* A ch a „0" szélessége, a Manrope átlagbetűje ennél keskenyebb: 54ch mérten
+     ~76 valódi karakter. A többi szakasz mértéke a typeset lépésre marad. */
+  .next > div > p { max-width: 33rem; }
+  .next-actions { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 1.6rem; }
   .admin > div { grid-column: 2; max-width: 60rem; }
-  .admin > div > p { margin: 0 0 1rem; color: var(--ink-muted); line-height: 1.75; }
+  .admin > div > p { max-width: 33rem; margin: 0 0 1rem; color: var(--ink-muted); line-height: 1.75; }
   .admin a { color: var(--blue); font-weight: 750; }
   @media (max-width: 800px) {
     .page-hero, .flow, .why { display: block; }
-    .page-hero { min-height: auto; }
     .page-hero > p:last-child { margin-top: 3rem; }
+    .next-actions .button { flex: 1 1 100%; }
     .password { grid-template-columns: 1fr; }
     .flow > div { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
     .why p { margin-top: 2rem; }

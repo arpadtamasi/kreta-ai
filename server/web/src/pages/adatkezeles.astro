@@ -1,53 +1,110 @@
 ---
-import BaseLayout from "../layouts/BaseLayout.astro";
+import LegalLayout from "../layouts/LegalLayout.astro";
+import type { LegalSection } from "../layouts/LegalLayout.astro";
+
+const sections: LegalSection[] = [
+  { id: "privat-gyerekprofil", title: "Privát gyerekprofil" },
+  { id: "kreta-kapcsolat", title: "Claude–KRÉTA kapcsolat" },
+  { id: "classroom-kapcsolat", title: "Google Classroom-kapcsolat" },
+  { id: "kiskoruak", title: "Kiskorúak adatai" },
+  { id: "jogalap", title: "Milyen jogalapon" },
+  { id: "megorzes", title: "Meddig őrizzük" },
+  { id: "jogaid", title: "A te jogaid" },
+  { id: "torles", title: "Törlés" },
+  { id: "szolgaltatok", title: "Adatkezelő és szolgáltatók" },
+  { id: "uzenetfal", title: "Korábbi nyilvános üzenetfal" },
+];
+
+/** A szakaszcím egyetlen forrása a fenti lista; elgépelt id build-időben elhasal. */
+const t = (id: string): string => {
+  const section = sections.find((item) => item.id === id);
+  if (!section) throw new Error(`Ismeretlen szakasz: ${id}`);
+  return section.title;
+};
+
+const related = [
+  { href: "/felhasznalasi-feltetelek", label: "Felhasználási feltételek" },
+  { href: "/hogy-mukodik", label: "Hogy működik?" },
+];
 ---
 
-<BaseLayout title="Adatkezelés – Üzenőfüzet" description="Az Üzenőfüzet rövid, közérthető adatkezelési tájékoztatója.">
-  <article class="legal">
-    <h1>Adatkezelés</h1>
-    <p class="intro">A privát gyerekprofilt, a KRÉTA-kapcsolatot és a gyermekenként külön engedélyezett Google Classroom-kapcsolatot elkülönítve kezeljük. A korábban elkészített nyilvános üzenetfal jelenleg nem érhető el a publikus felületen.</p>
+<LegalLayout
+  title="Adatkezelés – Üzenőfüzet"
+  description="Az Üzenőfüzet rövid, közérthető adatkezelési tájékoztatója."
+  heading="Adatkezelés"
+  sections={sections}
+  related={related}
+  updated="Utolsó frissítés: 2026. szeptember 4."
+>
+  <p class="intro" slot="intro">A KRÉTA-jelszavadat nem tároljuk. A privát gyerekprofilt, a KRÉTA-kapcsolatot és a gyermekenként külön engedélyezett Google Classroom-kapcsolatot elkülönítve kezeljük.</p>
 
-    <h2>Privát gyerekprofil</h2>
-    <p>Google-belépés után a Firestore-ban, a fiókod technikai azonosítója alatt legfeljebb három profil menthető. A profil a gyerek rendes nevét, KRÉTA-felhasználónevét, intézménykódját, valamint a létrehozás és módosítás időpontját tartalmazza. A KRÉTA-jelszó nem kerül az adatbázisba.</p>
-    <p>A profilokat csak a szerver olvassa a hitelesített Google-fiókod nevében. A kapcsolati pulton szerkesztheted vagy törölheted őket.</p>
-    <p>Az intézmény keresésekor a beírt keresőkifejezést a szerver továbbítja az eKRÉTA nyilvános intézménykeresőjének. A gyorsabb ismételt kereséshez a kifejezés és a találatok legfeljebb tíz percig a szerver memóriájában maradhatnak, tartós adatbázisba nem kerülnek. Kiválasztás után csak az intézménykódot tároljuk a profilban.</p>
+  <h2 id="privat-gyerekprofil">{t("privat-gyerekprofil")}</h2>
+  <p>Google-belépés után a Firestore-ban, a fiókod technikai azonosítója alatt legfeljebb három profil menthető. A profil ezeket tartalmazza:</p>
+  <ul>
+    <li>a gyerek rendes neve,</li>
+    <li>a KRÉTA-felhasználóneve,</li>
+    <li>az intézménykód,</li>
+    <li>a létrehozás és a módosítás időpontja.</li>
+  </ul>
+  <p><strong>A KRÉTA-jelszó nem kerül az adatbázisba.</strong> A profilokat csak a szerver olvassa a hitelesített Google-fiókod nevében; az Üzenőfüzet főoldalán szerkesztheted vagy törölheted őket.</p>
+  <p>Az intézmény keresésekor a beírt keresőkifejezést a szerver továbbítja az eKRÉTA nyilvános intézménykeresőjének. A gyorsabb ismételt kereséshez a kifejezés és a találatok legfeljebb tíz percig a szerver memóriájában maradhatnak, <strong>tartós adatbázisba nem kerülnek</strong>. Kiválasztás után csak az intézménykódot tároljuk a profilban.</p>
 
-    <h2>Claude–KRÉTA kapcsolat</h2>
-    <p>A KRÉTA-jelszó a kapcsolat létrehozásakor átmegy a szerveren, de nem tároljuk. Sikeres belépés után az access tokent és a forgó refresh tokent lejáró AES-256-GCM titkosítással a privát gyerekprofilban tároljuk. Claude csak a profil hivatkozását kapja, a KRÉTA-tokent nem.</p>
-    <p>Frissen tartás nélkül a kapcsolat és a titkosított hitelesítő adat legfeljebb 30 percig él. Bekapcsolt frissen tartásnál a szerver 25 percenként cseréli a KRÉTA tokent; opcionális határidő adható. Az Online állapotra kattintva a kapcsolat bármikor kikapcsolható: a tokent eltávolítjuk, a gyerekprofil megmarad.</p>
-    <p>A szerver üzemeltetési naplói technikai adatokat — például időpontot, kért végpontot és hálózati adatokat — tartalmazhatnak. KRÉTA-jelszót szándékosan nem naplózunk.</p>
+  <h2 id="kreta-kapcsolat">{t("kreta-kapcsolat")}</h2>
+  <p><strong>A KRÉTA-jelszó a kapcsolat létrehozásakor átmegy a szerveren, de nem tároljuk.</strong> Sikeres belépés után a belépési tokent (access token) és a megújító tokent (refresh token) lejáró AES-256-GCM titkosítással — iparági szabvány szerint — a privát gyerekprofilban tároljuk. Claude csak a profil hivatkozását kapja, a KRÉTA-tokent nem.</p>
+  <p>Frissen tartás nélkül a kapcsolat és a titkosított hitelesítő adat legfeljebb 30 percig él. Bekapcsolt frissen tartásnál a szerver 25 percenként cseréli a KRÉTA tokent; opcionális határidő adható. Az Online állapotra kattintva a kapcsolat bármikor kikapcsolható: <strong>a tokent eltávolítjuk, a gyerekprofil megmarad</strong>.</p>
+  <p>A szerver üzemeltetési naplói technikai adatokat — például időpontot, kért végpontot és hálózati adatokat — tartalmazhatnak. <strong>KRÉTA-jelszót szándékosan nem naplózunk.</strong></p>
 
-    <h2>Google Classroom-kapcsolat</h2>
-    <p>Minden gyerekprofilhoz külön iskolai Google-fiók engedélyezhető. Ez nem a dashboardra belépő szülői Google-fiók: a kapcsoláskor a Google saját oldalán választod ki az adott gyerek fiókját. Az Üzenőfüzet csak olvasási jogot kér a kurzusokhoz, feladatokhoz, a gyerek saját beadási állapotaihoz és jegyeihez, közleményekhez, valamint tananyagokhoz.</p>
-    <p>A Google által kiadott refresh tokent lejáró AES-256-GCM titkosítással a gyerek privát profiljában tároljuk; a profil API-ja és a Claude-nak kiadott OAuth-token nem tartalmazza. A kapcsolati pulton csak a kapcsolt iskolai e-mail-cím és az állapot jelenik meg. A Classroom gombra kattintva a Google-engedély visszavonását megkíséreljük, majd a helyi titkosított tokent töröljük.</p>
-    <p>Claude csak akkor kér le Classroom-adatot, amikor a beszélgetésben erre kéred. Az Üzenőfüzet öt rögzített, csak olvasó végpontot használ; nincs általános Google API-hozzáférés, nincs feladatbeadás, módosítás vagy törlés.</p>
+  <h2 id="classroom-kapcsolat">{t("classroom-kapcsolat")}</h2>
+  <p>Minden gyerekprofilhoz külön iskolai Google-fiók engedélyezhető. <strong>Ez nem az a szülői Google-fiók, amellyel az Üzenőfüzetbe belépsz:</strong> a kapcsoláskor a Google saját oldalán választod ki az adott gyerek fiókját. Az Üzenőfüzet ezekhez kér kizárólag olvasási jogot:</p>
+  <ul>
+    <li>kurzusok,</li>
+    <li>kiadott feladatok,</li>
+    <li>a gyerek saját beadási állapotai és jegyei,</li>
+    <li>közlemények,</li>
+    <li>tananyagok.</li>
+  </ul>
+  <p>A Google által kiadott megújító tokent lejáró AES-256-GCM titkosítással a gyerek privát profiljában tároljuk; a profil API-ja és a Claude-nak kiadott OAuth-token nem tartalmazza. Az Üzenőfüzet főoldalán csak a kapcsolt iskolai e-mail-cím és az állapot jelenik meg. A Classroom gombra kattintva a Google-engedély visszavonását megkíséreljük, majd a helyi titkosított tokent töröljük.</p>
+  <p>Claude csak akkor kér le Classroom-adatot, amikor a beszélgetésben erre kéred. Az Üzenőfüzet öt rögzített, csak olvasó végpontot használ: <strong>nincs általános Google API-hozzáférés, nincs feladatbeadás, módosítás vagy törlés.</strong></p>
 
-    <h2>Korábbi nyilvános üzenetfal</h2>
-    <p>Az üzenetfal jelenleg nem érhető el a publikus felületen. A korábban beküldött adatok kezelésének leírását átláthatósági okból megtartjuk: a Firebase Authentication a fiók technikai azonosítóját és megjelenített nevét adta át, az e-mail-cím nem került az üzenet mellé.</p>
-    <p>A Firestore-ban a megjelenített név, az üzenet, a fiók technikai azonosítója és a létrehozás/módosítás időpontja szerepelhet.</p>
+  <h2 id="kiskoruak">{t("kiskoruak")}</h2>
+  <p><strong>Az Üzenőfüzet kiskorúak iskolai adatait teszi elérhetővé, ezért a hozzáférést végig a szülő kezében tartjuk.</strong> A gyerekprofilt a szülő hozza létre a saját hitelesített Google-fiókjával, és a KRÉTA-kapcsolatot is ő létesíti. A Classroom-hozzáféréshez ezen felül a gyerek saját iskolai Google-fiókjának külön engedélye kell, amelyet az iskola Workspace-rendszergazdája letilthat.</p>
+  <p>Az Üzenőfüzet <strong>nem hoz létre fiókot kiskorúnak, nem küld neki üzenetet, és nem gyűjt adatot közvetlenül tőle</strong>. Az adatok a KRÉTA-ból és a Google Classroomból érkeznek, kizárólag olvasásra, és kizárólag akkor, amikor a szülő ezt a beszélgetésben kéri. A gyerek adataiból nem készítünk profilt, nem hirdetünk, és nem adjuk át harmadik félnek a jelen tájékoztatóban felsorolt szolgáltatókon kívül.</p>
 
-    <h2>Törlés</h2>
-    <p>Korábbi üzenetfal-bejegyzés törlését a projekt GitHub-kapcsolati felületén kérheted. A kapcsolati pulton külön leválaszthatod a KRÉTA- és a Classroom-kapcsolatot; a Törlés gomb a teljes gyerekprofilt és mindkét helyi titkosított kapcsolatot eltávolítja. A Claude-csatlakozó külön a Claude beállításaiban törölhető.</p>
+  <h2 id="jogalap">{t("jogalap")}</h2>
+  <ul>
+    <li><strong>Gyerekprofil és KRÉTA-kapcsolat:</strong> a te hozzájárulásod (GDPR 6. cikk (1) a)). A hozzájárulást bármikor visszavonhatod a kapcsolat leválasztásával vagy a profil törlésével.</li>
+    <li><strong>Google Classroom-kapcsolat:</strong> a gyerek iskolai Google-fiókjával adott külön engedély, amelyet a Google saját felületén lehet megadni és visszavonni.</li>
+    <li><strong>Üzemeltetési naplók:</strong> jogos érdek (GDPR 6. cikk (1) f)) a szolgáltatás biztonságos üzemeltetéséhez és a hibák elhárításához.</li>
+  </ul>
+  <p>Az adatkezelés az Európai Unión belül történik: a szolgáltatás a Google Cloud <strong>europe-west1</strong> régiójában fut.</p>
 
-    <h2>Szolgáltatók és kapcsolat</h2>
-    <p>A tárhelyet, a futtatást, a hitelesítést, a Classroom API-t és az adatbázist a Google Cloud, Google Workspace és Firebase biztosítja. A forráskód, a hibajelzés és a projekt kapcsolati felülete a <a href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">GitHub-tárolóban</a> érhető el.</p>
-    <p class="updated">Utolsó frissítés: 2026. szeptember 4.</p>
-  </article>
-</BaseLayout>
+  <h2 id="megorzes">{t("megorzes")}</h2>
+  <ul>
+    <li><strong>KRÉTA-jelszó:</strong> nem tároljuk; a belépés után eldobjuk.</li>
+    <li><strong>KRÉTA-tokenek:</strong> frissen tartás nélkül legfeljebb 30 percig; frissen tartással az általad megadott határidőig. Leválasztáskor azonnal töröljük.</li>
+    <li><strong>Classroom megújító token:</strong> a kapcsolat leválasztásáig vagy a Google-engedély visszavonásáig.</li>
+    <li><strong>Intézménykeresés:</strong> legfeljebb tíz percig a szerver memóriájában; tartós tárolás nincs.</li>
+    <li><strong>Gyerekprofil:</strong> amíg te nem törlöd.</li>
+    <li><strong>Üzemeltetési naplók:</strong> a Google Cloud naplózási szolgáltatásában, technikai adatokra korlátozva.</li>
+  </ul>
 
-<style>
-  .legal { max-width: 58rem; margin: 0 auto; padding: clamp(4rem, 9vw, 8rem) var(--page-pad); }
-  h1 { margin: 0 0 1.5rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 10vw, 9rem); font-weight: 600; line-height: .76; text-transform: uppercase; }
-  .intro { margin-bottom: 4rem; color: var(--blue); font-size: clamp(1.25rem, 2vw, 1.75rem); font-weight: 650; line-height: 1.45; }
-  h2 { margin: 3rem 0 .8rem; padding-top: 1rem; border-top: 2px solid var(--blue); color: var(--blue); font-size: 1.15rem; }
-  p { color: var(--ink-muted); line-height: 1.75; }
-  a { color: var(--blue); font-weight: 750; }
-  .updated { margin-top: 4rem; font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
+  <h2 id="jogaid">{t("jogaid")}</h2>
+  <p>A GDPR alapján jogod van hozzáférni a kezelt adatokhoz, kérni a helyesbítésüket, törlésüket, az adatkezelés korlátozását, tiltakozni a jogos érdeken alapuló adatkezelés ellen, valamint kérni az adathordozhatóságot. <strong>A legtöbb jogodat közvetlenül, azonnal gyakorolhatod:</strong> a profil szerkesztésével, a kapcsolatok leválasztásával és a Törlés gombbal.</p>
+  <p>Ha bármelyik jogodat kérelemmel szeretnéd gyakorolni, írj a lenti kapcsolati felületen. Ha úgy látod, hogy az adatkezelés jogsértő, panasszal fordulhatsz a felügyeleti hatósághoz:</p>
+  <ul>
+    <li>Nemzeti Adatvédelmi és Információszabadság Hatóság (NAIH)</li>
+    <li>1055 Budapest, Falk Miksa utca 9–11.</li>
+    <li><a href="https://naih.hu" target="_blank" rel="noreferrer noopener">naih.hu</a></li>
+  </ul>
+  <p>Bírósághoz is fordulhatsz a lakóhelyed szerint illetékes törvényszéken.</p>
 
-  @media (max-width: 480px) {
-    h1 {
-      font-size: clamp(3.15rem, 16.4vw, 4rem);
-      overflow-wrap: anywhere;
-    }
-  }
-</style>
+  <h2 id="torles">{t("torles")}</h2>
+  <p>Az Üzenőfüzet főoldalán külön leválaszthatod a KRÉTA- és a Classroom-kapcsolatot. <strong>A Törlés gomb a teljes gyerekprofilt és mindkét titkosított kapcsolatot eltávolítja.</strong> A Claude-csatlakozó külön, a Claude beállításaiban törölhető. Korábbi üzenetfal-bejegyzés törlését a projekt GitHub-kapcsolati felületén kérheted.</p>
+
+  <h2 id="szolgaltatok">{t("szolgaltatok")}</h2>
+  <p>Az Üzenőfüzetet a nyílt forráskódú projekt üzemeltetője működteti. <strong>Kérdés, érintetti kérelem és hibajelzés a projekt <a href="https://github.com/arpadtamasi/uzenofuzet/issues" target="_blank" rel="noreferrer noopener">GitHub-kapcsolati felületén</a> küldhető.</strong></p>
+  <p>Adatfeldolgozóként a tárhelyet, a futtatást, a hitelesítést, a Classroom API-t és az adatbázist a Google Cloud, a Google Workspace és a Firebase biztosítja. Az adatokat a te kérésedre az általad választott MCP-kliens (például a Claude) jeleníti meg; az ott megjelenő adatok további kezelésére az adott kliens saját szabályai vonatkoznak. A forráskód a <a href="https://github.com/arpadtamasi/uzenofuzet" target="_blank" rel="noreferrer noopener">GitHub-tárolóban</a> érhető el.</p>
+
+  <h2 id="uzenetfal">{t("uzenetfal")}</h2>
+  <p><strong>Az üzenetfal jelenleg nem érhető el a publikus felületen.</strong> A korábban beküldött adatok kezelésének leírását átláthatósági okból megtartjuk: a Firebase Authentication a fiók technikai azonosítóját és megjelenített nevét adta át, az e-mail-cím nem került az üzenet mellé. A Firestore-ban a megjelenített név, az üzenet, a fiók technikai azonosítója és a létrehozás/módosítás időpontja szerepelhet.</p>
+</LegalLayout>

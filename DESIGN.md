@@ -219,10 +219,10 @@ The public-site palette behaves like ink on cool stationery; saturated color is 
 
 ### Hierarchy
 
-- **Display** (600, fluid 4.5–9.5rem in the shipped surfaces, 0.76–0.78 line-height): Hero and section-opening phrases only; most instances are uppercase, with tight negative tracking.
+- **Display** (600, fluid 4.5–9.5rem in the shipped surfaces): Hero and section-opening phrases only; most instances are uppercase, with tight negative tracking. Line-height is 0.76 for a **single-line** head and **1.05 from two lines up**, because Big Shoulders sets uppercase accents up to 0.96em above the baseline — Á, É, Ő, Ű are in almost every Hungarian heading, and anything under 0.97 makes the second line's accents strike the line above.
 - **Headline** (700, fluid 2.1–6rem, 0.98–1.05 line-height): High-stakes warnings and advocacy statements in Manrope, not the display face.
 - **Lead** (650, fluid 1.35–2.35rem, 1.32–1.35 line-height): The interpretive statement paired with a large display heading.
-- **Body** (400, generally .78–1.25rem, 1.5–1.75 line-height): Explanations and legal copy; reading measures usually stop between 42rem and 64rem.
+- **Body** (400, generally .85–1.25rem, 1.5–1.75 line-height): Explanations and legal copy. Reading measure is capped at roughly 70 rendered characters — about `33rem` for 16px Manrope, or `52ch` when the capped element sets its own smaller size. Body prose does not go below .85rem.
 - **Action** (750–800, .73–.9rem): Buttons and inline next-step links.
 - **Label** (500, .58–.72rem, .04–.12em tracking): Timestamps, ruler marks, status labels, counts, and uppercase operational metadata.
 - **Credential Body** (400–700, .75–1.5rem): The backend form's compact system-font hierarchy, independent of the editorial type trio.
@@ -237,7 +237,9 @@ The public-site palette behaves like ink on cool stationery; saturated color is 
 
 Public pages use full-width, edge-connected sections with a fluid page inset. The primary desktop grammar is an asymmetrical split: question or label on the left, proof or explanation on the right. The landing hero uses `minmax(23rem, 41%) / minmax(0, 59%)`, tightens below 1050px, and becomes a vertical stack at 760px. The three landing capabilities become a vertical ruled list at 760px; dashboard and explanatory flows stack at 800px; the footer stacks at 760px; compact navigation applies at 600px; and the long privacy heading receives an additional 480px safeguard. The body accepts screens down to 320px, with 390px treated as the practical mobile proof point.
 
-The page inset is fluid from 1.25rem to 4.5rem. Major bands normally use 4–9rem of vertical padding via fluid clamps. There is no applied centered max-width on the public composition: the declared 1600px maximum is not currently used. Reading copy, however, is locally constrained to roughly 28–70rem according to role.
+The page inset is fluid from 1.25rem to 4.5rem. Major bands normally use 4–9rem of vertical padding via fluid clamps. There is no applied centered max-width on the public composition: the declared 1600px maximum is not currently used. Reading copy, however, is locally constrained by role: body prose to about 70 rendered characters, leads to roughly 55.
+
+**The Measure Is Counted in Characters Rule.** State reading measure as rendered characters, not as a container width. Two units mislead here. `rem` does not scale with the text: `33rem` holds ~71 characters at 16px but ~86 at 13.6px, so a rem cap set for body copy silently fails on any smaller role. `ch` is the width of "0", about 1.32× Manrope's average glyph, so `52ch` is ~69 characters, not 52 — and it resolves against the font-size of the element that *declares* it, not its children, so the cap belongs on the text element itself. Use `rem` when the capped element is body size, `ch` when it sets its own smaller size, and verify by measuring the rendered line.
 
 Ledger layouts align information with thin 1px washed-cobalt rules and stronger 2px cobalt starts. The transcript's 28px grid, red margin rule, top ruler, one parent question, and one corrected answer make it the signature spatial component without becoming a reading task. On mobile, the hero and proof stack; the three capabilities become full-width ruled records.
 

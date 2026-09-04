@@ -17,6 +17,8 @@ const { compact = false } = Astro.props;
 <style>
   .brand {
     display: inline-flex;
+    /* Önálló link: a láblécben keret nélkül is 44px-es célnak kell lennie. */
+    min-height: 44px;
     align-items: center;
     gap: .65rem;
     color: var(--blue);

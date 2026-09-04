@@ -1,0 +1,174 @@
+---
+/**
+ * Közös elrendezés a jogi oldalaknak (adatkezelés, felhasználási feltételek).
+ * A szakaszcímeket egy helyen tartjuk: ugyanabból a listából készül a
+ * szakaszmutató és az oldal h2-je is, így nem csúszhatnak szét.
+ */
+import BaseLayout from "./BaseLayout.astro";
+
+export interface LegalSection {
+  id: string;
+  title: string;
+}
+
+interface Props {
+  title: string;
+  description: string;
+  heading: string;
+  sections: LegalSection[];
+  related: { href: string; label: string }[];
+  updated: string;
+}
+
+const { title, description, heading, sections, related, updated } = Astro.props;
+---
+
+<BaseLayout title={title} description={description}>
+  <article class="legal">
+    <h1>{heading}</h1>
+    <slot name="intro" />
+
+    <nav class="section-index" aria-label="Szakaszok">
+      <ol>
+        {sections.map((section) => (
+          <li><a href={`#${section.id}`}>{section.title}</a></li>
+        ))}
+      </ol>
+    </nav>
+
+    <slot />
+
+    <nav class="related" aria-label="Kapcsolódó oldalak">
+      {related.map((link) => <a href={link.href}>{link.label}</a>)}
+    </nav>
+
+    <p class="updated">{updated}</p>
+  </article>
+</BaseLayout>
+
+<style>
+  /* --measure a szövegoszlop szélessége: 33rem 16px-es Manrope-pal ~71 valódi
+     karakter (a ch a „0" szélessége, az átlagbetű ennél keskenyebb). A cím és a
+     szakaszmutató marad széles: széles fejléc, keskeny olvasóoszlop. */
+  .legal { --measure: 33rem; max-width: 58rem; margin: 0 auto; padding: clamp(4rem, 9vw, 8rem) var(--page-pad); }
+
+  h1 {
+    margin: 0 0 1.5rem;
+    font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif;
+    font-size: clamp(5rem, 10vw, 9rem);
+    font-weight: 600;
+    /* Big Shouldersben a nagybetűs ékezet 0.96em-ig ér az alapvonal fölé
+       (a legmagasabb az É), így 0.97 alatt két sor tintája biztosan összeér.
+       1.05 mérten ~0.08em levegőt hagy — feszes marad, de nem ütközik. */
+    line-height: 1.05;
+    letter-spacing: -.035em;
+    text-transform: uppercase;
+  }
+
+  /* A bevezetőt és a törzsszöveget az oldal adja slotként, ezért globális
+     leszármazott-szelektor kell hozzá — a scope-ot a .legal hordozza. */
+  .legal :global(.intro) {
+    /* A bevezető nagyobb fokozatú, ezért szélesebb dobozban is rövidebb sor. */
+    max-width: 44rem;
+    margin: 0 0 3rem;
+    color: var(--blue);
+    font-size: clamp(1.25rem, 2vw, 1.75rem);
+    font-weight: 650;
+    line-height: 1.45;
+  }
+
+  .legal :global(h2) {
+    max-width: var(--measure);
+    margin: 3rem 0 .8rem;
+    padding-top: 1rem;
+    border-top: 2px solid var(--blue);
+    color: var(--blue);
+    font-size: 1.15rem;
+    scroll-margin-top: 1.5rem;
+  }
+
+  .legal :global(p) { max-width: var(--measure); color: var(--ink-muted); line-height: 1.75; }
+  .legal :global(a) { color: var(--blue); font-weight: 750; text-underline-offset: .25rem; }
+
+  /* A kiemelés a bekezdés lényegi állítását viszi, nem díszít: sötétebb tinta a
+     halvány törzsszövegben. A felsorolásjel vermilion, mint a lap többi jelölése. */
+  .legal :global(strong) { color: var(--ink); font-weight: 800; }
+  .legal :global(ul) { max-width: var(--measure); margin: .9rem 0 0; padding-left: 1.15rem; color: var(--ink-muted); line-height: 1.75; }
+  .legal :global(li) { margin-top: .25rem; }
+  .legal :global(li)::marker { color: var(--red); }
+
+  /* Szakaszmutató: 2px-es kobalt indítás, mono címkék — széles képernyőn
+     tördelt sor, telefonon vonalazott lista teljes értékű érintőfelülettel. */
+  .section-index {
+    margin: 0 0 4rem;
+    padding-top: .9rem;
+    border-top: 2px solid var(--blue);
+  }
+
+  /* Térköz választja el a tételeket, nem vonal: tördeléskor a sor elejére
+     kerülő elválasztó árván maradna. */
+  .section-index ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .1rem 1.9rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .section-index a {
+    display: inline-flex;
+    align-items: center;
+    padding: .4rem 0;
+    color: var(--blue);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+    font-weight: 500;
+    /* Mono marad — a szakaszmutató „index", a rendszer szerint rögzített adat.
+       Nagybetűt viszont nem kap: a leghosszabb tétel 36 karakter, és csupa
+       nagybetűvel az a telefonon olvashatatlan. A címketoken tracking-sávjának
+       alsó vége (.04em) tartja meg a rögzített jelleget. */
+    letter-spacing: .04em;
+    text-decoration: none;
+    text-underline-offset: .35rem;
+  }
+
+  .section-index a:hover { text-decoration: underline; text-decoration-thickness: 2px; }
+
+  .related {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0 2rem;
+    margin-top: 4rem;
+    padding-top: .75rem;
+    border-top: 1px solid var(--blue-soft);
+  }
+
+  .related a {
+    display: inline-flex;
+    min-height: 44px;
+    align-items: center;
+    color: var(--blue);
+    font-size: .85rem;
+    font-weight: 750;
+    text-underline-offset: .35rem;
+  }
+
+  .updated {
+    margin: 2.5rem 0 0;
+    color: var(--blue);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .72rem;
+  }
+
+  @media (max-width: 600px) {
+    .section-index ol { display: block; }
+    .section-index li { display: block; border-bottom: 1px solid var(--blue-soft); }
+    .section-index li + li::before { content: none; }
+    .section-index a { display: flex; min-height: 44px; padding: .25rem 0; }
+  }
+
+  @media (max-width: 480px) {
+    h1 { font-size: clamp(3.15rem, 16vw, 4rem); overflow-wrap: anywhere; }
+  }
+</style>
