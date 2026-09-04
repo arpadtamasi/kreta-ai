@@ -14,6 +14,7 @@ const summary = read("../web/src/components/dashboard/DashboardSummary.astro");
 const adminHelp = read("../web/src/components/dashboard/ClassroomAdminHelp.astro");
 const connector = read("../web/src/components/dashboard/ClaudeConnector.astro");
 const howItWorks = read("../web/src/pages/hogy-mukodik.astro");
+const astroConfig = read("../astro.config.mjs");
 const profilesModule = read("../web/src/scripts/dashboard/profiles.ts");
 const mainModule = read("../web/src/scripts/dashboard/main.ts");
 const managePanelModule = read("../web/src/scripts/dashboard/managePanel.ts");
@@ -213,4 +214,8 @@ test("the client logic lives in modules, not in the profiles component", () => {
   assert.ok(container.split("\n").length < 130, "ChildProfiles.astro should stay a thin container");
   assert.doesNotMatch(container, /firebase\/auth/);
   assert.doesNotMatch(container, /fetch\(/);
+});
+
+test("component scripts stay external files, because production CSP forbids inline script", () => {
+  assert.match(astroConfig, /build: \{ assetsInlineLimit: 0 \}/);
 });
