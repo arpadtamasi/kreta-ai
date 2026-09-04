@@ -19,6 +19,7 @@ export function startClassroomAdminHelp(): void {
     return [
       "Üzenőfüzet – Google Classroom-hozzáférés",
       "Honlap: https://uzenofuzet.hu",
+      "Részletes leírás a rendszergazdának: https://uzenofuzet.hu/iskolai-admin",
       "",
       "OAuth-kliensazonosító:",
       clientId!.textContent?.trim() ?? "",

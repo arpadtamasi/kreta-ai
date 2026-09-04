@@ -49,6 +49,7 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
     <h2 id="admin-title">Ha az iskola tiltja</h2>
     <div>
       <p>Ha az iskola Google Workspace-e még nem engedélyezte az Üzenőfüzetet, a Classroom összekapcsolása elakad. Ilyenkor az alábbi adatokat kell elküldeni az iskolai Google-rendszergazdának; a műhelyben ugyanez az összefoglaló nyílik meg magától.</p>
+      <p>A rendszergazdának szánt teljes leírás — kért hozzáférések, hívott végpontok, engedélyezés és visszavonás — külön oldalon él: <a href="/iskolai-admin">Iskolai admin csatlakozás</a>. Ezt a linket elég elküldeni az iskolának.</p>
       <ClassroomAdminHelp variant="page" />
     </div>
   </section>
@@ -80,6 +81,7 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
   .classroom { border-bottom-color: var(--blue); background: var(--paper-bright); }
   .admin > div { grid-column: 2; max-width: 60rem; }
   .admin > div > p { margin: 0 0 1rem; color: var(--ink-muted); line-height: 1.75; }
+  .admin a { color: var(--blue); font-weight: 750; }
   @media (max-width: 800px) {
     .page-hero, .flow, .why { display: block; }
     .page-hero { min-height: auto; }

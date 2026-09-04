@@ -1,0 +1,291 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const clientId = "652545082668-28jv22mkvkjl85hd1rhfard3egnb4dtc.apps.googleusercontent.com";
+
+/** Az Admin konzolban is ez a hat scope jelenik meg; mind read-only. */
+const scopes = [
+  { label: "Google-fiók azonosítása", scope: "openid" },
+  { label: "Iskolai e-mail-cím megtekintése", scope: "https://www.googleapis.com/auth/userinfo.email" },
+  { label: "Kurzusok megtekintése", scope: "https://www.googleapis.com/auth/classroom.courses.readonly" },
+  { label: "Saját feladatok és beadások megtekintése", scope: "https://www.googleapis.com/auth/classroom.coursework.me.readonly" },
+  { label: "Közlemények megtekintése", scope: "https://www.googleapis.com/auth/classroom.announcements.readonly" },
+  { label: "Tananyagok megtekintése", scope: "https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly" },
+];
+
+const identity = [
+  { label: "Alkalmazás neve", value: "Üzenőfüzet" },
+  { label: "Weboldal", value: "https://uzenofuzet.hu" },
+  { label: "OAuth-kliens típusa", value: "Web application" },
+  { label: "OAuth-kliensazonosító", value: clientId, wide: true },
+  { label: "Átirányítási URI", value: "https://uzenofuzet.hu/api/classroom/callback", wide: true },
+  { label: "Futtatás", value: "Google Cloud Run, europe-west1 (EU)" },
+];
+
+/** A Classroom API-ból pontosan ez az öt olvasó végpont hívható, mindig GET-tel. */
+const calls = [
+  { path: "GET /v1/courses", note: "A tanuló aktív kurzusai (studentId=me)." },
+  { path: "GET /v1/courses/{id}/courseWork", note: "A kurzus publikált feladatai." },
+  { path: "GET /v1/courses/{id}/courseWork/{id}/studentSubmissions", note: "Csak a saját beadások és jegyek (userId=me)." },
+  { path: "GET /v1/courses/{id}/announcements", note: "A kurzus publikált közleményei." },
+  { path: "GET /v1/courses/{id}/courseWorkMaterials", note: "A kurzus publikált tananyagai." },
+];
+---
+
+<BaseLayout
+  title="Iskolai admin csatlakozás – Üzenőfüzet"
+  description="Minden adat egy helyen az iskola Google Workspace-rendszergazdájának: mit kér az Üzenőfüzet, mit nem tud megtenni, és hogyan vonható vissza."
+>
+  <div id="admin-page">
+    <header class="page-hero">
+      <p class="eyebrow">Az iskola Google Workspace-rendszergazdájának</p>
+      <h1>Iskolai admin<br />csatlakozás</h1>
+      <p class="lead">Egy szülő azt kérte, engedélyezd az Üzenőfüzetet az iskola Workspace-ében. Itt együtt van minden, ami a döntéshez kell: mit kér az alkalmazás, mit hív, mit nem tud megtenni, és hogyan vonható vissza.</p>
+    </header>
+
+    <section class="share" aria-labelledby="share-title">
+      <div>
+        <h2 id="share-title">Szülőként: ha a kérés nem elég, ezt a linket küldd el</h2>
+        <p>Előbb a gyerek iskolai fiókjával nyomd meg a Google hibaoldalán a <strong>Request Access</strong> gombot: a kérés magától megjelenik az iskola Admin konzoljában. Ez az oldal akkor kell, ha az iskola kikapcsolta a kérésküldést, vagy ha a rendszergazdának a döntéshez több kell a puszta kliensazonosítónál.</p>
+      </div>
+      <button data-copy="link" data-done="Az oldal linkjét a vágólapra másoltuk." type="button">Oldal linkjének másolása</button>
+    </section>
+
+    <section class="facts" aria-label="Összefoglaló">
+      <article><span>01</span><h2>Csak olvasás</h2><p>Az alkalmazás kizárólag <code>GET</code> kéréseket küld a Classroom API-nak. Nem ad be feladatot, nem ír és nem módosít jegyet, nem töröl semmit.</p></article>
+      <article><span>02</span><h2>Gyerekenként külön engedély</h2><p>A hozzáférést a tanuló adja meg a Google saját oldalán, a saját iskolai fiókjával. A szülő fiókja csak a szülői pultot védi, a tanuló adataihoz nem ad jogot.</p></article>
+      <article><span>03</span><h2>Bármikor visszavonható</h2><p>Az engedély az Admin konzolban letiltható, a tanuló fiókjából visszavonható, a szülő pedig a pulton törölheti a kapcsolatot.</p></article>
+    </section>
+
+    <section class="block identity" aria-labelledby="identity-title">
+      <h2 id="identity-title">Az engedélyezendő alkalmazás</h2>
+      <div class="block-body">
+        <dl id="admin-identity">
+          {identity.map((row) => (
+            <div class:list={{ wide: row.wide }}>
+              <dt>{row.label}</dt>
+              <dd>{row.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <div class="actions">
+          <button data-copy="approval" data-done="A kliensazonosítót és a kért hozzáféréseket a vágólapra másoltuk." type="button">Adminadatok másolása</button>
+          <a href="https://support.google.com/a/answer/7281227?hl=hu" rel="noreferrer">Google rendszergazdai útmutató</a>
+        </div>
+        <p class="copy-status" id="admin-copy-status" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+
+    <section class="block scopes" aria-labelledby="scopes-title">
+      <h2 id="scopes-title">Kért hozzáférések</h2>
+      <div class="block-body">
+        <p class="intro">Az alkalmazás hat scope-ot kér, mind csak olvasó. Írási, beadási vagy törlési scope nincs köztük, és a Classroomon kívül semmilyen Google-szolgáltatáshoz nem kér hozzáférést.</p>
+        <ul class="scope-list" id="admin-scope-list">
+          {scopes.map((row) => (
+            <li><strong>{row.label}</strong><code>{row.scope}</code></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <section class="block calls" aria-labelledby="calls-title">
+      <h2 id="calls-title">Mit hív valójában</h2>
+      <div class="block-body">
+        <p class="intro">A Claude-nak öt rögzített eszköz áll rendelkezésére. Mindegyik pontosan egy Classroom-végpontot olvas, és csak akkor fut le, ha a szülő a beszélgetésben rákérdez.</p>
+        <ul class="call-list">
+          {calls.map((row) => (
+            <li><code>{row.path}</code><span>{row.note}</span></li>
+          ))}
+        </ul>
+      </div>
+    </section>
+
+    <section class="block limits" aria-labelledby="limits-title">
+      <h2 id="limits-title">Amit nem tesz — és amit tudnod kell</h2>
+      <div class="block-body">
+        <ul class="no-list">
+          <li>Nem ad be feladatot, nem ír vissza jegyet, nem szerkeszt és nem töröl Classroom-tartalmat.</li>
+          <li>Nem lát más tanulót: a beadási állapotokat és jegyeket <code>userId=me</code> szűréssel, csak a saját fiókjából olvassa.</li>
+          <li>Nem kér Gmail-, Drive-, Naptár- vagy címtárhozzáférést, és nem használ általános Google API-jogosultságot.</li>
+          <li>Nem tárolja a Classroom-tartalmakat: a válaszok lekéréskor keletkeznek, adatbázisba nem kerülnek.</li>
+          <li>Nem hirdet, nem ad tovább adatot harmadik félnek üzleti célra, és nem tanít modellt az iskola adataiból.</li>
+        </ul>
+        <aside>
+          <h3>Egy dolgot fontos tisztán látni</h3>
+          <p>A lekért kurzus-, feladat- és jegyadatok abba a Claude-beszélgetésbe kerülnek, amelyben a szülő rákérdez. Ezeket onnantól az Anthropic a saját feltételei szerint kezeli, ahogy minden más beszélgetést. Az Üzenőfüzet az adatokat továbbítja, nem gyűjti.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="block triage" aria-labelledby="triage-title">
+      <h2 id="triage-title">Melyik hibát látod?</h2>
+      <div class="block-body">
+        <p class="intro">A Google két, könnyen összekeverhető hibát ad. Csak az első tartozik az iskolára.</p>
+        <ul class="triage-list">
+          <li>
+            <strong>„Access blocked: Your institution's admin needs to review uzenofuzet.hu”</strong>
+            <code>Error 400: access_not_configured</code>
+            <span>Ez az iskola Workspace-tiltása: a rendszergazdának kell engedélyeznie az alkalmazást az alábbi lépések szerint.</span>
+          </li>
+          <li>
+            <strong>„Google hasn't verified this app” / a hitelesítés még nem fejeződött be</strong>
+            <code>Error 403: access_denied</code>
+            <span>Ez nem az iskolán múlik, hanem az Üzenőfüzet Google-oldali beállításán. Ilyenkor a szülőnek kell jeleznie az üzemeltetőnek.</span>
+          </li>
+        </ul>
+        <p><strong>A Request Access gombot a gyerek iskolai fiókjával kell megnyomni</strong> — pontosan azzal, amelyik a hibaoldal alján látszik. A kérés annak az iskolai domainnek a rendszergazdájához fut be; magánfiókból (például Gmailről) küldve senkihez nem jut el. A kérés az Admin konzol <strong>Hozzáférési kérések (Access requests)</strong> listájába kerül — hogy megy-e róla e-mail is, az a rendszergazda értesítési beállításain múlik. Ha az iskola kikapcsolta a kérésküldést, marad a közvetlen megkeresés a fenti kliensazonosítóval.</p>
+      </div>
+    </section>
+
+    <section class="steps" aria-labelledby="steps-title">
+      <div>
+        <h2 id="steps-title">Engedélyezés<br />az Admin<br />konzolban</h2>
+        <p>Két út vezet ugyanoda. Ha a szülő vagy a tanuló már elindította a hozzáférési kérést, elég azt jóváhagynod.</p>
+      </div>
+      <ol>
+        <li><span>01</span><div><h3>Nyisd meg az alkalmazáshozzáférést</h3><p><strong>Biztonság (Security) → Hozzáférés és adatkezelés (Access and data control) → API-vezérlők (API controls) → Alkalmazáshozzáférés kezelése (Manage App Access)</strong></p></div></li>
+        <li><span>02</span><div><h3>Nézd meg a beérkezett kéréseket</h3><p>A <strong>Hozzáférési kérések (Access requests)</strong> listán megjelenik a tanuló kérése, ha a Google hibaoldalán — a saját iskolai fiókjával belépve — a <strong>Request Access</strong> gombra kattintott. A jóváhagyással készen is vagy.</p></div></li>
+        <li><span>03</span><div><h3>Vagy add hozzá kézzel</h3><p>Válaszd az <strong>Új alkalmazás konfigurálása (Configure new app)</strong> lehetőséget, keress az <strong>OAuth-kliensazonosítóra</strong>, majd válaszd ki a tanulók szervezeti egységét.</p></div></li>
+        <li><span>04</span><div><h3>Adj hozzáférést a fenti scope-okhoz</h3><p>Az <strong>Adott Google-adatok (Specific Google data)</strong> beállításnál elég a hat felsorolt olvasó scope. A teljes <strong>Megbízható (Trusted)</strong> állapot nem szükséges.</p></div></li>
+        <li><span>05</span><div><h3>Ellenőrizd a Classroom-beállítást</h3><p>A Classroom beállításainál a <strong>Classroom API adathozzáférés</strong> legyen engedélyezve az érintett szervezeti egységnek, különben az engedélyezés a Google oldalán elakad.</p></div></li>
+      </ol>
+    </section>
+
+    <section class="block data" aria-labelledby="data-title">
+      <h2 id="data-title">Mi kerül tárolásra</h2>
+      <div class="block-body">
+        <p>A Google által kiadott refresh tokent lejáró AES-256-GCM titkosítással a szülő privát profiljában tároljuk; a lezáró kulcsot a Google Secret Manager őrzi. A Claude-nak kiadott token nem tartalmaz Google-hitelesítő adatot, csak profilhivatkozást.</p>
+        <p>A szülői pulton a kapcsolatból csak a csatlakoztatott iskolai e-mail-cím és az állapot látszik. A szolgáltatás Google Cloud Runon fut az EU-ban (europe-west1). A teljes leírás az <a href="/adatkezeles">adatkezelési tájékoztatóban</a> és a <a href="/hogy-mukodik">Hogy működik?</a> oldalon olvasható.</p>
+      </div>
+    </section>
+
+    <section class="block revoke" aria-labelledby="revoke-title">
+      <h2 id="revoke-title">Visszavonás</h2>
+      <div class="block-body">
+        <ul class="no-list">
+          <li><strong>Az Admin konzolból:</strong> az Alkalmazáshozzáférés kezelése listán a kliensazonosítót blokkolhatod; ettől a további lekérdezések azonnal elakadnak.</li>
+          <li><strong>A tanuló fiókjából:</strong> a <a href="https://myaccount.google.com/permissions" rel="noreferrer">Google-fiók engedélyeinél</a> a hozzáférés bármikor visszavonható.</li>
+          <li><strong>A szülői pultról:</strong> a kapcsolat törlésekor megkíséreljük a Google-engedély visszavonását, és töröljük a helyi titkosított tokent.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="block contact" aria-labelledby="contact-title">
+      <h2 id="contact-title">Kérdés esetén</h2>
+      <div class="block-body">
+        <p>Az Üzenőfüzet független, nyílt forrású projekt: nem áll kapcsolatban az eKRÉTA Zrt.-vel, és nem hivatalos KRÉTA-termék. A teljes forráskód — a Classroom-hívásokkal együtt — átnézhető, kérdés vagy kifogás pedig ott jelezhető.</p>
+        <p class="actions"><a class="button" href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">Forráskód a GitHubon</a></p>
+      </div>
+    </section>
+  </div>
+</BaseLayout>
+
+<script>
+  import { startAdminPage } from "../scripts/adminPage";
+  startAdminPage();
+</script>
+
+<style>
+  .page-hero { display: grid; grid-template-columns: 37% 63%; min-height: 30rem; padding: clamp(3.5rem, 7vw, 6.5rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .eyebrow { grid-column: 1; margin: 0 0 1.1rem; color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: .68rem; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; }
+  h1 { grid-column: 1; margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4.4rem, 7.4vw, 8rem); font-weight: 600; line-height: .76; letter-spacing: -.035em; text-transform: uppercase; }
+  .lead { grid-column: 2; grid-row: 1 / span 3; align-self: end; max-width: 51rem; margin: 0; color: var(--blue); font-size: clamp(1.3rem, 2.1vw, 2.1rem); font-weight: 650; line-height: 1.35; }
+
+  .share { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.5rem 3rem; padding: clamp(2rem, 3.5vw, 3rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); background: var(--paper-bright); }
+  .share h2 { margin: 0 0 .5rem; font-size: 1.05rem; letter-spacing: -.02em; }
+  .share strong { color: var(--ink); }
+  .share p { max-width: 46rem; margin: 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.65; }
+
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--blue-soft); }
+  .facts article { padding: clamp(2rem, 3.5vw, 3rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
+  .facts article:last-child { border-right: 0; }
+  .facts span { color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: .68rem; letter-spacing: .08em; }
+  .facts h2 { margin: .6rem 0 .55rem; color: var(--blue); font-size: 1.15rem; letter-spacing: -.02em; }
+  .facts p { margin: 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.7; }
+
+  .block { display: grid; grid-template-columns: 37% minmax(0, 1fr); gap: clamp(1.5rem, 5vw, 6rem); padding: clamp(3rem, 6vw, 5.5rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .block h2 { margin: 0; color: var(--blue); font-size: clamp(1.8rem, 3.2vw, 3.1rem); letter-spacing: -.045em; line-height: 1.05; }
+  .block-body { max-width: 58rem; }
+  .block-body > p { margin: 0 0 1rem; color: var(--ink-muted); line-height: 1.75; }
+  .block-body > p:last-child { margin-bottom: 0; }
+  .block-body .intro { margin-bottom: 1.6rem; }
+  .block-body a { color: var(--blue); font-weight: 750; }
+  .block-body a.button { color: white; }
+
+  dl { margin: 0; }
+  dl div { display: grid; grid-template-columns: minmax(9rem, .55fr) minmax(0, 1fr); gap: .35rem 1.5rem; padding: .8rem 0; border-top: 1px solid var(--blue-soft); }
+  dl div:last-child { border-bottom: 1px solid var(--blue-soft); }
+  dl div.wide dd { color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .72rem; font-weight: 650; }
+  dt { color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+  dd { margin: 0; overflow-wrap: anywhere; font-size: .82rem; font-weight: 700; line-height: 1.55; }
+
+  .scope-list, .call-list, .no-list { margin: 0; padding: 0; list-style: none; }
+  .scope-list li { display: grid; grid-template-columns: minmax(10rem, .8fr) minmax(0, 1.2fr); gap: .35rem 1.5rem; padding: .75rem 0; border-top: 1px solid var(--blue-soft); }
+  .scope-list li:last-child { border-bottom: 1px solid var(--blue-soft); }
+  .scope-list strong { font-size: .8rem; line-height: 1.45; }
+  .scope-list code { overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .7rem; line-height: 1.55; }
+
+  .triage-list { margin: 0 0 1.6rem; padding: 0; list-style: none; }
+  .triage-list li { padding: .95rem 0; border-top: 1px solid var(--blue-soft); }
+  .triage-list li:last-child { border-bottom: 1px solid var(--blue-soft); }
+  .triage-list strong { display: block; font-size: .85rem; line-height: 1.5; }
+  .triage-list code { display: block; margin: .3rem 0; color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
+  .triage-list span { display: block; color: var(--ink-muted); font-size: .82rem; line-height: 1.65; }
+  .call-list li { padding: .85rem 0; border-top: 1px solid var(--blue-soft); }
+  .call-list li:last-child { border-bottom: 1px solid var(--blue-soft); }
+  .call-list code { display: block; overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .72rem; font-weight: 650; }
+  .call-list span { display: block; margin-top: .3rem; color: var(--ink-muted); font-size: .8rem; line-height: 1.6; }
+
+  .no-list li { padding: .8rem 0 .8rem 1.6rem; border-top: 1px solid var(--blue-soft); color: var(--ink-muted); font-size: .85rem; line-height: 1.7; text-indent: -1.6rem; }
+  .no-list li::before { content: "—"; display: inline-block; width: 1.6rem; color: var(--red); text-indent: 0; }
+  .no-list li:last-child { border-bottom: 1px solid var(--blue-soft); }
+  .no-list strong { color: var(--ink); }
+  .no-list code { color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .78rem; }
+
+  aside { margin-top: 2rem; padding: 1.3rem 1.5rem; border: 1px solid #c29a20; background: #fff4c9; }
+  aside h3 { margin: 0 0 .5rem; color: #382b0d; font-size: .92rem; }
+  aside p { margin: 0; color: #5a4816; font-size: .84rem; line-height: 1.7; }
+
+  .steps { display: grid; grid-template-columns: 37% 63%; border-bottom: 1px solid var(--blue-soft); }
+  .steps > div { padding: clamp(3rem, 6vw, 5.5rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
+  .steps h2 { margin: 0 0 1.4rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(3.2rem, 5vw, 5.5rem); font-weight: 600; line-height: .76; text-transform: uppercase; }
+  .steps > div p { max-width: 26rem; margin: 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.7; }
+  .steps ol { margin: 0; padding: 0; list-style: none; }
+  .steps li { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: 1.75rem var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .steps li:last-child { border-bottom: 0; }
+  .steps li > span { color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: .8rem; }
+  .steps h3 { margin: 0 0 .45rem; font-size: 1rem; }
+  .steps li p { max-width: 45rem; margin: 0; color: var(--ink-muted); font-size: .84rem; line-height: 1.7; }
+  .steps li strong { color: var(--ink); }
+
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.5rem; margin-top: 1.6rem; }
+  .actions a:not(.button) { padding: .75rem 0; color: var(--blue); font-size: .8rem; font-weight: 800; text-underline-offset: .25rem; }
+  button[data-copy] { min-height: 3rem; padding: .8rem 1.2rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-size: .8rem; font-weight: 800; cursor: pointer; }
+  button[data-copy]:hover { background: var(--blue); }
+  button[data-copy]:disabled { cursor: wait; opacity: .65; }
+  .copy-status { min-height: 1.3rem; margin: .7rem 0 0; color: var(--green); font-size: .78rem; line-height: 1.5; }
+  .copy-status[data-kind="error"] { color: var(--red); }
+
+  .contact { border-bottom: 0; }
+
+  @media (max-width: 900px) {
+    .facts { grid-template-columns: 1fr; }
+    .facts article { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
+    .facts article:last-child { border-bottom: 0; }
+  }
+
+  @media (max-width: 800px) {
+    .page-hero, .block, .steps { display: block; }
+    .page-hero { min-height: auto; }
+    .lead { margin-top: 2.5rem; }
+    .block h2 { margin-bottom: 2rem; }
+    .steps > div { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
+    .share button { width: 100%; }
+  }
+
+  @media (max-width: 560px) {
+    .scope-list li, dl div { grid-template-columns: 1fr; }
+    .actions { align-items: stretch; flex-direction: column; }
+    .actions button, .actions a { width: 100%; text-align: center; }
+  }
+</style>

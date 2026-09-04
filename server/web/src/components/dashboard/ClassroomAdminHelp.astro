@@ -14,7 +14,7 @@ const { variant = "workspace" } = Astro.props;
     <div class="admin-help-intro">
       <h3>Az Üzenőfüzet csak olvassa a gyerek Classroom-adatait</h3>
       <p>Nem ad be feladatot, nem ír jegyet, és nem módosít vagy töröl semmit. Az iskolai rendszergazda az alábbi kliensazonosítóval engedélyezheti az alkalmazást.</p>
-      <p class="admin-request-tip"><strong>Gyorsabb út:</strong> a Google hibaoldalán kattints a <strong>Request Access / Hozzáférés kérése</strong> gombra. Ettől a kérés megjelenik az iskola adminisztrátori felületén felülvizsgálatra.</p>
+      <p class="admin-request-tip"><strong>Gyorsabb út:</strong> a Google hibaoldalán — a gyerek iskolai fiókjával belépve — kattints a <strong>Request Access / Hozzáférés kérése</strong> gombra. Ettől a kérés megjelenik az iskola adminisztrátori felületén felülvizsgálatra. Magánfiókból küldve a kérés nem jut el az iskolához.</p>
     </div>
 
     <div class="admin-client">
@@ -44,6 +44,7 @@ const { variant = "workspace" } = Astro.props;
 
     <div class="admin-help-actions">
       <button id="copy-classroom-admin-data" type="button">Adminadatok másolása</button>
+      <a href="/iskolai-admin">Teljes leírás az adminnak</a>
       <a href="https://support.google.com/a/answer/7281227?hl=hu" rel="noreferrer">Google rendszergazdai útmutató</a>
     </div>
     <p class="admin-copy-status" id="classroom-admin-copy-status" role="status" aria-live="polite"></p>

@@ -93,3 +93,34 @@ test("the Classroom authorisation returns to the child that started it", () => {
   assert.match(classroomRouter, /target\.searchParams\.set\("id", profileId\)/);
   assert.match(pageModule, /startClassroomAuthorization\(user, current\.id, returnTo\)/);
 });
+
+test("the two connectors are equal tabs, not a profile with an external extra", () => {
+  assert.match(details, /role="tablist"/);
+  for (const id of ["tab-kreta", "tab-classroom", "panel-kreta", "panel-classroom"]) {
+    assert.ok(details.includes(`id="${id}"`), `missing tab element: ${id}`);
+  }
+  assert.ok(
+    details.indexOf('id="child-username"') > details.indexOf('id="panel-kreta"'),
+    "the KRÉTA credentials belong to the KRÉTA connector, not to the profile header",
+  );
+  assert.match(pageModule, /function selectTab\(id: "kreta" \| "classroom"\)/);
+  assert.match(pageModule, /selectTab\("classroom"\)/, "returning from Google opens the Classroom tab");
+});
+
+test("a school block stays visible at the button instead of a status line that scrolls away", () => {
+  assert.match(details, /id="child-classroom-hint"/, "the Request Access tip is there before any block");
+  assert.match(details, /id="child-classroom-blocked"/);
+  assert.match(details, /Request Access/);
+  assert.match(details, /href="\/iskolai-admin"/);
+  assert.match(pageModule, /uzenofuzet-classroom-blocked:/, "the block is remembered per child");
+  assert.match(pageModule, /writeBlocked\(classroomResult === "blocked"\)/);
+  assert.match(pageModule, /classroomConnect\.textContent = blocked/);
+  assert.match(pageModule, /navigator\.clipboard\.writeText\(schoolLetter\(\)\)/);
+});
+
+test("the page reveals itself only once the right title is in place", () => {
+  assert.match(page, /<h1 id="child-title"><\/h1>/, "no 'add a child' heading flashes while loading");
+  assert.match(pageModule, /function reveal\(\)/);
+  assert.match(pageModule, /title\.textContent = "Gyerek hozzáadása";/);
+  assert.doesNotMatch(pageModule, /loading\.hidden = true;\n    body\.hidden = false;\n    try/);
+});
