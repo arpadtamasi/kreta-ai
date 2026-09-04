@@ -1,0 +1,437 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ArrowMark from "../components/ArrowMark.astro";
+import SparkMark from "../components/SparkMark.astro";
+---
+
+<BaseLayout
+  title="Üzenőfüzet – kérdezd a KRÉTA-naplót Claude-ban"
+  description="Az Üzenőfüzet összeköti az órarendet, a hiányzásokat és a dolgozatokat, hogy lásd, mire érdemes rákérdezni."
+>
+  <section class="hero" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 id="hero-title"><span>Mi volt ma</span><span>az iskolában?</span></h1>
+      <p class="hero-lede">Az Üzenőfüzet összeköti az órarendet, a hiányzásokat és a dolgozatokat, hogy lásd, mire érdemes rákérdezni.</p>
+      <a class="button hero-button" href="/dashboard">Kapcsold össze Claude-dal <ArrowMark /></a>
+      <p class="trust-line">Csak olvas. Nem módosít jegyet, igazolást vagy üzenetet.</p>
+      <p class="hero-meta">Kísérleti, független szolgáltatás · claude.ai weben és mobilon</p>
+    </div>
+
+    <div class="proof" aria-label="Szintetikus példabeszélgetés">
+      <div class="ruler" aria-hidden="true">
+        <span>0</span><i></i><i></i><i></i><span>10</span><i></i><i></i><i></i><span>20</span>
+      </div>
+      <p class="demo-tag">Bemutató · nem valós tanulói adatok</p>
+
+      <div class="proof-thread">
+        <article class="message question">
+          <div class="avatar" aria-hidden="true">ÉN</div>
+          <div>
+            <div class="speaker-line"><strong>Mire készüljünk holnap?</strong><time>19:42</time></div>
+            <p class="tool-line">KRÉTA napló használata</p>
+          </div>
+        </article>
+
+        <article class="message answer">
+          <div class="claude-mark" aria-hidden="true"><SparkMark /></div>
+          <div class="answer-body">
+            <div class="speaker-line claude-label"><strong>Claude</strong><time>19:42</time></div>
+            <aside class="insight">
+              <div class="bracket" aria-hidden="true"></div>
+              <p class="insight-title">Amit érdemes megnézned:</p>
+              <p>Pénteken kémiadolgozat lesz. Áron szerdai előkészítő órájáról hiányzás van rögzítve, még <span class="circled">„igazolandó”</span> állapotban.</p>
+              <p class="all-good">A többi tárgyban nincs eltérés ezen a héten.</p>
+            </aside>
+          </div>
+        </article>
+      </div>
+
+      <p class="margin-note">Ez már nem lista.<br />Ez összefüggés.</p>
+    </div>
+  </section>
+
+  <section class="capabilities" aria-label="Miben segít az Üzenőfüzet?">
+    <article>
+      <h2>Kérdezz természetesen</h2>
+      <p>„Mire készüljünk holnap?” — nem kell a KRÉTA menüiben keresned.</p>
+    </article>
+    <article>
+      <h2>Lásd, ami eltér</h2>
+      <p>A hiányzást, új jegyet, közelgő dolgozatot vagy házit hozza előre.</p>
+    </article>
+    <article>
+      <h2>Értsd az összefüggést</h2>
+      <p>Megmutatja, ha a mai nap egy korábbi órához vagy közelgő feladathoz kapcsolódik.</p>
+    </article>
+  </section>
+
+  <section class="closing" aria-labelledby="closing-title">
+    <div>
+      <h2 id="closing-title">Kérdezd meg, mi történt ma.</h2>
+      <p>A kapcsolati pulton néhány perc alatt beállíthatod az első gyereket.</p>
+    </div>
+    <a class="button" href="/dashboard">Kapcsold össze Claude-dal <ArrowMark /></a>
+  </section>
+</BaseLayout>
+
+<style>
+  .hero {
+    min-height: calc(100svh - 5.25rem);
+    display: grid;
+    grid-template-columns: minmax(23rem, 41%) minmax(0, 59%);
+    border-bottom: 1px solid var(--blue-soft);
+  }
+
+  .hero-copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    justify-content: center;
+    padding: clamp(3.75rem, 8vh, 7rem) clamp(2rem, 4vw, 5rem) 2rem var(--page-pad);
+    border-right: 1px solid var(--blue-soft);
+  }
+
+  h1 {
+    margin: 0;
+    color: var(--ink);
+    font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif;
+    font-size: clamp(5.4rem, 7.4vw, 8.2rem);
+    font-weight: 600;
+    letter-spacing: -.035em;
+    line-height: .78;
+  }
+
+  h1 span { display: block; }
+
+  h1::after {
+    content: "";
+    display: block;
+    width: 5.5rem;
+    height: 3px;
+    margin-top: 1.25rem;
+    background: var(--red);
+  }
+
+  .hero-lede {
+    max-width: 32rem;
+    margin: 1.8rem 0 1.7rem;
+    color: var(--ink-muted);
+    font-size: clamp(1.05rem, 1.25vw, 1.28rem);
+    line-height: 1.58;
+  }
+
+  .hero-button {
+    width: min(100%, 24rem);
+    min-height: 4.5rem;
+    justify-content: space-between;
+    padding-inline: 1.5rem;
+  }
+
+  .trust-line {
+    max-width: 30rem;
+    margin: .9rem 0 0;
+    color: var(--blue);
+    font-size: .78rem;
+    font-weight: 750;
+    line-height: 1.5;
+  }
+
+  .hero-meta {
+    margin: auto 0 0;
+    padding-top: 2rem;
+    color: var(--blue);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem;
+    letter-spacing: .04em;
+    line-height: 1.5;
+    text-transform: uppercase;
+  }
+
+  .proof {
+    position: relative;
+    display: flex;
+    min-width: 0;
+    overflow: hidden;
+    align-items: center;
+    padding: clamp(5.5rem, 11vh, 8.5rem) clamp(2rem, 5vw, 6rem) clamp(4.5rem, 8vh, 6.5rem) clamp(4.25rem, 7vw, 8rem);
+    background-color: var(--paper-bright);
+    background-image:
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+
+  .proof::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: clamp(2rem, 4.5vw, 5rem);
+    width: 2px;
+    background: rgba(214, 74, 53, .55);
+  }
+
+  .ruler {
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1.8rem;
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-around;
+    padding: 0 1rem .25rem;
+    border-bottom: 1px solid var(--blue-soft);
+    color: var(--blue);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .58rem;
+  }
+
+  .ruler i { height: .45rem; border-left: 1px solid var(--blue-soft); }
+
+  .demo-tag {
+    position: absolute;
+    top: 2.5rem;
+    right: 1.5rem;
+    margin: 0;
+    padding: .35rem .55rem;
+    border: 1px solid var(--blue-soft);
+    color: var(--blue);
+    background: rgba(251, 252, 254, .9);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .6rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+  }
+
+  .proof-thread { width: min(100%, 56rem); }
+
+  .message {
+    position: relative;
+    display: grid;
+    grid-template-columns: 2.5rem minmax(0, 1fr);
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--blue-soft);
+  }
+
+  .question { align-items: center; border-top: 2px solid var(--blue); }
+
+  .avatar {
+    width: 2.5rem;
+    aspect-ratio: 1;
+    display: grid;
+    place-items: center;
+    color: white;
+    background: var(--blue);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem;
+  }
+
+  .speaker-line {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    color: var(--blue);
+  }
+
+  .speaker-line strong { font-size: clamp(1rem, 1.3vw, 1.3rem); }
+
+  .speaker-line time {
+    flex: 0 0 auto;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem;
+    font-weight: 500;
+  }
+
+  .tool-line {
+    margin: .35rem 0 0;
+    color: var(--ink-muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .67rem;
+  }
+
+  .tool-line::before {
+    content: "";
+    display: inline-block;
+    width: .5rem;
+    height: .5rem;
+    margin-right: .4rem;
+    background: var(--green);
+  }
+
+  .claude-mark { padding-top: .15rem; color: var(--red); }
+  .claude-label { color: var(--red); }
+
+  .insight {
+    position: relative;
+    margin: .9rem 0 .2rem;
+    padding: 1.15rem 1.25rem 1.15rem 1.5rem;
+    border: 1px solid rgba(214, 74, 53, .32);
+    background: rgba(242, 200, 75, .2);
+  }
+
+  .insight p {
+    margin: 0;
+    font-size: clamp(.92rem, 1.2vw, 1.12rem);
+    line-height: 1.58;
+  }
+
+  .insight p.insight-title {
+    margin-bottom: .35rem;
+    color: var(--blue-strong);
+    font-weight: 850;
+  }
+
+  .insight .all-good {
+    margin-top: .65rem;
+    color: var(--ink-muted);
+    font-size: clamp(.8rem, 1vw, .92rem);
+  }
+
+  .circled {
+    position: relative;
+    display: inline-block;
+    color: var(--red);
+    font-weight: 850;
+  }
+
+  .circled::after {
+    content: "";
+    position: absolute;
+    inset: -.25rem -.42rem;
+    border: 2px solid var(--red);
+    border-radius: 48% 53% 45% 50%;
+    transform: rotate(-3deg);
+  }
+
+  .bracket {
+    position: absolute;
+    top: -.45rem;
+    bottom: -.45rem;
+    left: -.75rem;
+    width: .55rem;
+    border: 2px solid var(--red);
+    border-right: 0;
+  }
+
+  .margin-note {
+    position: absolute;
+    right: 1.4rem;
+    bottom: 1rem;
+    margin: 0;
+    color: var(--red);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem;
+    line-height: 1.45;
+    transform: rotate(-2deg);
+  }
+
+  .capabilities {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-bottom: 1px solid var(--blue-soft);
+  }
+
+  .capabilities article {
+    min-height: 14rem;
+    padding: clamp(2.5rem, 5vw, 4.75rem) var(--page-pad);
+  }
+
+  .capabilities article + article { border-left: 1px solid var(--blue-soft); }
+
+  .capabilities h2 {
+    margin: 0 0 .8rem;
+    color: var(--ink);
+    font-size: clamp(1.15rem, 1.6vw, 1.55rem);
+    letter-spacing: -.025em;
+    line-height: 1.2;
+  }
+
+  .capabilities h2::before {
+    content: "";
+    display: block;
+    width: 2.25rem;
+    height: 2px;
+    margin-bottom: 1rem;
+    background: var(--red);
+  }
+
+  .capabilities p {
+    max-width: 34rem;
+    margin: 0;
+    color: var(--ink-muted);
+    font-size: .9rem;
+    line-height: 1.65;
+  }
+
+  .closing {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 2rem;
+    align-items: center;
+    padding: clamp(3.75rem, 7vw, 6.5rem) var(--page-pad);
+    color: white;
+    background: var(--ink);
+  }
+
+  .closing h2 {
+    max-width: 46rem;
+    margin: 0;
+    font-size: clamp(2rem, 4.2vw, 4.5rem);
+    letter-spacing: -.045em;
+    line-height: 1.04;
+  }
+
+  .closing p {
+    max-width: 42rem;
+    margin: 1rem 0 0;
+    color: #bac6d5;
+    line-height: 1.65;
+  }
+
+  .closing .button {
+    min-width: 18rem;
+    justify-content: space-between;
+    border-color: #9cb9df;
+  }
+
+  @media (max-width: 1050px) {
+    .hero { grid-template-columns: minmax(20rem, 39%) minmax(0, 61%); }
+    h1 { font-size: clamp(4.6rem, 8vw, 6.5rem); }
+    .proof { padding-left: 4.5rem; }
+    .hero-meta { display: none; }
+  }
+
+  @media (max-width: 760px) {
+    .hero { min-height: auto; display: block; }
+    .hero-copy {
+      min-height: 35rem;
+      padding: 4.25rem var(--page-pad) 3rem;
+      border-right: 0;
+      border-bottom: 1px solid var(--blue-soft);
+    }
+    h1 { font-size: clamp(4.8rem, 22vw, 6.6rem); }
+    .hero-button { width: 100%; }
+    .hero-meta { display: block; margin-top: 3rem; }
+    .proof { min-height: 34rem; padding: 5.25rem 1rem 4.75rem 3.4rem; }
+    .proof::before { left: 1.35rem; }
+    .demo-tag { top: 2.35rem; right: .75rem; font-size: .52rem; }
+    .message { grid-template-columns: 2rem minmax(0, 1fr); gap: .7rem; }
+    .avatar { width: 2rem; font-size: .54rem; }
+    .claude-mark :global(svg) { width: 1.65rem; }
+    .margin-note { right: .7rem; }
+    .capabilities { grid-template-columns: 1fr; }
+    .capabilities article { min-height: 0; }
+    .capabilities article + article { border-top: 1px solid var(--blue-soft); border-left: 0; }
+    .closing { grid-template-columns: 1fr; }
+    .closing .button { width: 100%; min-width: 0; }
+  }
+
+  @media (max-width: 420px) {
+    h1 { font-size: clamp(4.1rem, 21vw, 5.4rem); }
+    .hero-copy { min-height: 33rem; }
+    .proof { padding-left: 3rem; }
+    .insight { padding-inline: .9rem; }
+    .speaker-line strong { font-size: .9rem; }
+  }
+</style>

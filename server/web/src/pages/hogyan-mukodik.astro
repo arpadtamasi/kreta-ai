@@ -1,0 +1,81 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Hogyan működik? – Üzenőfüzet" description="Őszinte leírás arról, hogyan kezeli az Üzenőfüzet a KRÉTA-, Classroom- és profiladatokat.">
+  <header class="page-hero">
+    <h1>Hogyan<br />működik?</h1>
+    <p>Az Üzenőfüzet a KRÉTA-t és a Google Classroomot is elérhetővé teszi Claude-nak. Fontos pontosan értened a két eltérő kapcsolatot.</p>
+  </header>
+
+  <section class="password" id="jelszo" aria-labelledby="password-title">
+    <div class="warning-mark" aria-hidden="true">!</div>
+    <div>
+      <h2 id="password-title">A belépéskor a KRÉTA-jelszavad átmegy az Üzenőfüzet szerverén.</h2>
+      <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak az Online kapcsolat létrehozásához használjuk, majd eldobjuk.</p>
+      <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. A jelszó kezelése átmeneti, nem „zero knowledge”.</p>
+      <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> A hosztolt szolgáltatás csak akkor való neked, ha ezt a szerveroldali bizalmi határt elfogadod.</aside>
+    </div>
+  </section>
+
+  <section class="flow" aria-labelledby="flow-title">
+    <div>
+      <h2 id="flow-title">Mi történik<br />a háttérben?</h2>
+    </div>
+    <ol>
+      <li><span>01</span><div><h3>Hozzáadod és Online kapcsolod a gyereket</h3><p>A Google-fiókodhoz a gyerek rendes neve, KRÉTA-felhasználóneve és intézménykódja kerül. A megadott jelszóval a szerver egyszer belép a KRÉTA-ba, majd a jelszót eldobja.</p></div></li>
+      <li><span>02</span><div><h3>Te választod ki az időtartamot</h3><p>Jelölés nélkül ez 30 perces próba. Ha kéred a frissen tartást, az Üzenőfüzet 25 percenként megújítja a kapcsolatot. Opcionális befejezési napot is adhatsz.</p></div></li>
+      <li><span>03</span><div><h3>A forgó token titkosítva marad</h3><p>A KRÉTA access és refresh tokenje lejáró AES-256-GCM titkosítással kerül a privát profilodba. A szerver birtokolja a kulcsot: ez nyugalmi titkosítás, nem „zero knowledge”.</p></div></li>
+      <li><span>04</span><div><h3>A Classroom külön, gyerekenként kapcsolódik</h3><p>A gyerek a Google saját oldalán választja ki az iskolai fiókját. A szülői Google-belépés csak a profilokat védi; nem helyettesíti a gyerek Classroom-engedélyét.</p></div></li>
+      <li><span>05</span><div><h3>Claude csak profilhivatkozást kap</h3><p>A Claude-nak kiadott tokenben nincs KRÉTA- vagy Google-hitelesítő adat. A rögzített eszközök kéréskor, gyermekenként külön nyitják meg a megfelelő titkosított kapcsolatot.</p></div></li>
+      <li><span>06</span><div><h3>Mindkét forrás külön leválasztható</h3><p>A KRÉTA Online állapota és a Classroom-kapcsolat egymástól függetlenül törölhető; a gyerekprofil mindkét esetben megmarad.</p></div></li>
+    </ol>
+  </section>
+
+  <section class="why classroom" aria-labelledby="classroom-title">
+    <h2 id="classroom-title">Mit olvashat a Classroomból?</h2>
+    <p>Aktív kurzusokat, kiadott feladatokat, a gyerek saját beadási állapotát és jegyét, közleményeket és tananyagokat. Az Üzenőfüzet ehhez kizárólag read-only Google scope-okat kér.</p>
+    <p><strong>Nincs beadás vagy módosítás.</strong> Az iskola Workspace-rendszergazdája a külső alkalmazást letilthatja; ilyenkor az engedélyezést az iskola adminisztrátorának kell jóváhagynia.</p>
+  </section>
+
+  <section class="why" aria-labelledby="why-title">
+    <h2 id="why-title">Miért kell a 25 perces frissítés?</h2>
+    <p>A KRÉTA access tokenje 30 percig él. Frissítéskor új access tokent és új, egyszer használható refresh tokent ad; a korábbi refresh token utána már nem használható. Mivel nincs hivatalos külső OAuth, az Üzenőfüzet csak úgy tud tartósan Online maradni, ha a mindenkori tokent titkosítva megőrzi és még lejárat előtt lecseréli.</p>
+    <p><strong>Ez a bonyolultság a KRÉTA belépési modelljéből következik.</strong> Ha nem kéred, semmi nem frissül a háttérben: 30 perc után a próba Offline lesz.</p>
+  </section>
+
+</BaseLayout>
+
+<style>
+  .page-hero { display: grid; grid-template-columns: 37% 63%; min-height: 34rem; padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  h1 { grid-column: 1; margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 8vw, 9rem); font-weight: 600; line-height: .76; letter-spacing: -.035em; text-transform: uppercase; }
+  .page-hero > p:last-child { grid-column: 2; grid-row: 1 / span 2; align-self: end; max-width: 51rem; margin: 0; color: var(--blue); font-size: clamp(1.35rem, 2.2vw, 2.2rem); font-weight: 650; line-height: 1.35; }
+  .password { display: grid; grid-template-columns: 1fr 5fr; gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 9vw, 9rem) var(--page-pad); color: white; background: var(--ink); }
+  .warning-mark { width: clamp(5rem, 9vw, 9rem); aspect-ratio: 1; display: grid; place-items: center; align-self: start; border: 5px solid var(--red); border-radius: 50%; color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: clamp(3rem, 6vw, 6rem); transform: rotate(-5deg); }
+  .password h2 { max-width: 67rem; margin: 0 0 1.6rem; font-size: clamp(2.1rem, 4.2vw, 4.7rem); letter-spacing: -.045em; line-height: 1.05; }
+  .password p { max-width: 64rem; color: #bac6d5; line-height: 1.75; }
+  .password .large { color: white; font-size: clamp(1.15rem, 1.7vw, 1.6rem); line-height: 1.55; }
+  aside { max-width: 64rem; margin: 2rem 0; padding: 1.3rem 1.5rem; border: 1px solid rgba(242, 200, 75, .65); color: #f3e8bd; background: #172433; line-height: 1.65; }
+  .flow { display: grid; grid-template-columns: 37% 63%; }
+  .flow > div { padding: clamp(4rem, 8vw, 8rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
+  .flow h2 { margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 6vw, 7rem); font-weight: 600; line-height: .76; text-transform: uppercase; }
+  .flow ol { margin: 0; padding: 0; list-style: none; }
+  .flow li { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: 2rem var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .flow li > span { color: var(--red); font-family: "IBM Plex Mono", monospace; }
+  .flow h3 { margin: 0 0 .45rem; font-size: 1rem; }
+  .flow li p { max-width: 45rem; margin: 0; color: var(--ink-muted); font-size: .84rem; line-height: 1.65; }
+  .why { display: grid; grid-template-columns: 37% minmax(0, 1fr); gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  .why h2 { margin: 0; color: var(--blue); font-size: clamp(2rem, 4vw, 4rem); letter-spacing: -.045em; line-height: 1.04; }
+  .why p { grid-column: 2; max-width: 50rem; margin: 0; color: var(--ink-muted); line-height: 1.75; }
+  .why p + p { margin-top: -2rem; }
+  .classroom { border-bottom-color: var(--blue); background: var(--paper-bright); }
+  @media (max-width: 800px) {
+    .page-hero, .flow, .why { display: block; }
+    .page-hero { min-height: auto; }
+    .page-hero > p:last-child { margin-top: 3rem; }
+    .password { grid-template-columns: 1fr; }
+    .flow > div { border-right: 0; border-bottom: 1px solid var(--blue-soft); }
+    .why p { margin-top: 2rem; }
+    .why p + p { margin-top: 1rem; }
+  }
+</style>

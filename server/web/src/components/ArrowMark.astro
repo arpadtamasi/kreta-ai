@@ -1,0 +1,27 @@
+---
+interface Props {
+  direction?: "right" | "down" | "up-right";
+}
+
+const { direction = "right" } = Astro.props;
+---
+
+<svg class:list={["arrow-mark", `arrow-mark--${direction}`]} viewBox="0 0 20 20" aria-hidden="true">
+  <path d="M3 10h13M11 5l5 5-5 5" />
+</svg>
+
+<style>
+  .arrow-mark {
+    width: 1.15em;
+    height: 1.15em;
+    flex: 0 0 auto;
+    overflow: visible;
+    fill: none;
+    stroke: currentColor;
+    stroke-linecap: square;
+    stroke-linejoin: miter;
+    stroke-width: 1.6;
+  }
+  .arrow-mark--down { transform: rotate(90deg); }
+  .arrow-mark--up-right { transform: rotate(-45deg); }
+</style>

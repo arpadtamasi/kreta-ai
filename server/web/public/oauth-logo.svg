@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120" role="img" aria-labelledby="title">
+  <title id="title">Üzenőfüzet</title>
+  <rect width="120" height="120" fill="#f4f7fb"/>
+  <path d="M16 26c18-3.6 31.5 1.8 44 12.6C72.5 27.8 86 22.4 104 26v68c-18-3.6-31.5 1.8-44 12.6C47.5 95.8 34 90.4 16 94V26Z" fill="none" stroke="#073896" stroke-width="6" stroke-linejoin="miter"/>
+  <path d="M60 38.6v68" fill="none" stroke="#d64a35" stroke-width="6"/>
+  <path d="M26 43c10-.7 18.3 2 26 8M68 51c7.7-6 16-8.7 26-8M26 59c10-.7 18.3 2 26 8M68 67c7.7-6 16-8.7 26-8M26 75c10-.7 18.3 2 26 8M68 83c7.7-6 16-8.7 26-8" fill="none" stroke="#113f7a" stroke-width="4" stroke-linecap="square"/>
+</svg>

@@ -1,0 +1,260 @@
+---
+import ArrowMark from "./ArrowMark.astro";
+---
+
+<section class="pledge-wall" id="uzenetfal" aria-labelledby="pledge-title">
+  <div class="pledge-intro">
+    <h2 id="pledge-title">Legyünk ott<br />névvel.</h2>
+    <p class="lead">Ha 2026-ban normális, dokumentált hozzáférést szeretnél a saját családod iskolai adataihoz, mondd ki nyilvánosan.</p>
+    <div class="counter" aria-live="polite"><strong id="pledge-count">0</strong><span>ember kéri</span></div>
+  </div>
+
+  <div class="pledge-actions">
+    <div class="auth-panel">
+      <p id="auth-copy"><strong>Ehhez nem kell KRÉTA-fiókot vagy diákot kapcsolnod.</strong> Egy Google-belépés igazolja, hogy egy valódi fiók áll az üzenet mögött. Az e-mail-címed nem tesszük közzé.</p>
+      <button class="google-button" id="google-sign-in" type="button">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285f4" d="M21.6 12.2c0-.7-.1-1.5-.2-2.2H12v4h5.4a4.6 4.6 0 0 1-2 3v2.6h3.3c1.9-1.8 2.9-4.4 2.9-7.4Z"/><path fill="#34a853" d="M12 22c2.7 0 5-.9 6.7-2.4L15.4 17c-.9.6-2.1 1-3.4 1-2.6 0-4.8-1.8-5.6-4.1H3v2.7A10 10 0 0 0 12 22Z"/><path fill="#fbbc05" d="M6.4 13.9A6 6 0 0 1 6.1 12c0-.7.1-1.3.3-1.9V7.4H3A10 10 0 0 0 2 12c0 1.7.4 3.2 1 4.6l3.4-2.7Z"/><path fill="#ea4335" d="M12 6c1.5 0 2.9.5 3.9 1.5l2.9-2.8A9.7 9.7 0 0 0 12 2a10 10 0 0 0-9 5.4l3.4 2.7A6 6 0 0 1 12 6Z"/></svg>
+        Belépés Google-lal
+      </button>
+      <div class="signed-in" id="signed-in" hidden>
+        <span>Belépve: <strong id="signed-in-name"></strong></span>
+        <button id="sign-out" type="button">Kilépés</button>
+      </div>
+    </div>
+
+    <form id="pledge-form" hidden>
+      <label for="pledge-message">A nyilvános üzeneted</label>
+      <textarea id="pledge-message" name="message" minlength="10" maxlength="240" rows="4" required placeholder="Azért kérek hivatalos hozzáférést, mert…"></textarea>
+      <div class="form-meta"><span><strong id="character-count">0</strong>/240</span><span>A Google-fiókod neve fog megjelenni.</span></div>
+      <label class="consent">
+        <input name="consent" type="checkbox" required />
+        <span>Értem, hogy a nevem és az üzenetem nyilvános lesz.</span>
+      </label>
+      <label class="honeypot" aria-hidden="true">Weboldal <input name="website" tabindex="-1" autocomplete="off" /></label>
+      <p class="privacy-warning"><strong>Ne írj gyermeknevet, osztályt, iskolát vagy más személyes adatot.</strong> A saját álláspontodat fogalmazd meg.</p>
+      <button class="button" type="submit">Tedd a nevem a listára <ArrowMark /></button>
+    </form>
+    <p class="form-status" id="pledge-status" role="status"></p>
+  </div>
+
+  <div class="pledge-list-wrap">
+    <div class="list-head"><span>Név</span><span>Üzenet</span><span>Dátum</span></div>
+    <ol class="pledge-list" id="pledge-list" aria-live="polite">
+      <li class="loading">A névjegyzék betöltése…</li>
+    </ol>
+    <template id="pledge-template">
+      <li>
+        <div class="pledge-name"><span></span><small>Google-fiókkal hitelesítve</small></div>
+        <p></p>
+        <div class="pledge-date"><time></time><button type="button" hidden>Törlés</button></div>
+      </li>
+    </template>
+  </div>
+</section>
+
+<script>
+  import { initializeApp } from "firebase/app";
+  import {
+    getAuth,
+    GoogleAuthProvider,
+    onAuthStateChanged,
+    signInWithPopup,
+    signOut,
+    type User,
+  } from "firebase/auth";
+
+  const firebaseConfig = {
+    projectId: "uzenofuzet",
+    appId: "1:652545082668:web:2ae336556523a75af4d889",
+    storageBucket: "uzenofuzet.firebasestorage.app",
+    apiKey: "AIzaSyBFaJ8tV0bC4yfff6pTj09M1Oc17S9KuPc",
+    authDomain: "uzenofuzet.firebaseapp.com",
+    messagingSenderId: "652545082668",
+  };
+
+  const auth = getAuth(initializeApp(firebaseConfig));
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: "select_account" });
+
+  const signInButton = document.querySelector<HTMLButtonElement>("#google-sign-in")!;
+  const signOutButton = document.querySelector<HTMLButtonElement>("#sign-out")!;
+  const signedIn = document.querySelector<HTMLElement>("#signed-in")!;
+  const signedInName = document.querySelector<HTMLElement>("#signed-in-name")!;
+  const form = document.querySelector<HTMLFormElement>("#pledge-form")!;
+  const textarea = document.querySelector<HTMLTextAreaElement>("#pledge-message")!;
+  const characterCount = document.querySelector<HTMLElement>("#character-count")!;
+  const status = document.querySelector<HTMLElement>("#pledge-status")!;
+  const count = document.querySelector<HTMLElement>("#pledge-count")!;
+  const list = document.querySelector<HTMLOListElement>("#pledge-list")!;
+  const template = document.querySelector<HTMLTemplateElement>("#pledge-template")!;
+  let currentUser: User | null = null;
+
+  function setStatus(message: string, error = false) {
+    status.textContent = message;
+    status.dataset.error = String(error);
+  }
+
+  async function authHeader(): Promise<Record<string, string>> {
+    if (!currentUser) return {};
+    return { authorization: `Bearer ${await currentUser.getIdToken()}` };
+  }
+
+  async function loadPledges() {
+    try {
+      const response = await fetch("/api/pledges", { headers: await authHeader() });
+      if (!response.ok) throw new Error("Nem sikerült betölteni a névjegyzéket.");
+      const data = await response.json() as {
+        count: number;
+        pledges: Array<{ name: string; message: string; updatedAt: string; mine: boolean }>;
+      };
+      count.textContent = new Intl.NumberFormat("hu-HU").format(data.count);
+      list.replaceChildren();
+
+      if (data.pledges.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "empty";
+        empty.textContent = "A lista most indul. Az első név lehet a tiéd.";
+        list.append(empty);
+        return;
+      }
+
+      for (const pledge of data.pledges) {
+        const fragment = template.content.cloneNode(true) as DocumentFragment;
+        fragment.querySelector<HTMLElement>(".pledge-name span")!.textContent = pledge.name;
+        fragment.querySelector<HTMLParagraphElement>("p")!.textContent = pledge.message;
+        const time = fragment.querySelector<HTMLTimeElement>("time")!;
+        const date = new Date(pledge.updatedAt);
+        time.dateTime = pledge.updatedAt;
+        time.textContent = new Intl.DateTimeFormat("hu-HU", { year: "numeric", month: "short", day: "numeric" }).format(date);
+        const deleteButton = fragment.querySelector<HTMLButtonElement>("button")!;
+        deleteButton.hidden = !pledge.mine;
+        deleteButton.addEventListener("click", removeOwnPledge);
+        list.append(fragment);
+      }
+    } catch (error) {
+      count.textContent = "—";
+      list.replaceChildren();
+      const item = document.createElement("li");
+      item.className = "empty";
+      item.textContent = "A névjegyzék most nem érhető el.";
+      list.append(item);
+    }
+  }
+
+  async function removeOwnPledge() {
+    if (!currentUser || !window.confirm("Biztosan törlöd a nyilvános üzenetedet?")) return;
+    const response = await fetch("/api/pledges/me", { method: "DELETE", headers: await authHeader() });
+    if (response.ok) {
+      textarea.value = "";
+      characterCount.textContent = "0";
+      setStatus("Az üzenetedet töröltük.");
+      await loadPledges();
+    } else {
+      setStatus("A törlés most nem sikerült.", true);
+    }
+  }
+
+  signInButton.addEventListener("click", async () => {
+    setStatus("");
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (error) {
+      const cancelled = error instanceof Error && /popup-closed-by-user/.test(error.message);
+      if (!cancelled) setStatus("A Google-belépés nem sikerült. Próbáld újra.", true);
+    }
+  });
+
+  signOutButton.addEventListener("click", () => void signOut(auth));
+  textarea.addEventListener("input", () => { characterCount.textContent = String(textarea.value.length); });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (!currentUser) return;
+    setStatus("Mentés…");
+    const values = new FormData(form);
+    const response = await fetch("/api/pledges", {
+      method: "POST",
+      headers: { "content-type": "application/json", ...await authHeader() },
+      body: JSON.stringify({
+        message: values.get("message"),
+        consent: values.get("consent") === "on",
+        website: values.get("website"),
+      }),
+    });
+    const data = response.status === 204 ? {} : await response.json().catch(() => ({})) as { error?: string };
+    if (!response.ok) {
+      setStatus(data.error ?? "Az üzenetet most nem sikerült elmenteni.", true);
+      return;
+    }
+    setStatus("Kint vagy a listán. Köszönjük, hogy névvel vállaltad.");
+    await loadPledges();
+  });
+
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    signInButton.hidden = Boolean(user);
+    signedIn.hidden = !user;
+    form.hidden = !user;
+    signedInName.textContent = user?.displayName ?? "Google-fiók";
+    await loadPledges();
+  });
+</script>
+
+<style>
+  .pledge-wall {
+    display: grid;
+    grid-template-columns: .72fr 1.05fr;
+    background: var(--ink);
+    color: var(--paper-bright);
+  }
+  .pledge-intro { position: relative; padding: clamp(4rem, 8vw, 8rem) var(--page-pad); border-right: 1px solid #405065; }
+  .pledge-intro::after { content: "+"; position: absolute; top: 1rem; right: 1rem; color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: 1.6rem; }
+  h2 { margin: 0 0 1.8rem; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 8.8vw, 9.5rem); font-weight: 600; line-height: .76; letter-spacing: -.035em; text-transform: uppercase; }
+  .lead { max-width: 34rem; margin: 0; color: #c4ceda; font-size: clamp(1rem, 1.3vw, 1.25rem); line-height: 1.65; }
+  .counter { display: flex; align-items: baseline; gap: 1rem; margin-top: clamp(3rem, 7vw, 6rem); color: var(--yellow); }
+  .counter strong { font-family: "IBM Plex Mono", monospace; font-size: clamp(3.8rem, 7vw, 7rem); line-height: 1; }
+  .counter span { font-size: .8rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+
+  .pledge-actions { padding: clamp(4rem, 7vw, 7rem) var(--page-pad); background: #101a27; }
+  .auth-panel { padding-bottom: 2rem; border-bottom: 1px solid #405065; }
+  .auth-panel > p { max-width: 42rem; margin: 0 0 1.4rem; color: #c4ceda; line-height: 1.6; }
+  .google-button { min-height: 3.4rem; display: inline-flex; align-items: center; gap: .75rem; padding: .75rem 1.1rem; border: 2px solid white; border-radius: 0; color: #202124; background: white; font-weight: 750; cursor: pointer; }
+  .google-button svg { width: 1.35rem; }
+  .signed-in { display: flex; align-items: center; justify-content: space-between; gap: 1rem; font-size: .85rem; }
+  .signed-in button, .pledge-date button { padding: .25rem 0; border: 0; color: #a9c5ee; background: transparent; text-decoration: underline; text-underline-offset: .25rem; cursor: pointer; }
+  form { padding-top: 2rem; }
+  form > label:first-child { display: block; margin-bottom: .65rem; font-size: .78rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+  textarea { width: 100%; resize: vertical; padding: 1rem; border: 2px solid #8aa2c3; border-radius: 0; color: var(--ink); background: var(--paper-bright); line-height: 1.55; }
+  .form-meta { display: flex; justify-content: space-between; gap: 1rem; margin-top: .5rem; color: #9caabe; font-family: "IBM Plex Mono", monospace; font-size: .62rem; }
+  .consent { display: flex; gap: .7rem; align-items: flex-start; margin: 1.3rem 0; color: #dce3ec; font-size: .78rem; line-height: 1.5; }
+  .consent input { width: 1.15rem; height: 1.15rem; accent-color: var(--yellow); }
+  .privacy-warning { max-width: 43rem; margin: 0 0 1.5rem; color: #9caabe; font-size: .73rem; line-height: 1.55; }
+  .privacy-warning strong { color: #ffd9d3; }
+  .honeypot { position: absolute; left: -9999px; }
+  .form-status { min-height: 1.4rem; margin: 1rem 0 0; color: #9de0c2; font-size: .78rem; }
+  .form-status[data-error="true"] { color: #ffb7aa; }
+
+  .pledge-list-wrap { grid-column: 1 / -1; border-top: 1px solid #405065; }
+  .list-head, .pledge-list li { display: grid; grid-template-columns: minmax(10rem, .55fr) minmax(16rem, 1.7fr) minmax(8rem, .35fr); }
+  .list-head { color: #9caabe; font-family: "IBM Plex Mono", monospace; font-size: .62rem; letter-spacing: .12em; text-transform: uppercase; }
+  .list-head span { padding: .8rem var(--page-pad); border-right: 1px solid #405065; }
+  .pledge-list { margin: 0; padding: 0; list-style: none; }
+  .pledge-list li { border-top: 1px solid #405065; }
+  .pledge-list li > * { margin: 0; padding: 1.35rem var(--page-pad); border-right: 1px solid #405065; }
+  .pledge-name span { display: block; font-weight: 850; }
+  .pledge-name small { display: block; margin-top: .35rem; color: #77bca3; font-family: "IBM Plex Mono", monospace; font-size: .58rem; }
+  .pledge-list p { color: #dce3ec; font-size: .88rem; line-height: 1.55; }
+  .pledge-date { color: #9caabe; font-family: "IBM Plex Mono", monospace; font-size: .64rem; }
+  .pledge-date button { display: block; margin-top: .55rem; font-family: inherit; font-size: inherit; }
+  .pledge-list .loading, .pledge-list .empty { display: block; padding: 2rem var(--page-pad); color: #9caabe; font-family: "IBM Plex Mono", monospace; font-size: .75rem; }
+
+  @media (max-width: 800px) {
+    .pledge-wall { display: block; }
+    .pledge-intro { border-right: 0; border-bottom: 1px solid #405065; }
+    .list-head { display: none; }
+    .pledge-list li { display: block; padding: 1.5rem var(--page-pad); }
+    .pledge-list li > * { padding: .25rem 0; border: 0; }
+    .pledge-list p { margin: .6rem 0; }
+    .form-meta span:last-child { display: none; }
+  }
+</style>

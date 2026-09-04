@@ -1,0 +1,32 @@
+---
+import BrandMark from "./BrandMark.astro";
+---
+
+<footer>
+  <BrandMark />
+  <p>Független, nyílt forrású kezdeményezés. Nem az eKRÉTA Zrt. hivatalos szolgáltatása.</p>
+  <nav aria-label="Lábléc navigáció">
+    <a href="/hogyan-mukodik">Hogyan működik?</a>
+    <a href="/adatkezeles">Adatkezelés</a>
+    <a href="/felhasznalasi-feltetelek">Feltételek</a>
+    <a href="/dashboard">Kapcsolati pult</a>
+  </nav>
+</footer>
+
+<style>
+  footer {
+    display: grid;
+    grid-template-columns: auto minmax(15rem, 1fr) auto;
+    gap: 2rem;
+    align-items: center;
+    padding: 2.2rem var(--page-pad);
+    border-top: 1px solid var(--blue-soft);
+  }
+  p { max-width: 42rem; margin: 0; color: var(--ink-muted); font-size: .72rem; line-height: 1.6; }
+  nav { display: flex; gap: 1.4rem; }
+  nav a { color: var(--blue); font-size: .72rem; font-weight: 700; text-underline-offset: .25rem; }
+  @media (max-width: 760px) {
+    footer { grid-template-columns: 1fr; gap: 1.25rem; }
+    nav { flex-wrap: wrap; }
+  }
+</style>

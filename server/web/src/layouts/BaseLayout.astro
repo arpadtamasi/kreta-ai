@@ -1,0 +1,36 @@
+---
+import "@fontsource-variable/big-shoulders-display";
+import "@fontsource-variable/manrope";
+import "@fontsource/ibm-plex-mono/latin-ext-500";
+import "../styles/global.css";
+import SiteHeader from "../components/SiteHeader.astro";
+import SiteFooter from "../components/SiteFooter.astro";
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = "Üzenőfüzet – kérdezd a KRÉTA-naplót Claude-ban",
+  description = "Olvasd a gyerekeid KRÉTA-adatait természetes nyelven, Claude egyéni csatlakozóval.",
+} = Astro.props;
+---
+
+<!doctype html>
+<html lang="hu">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#f4f7fb" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#tartalom">Ugrás a tartalomra</a>
+    <SiteHeader />
+    <main id="tartalom"><slot /></main>
+    <SiteFooter />
+  </body>
+</html>

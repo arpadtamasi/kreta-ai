@@ -1,0 +1,48 @@
+---
+import BrandMark from "./BrandMark.astro";
+const pathname = Astro.url.pathname;
+---
+
+<header class:list={["site-header", { home: pathname === "/" }]}>
+  <BrandMark />
+  <nav aria-label="Fő navigáció">
+    <a class:list={{ active: pathname === "/hogyan-mukodik" }} href="/hogyan-mukodik">Hogyan működik?</a>
+    <a class:list={["dashboard-link", { active: pathname === "/dashboard" }]} href="/dashboard">Kapcsolati pult</a>
+  </nav>
+</header>
+
+<style>
+  .site-header {
+    min-height: 5.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 2rem;
+    padding: 0 var(--page-pad);
+    border-top: 5px solid var(--blue);
+    border-bottom: 1px solid var(--blue-soft);
+  }
+
+  nav { display: flex; align-items: center; gap: clamp(1rem, 3vw, 2.75rem); }
+  .site-header :global(.brand) { margin-right: clamp(1.5rem, 3vw, 3.2rem); padding: .72rem .9rem; border: 2px solid var(--blue); }
+  .site-header:not(.home) .dashboard-link { margin-left: auto; }
+  .site-header.home .dashboard-link { display: none; }
+
+  nav a {
+    color: var(--ink-muted);
+    font-size: .9rem;
+    font-weight: 700;
+    text-decoration: none;
+    text-underline-offset: .4rem;
+  }
+
+  nav a:hover,
+  nav a.active { color: var(--blue); text-decoration: underline; text-decoration-thickness: 2px; }
+
+  @media (max-width: 600px) {
+    .site-header { min-height: 4.5rem; gap: 1rem; }
+    nav { gap: .8rem; }
+    nav a { font-size: .73rem; }
+    nav a:last-child { display: none; }
+  }
+</style>
