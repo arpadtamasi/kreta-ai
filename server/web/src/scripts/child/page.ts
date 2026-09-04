@@ -1,5 +1,5 @@
 /** A gyerek saját oldala: adatok, kapcsolatok, szerkesztés, veszélyzóna. */
-import { onAuthStateChanged, type User } from "firebase/auth";
+import { onAuthStateChanged, signInWithPopup, type User } from "firebase/auth";
 import {
   deleteProfile,
   disconnectClassroom,
@@ -9,7 +9,7 @@ import {
   startClassroomAuthorization,
   stopKretaConnection,
 } from "../dashboard/api";
-import { auth } from "../dashboard/firebase";
+import { auth, provider } from "../dashboard/firebase";
 import { createInstituteSearch } from "../dashboard/institutes";
 import {
   classroomDetail,
@@ -41,6 +41,8 @@ export function startChildPage(): void {
   const classroomBlocked = document.querySelector<HTMLElement>("#child-classroom-blocked")!;
   const blockedStatus = document.querySelector<HTMLElement>("#child-classroom-blocked-status")!;
   const copyLetter = document.querySelector<HTMLButtonElement>("#copy-school-letter")!;
+  const sessionIssue = document.querySelector<HTMLElement>("#child-session-issue")!;
+  const sessionFix = document.querySelector<HTMLButtonElement>("#child-session-fix")!;
   const tabs = [...document.querySelectorAll<HTMLButtonElement>(".tabs .tab")];
   const kretaConnect = document.querySelector<HTMLButtonElement>("#child-kreta-connect")!;
   const classroomConnect = document.querySelector<HTMLButtonElement>("#child-classroom-connect")!;
@@ -146,6 +148,34 @@ export function startChildPage(): void {
     }
   });
 
+  let sessionReady = false;
+
+  /** A Classroom visszatérő lépése süti-alapú: enélkül a folyamat a végén bukna el. */
+  async function ensureSession(user: User): Promise<boolean> {
+    try {
+      await establishSession(user);
+      sessionReady = true;
+    } catch {
+      sessionReady = false;
+    }
+    sessionIssue.hidden = sessionReady;
+    return sessionReady;
+  }
+
+  sessionFix.addEventListener("click", async () => {
+    sessionFix.disabled = true;
+    try {
+      await signInWithPopup(auth, provider);
+      const user = auth.currentUser;
+      if (user && await ensureSession(user)) setStatus("A Google-belépés megújítva. Indulhat a Classroom összekapcsolása.", "success");
+      else setStatus("A Google-belépést nem sikerült megújítani. Próbáld újra, vagy lépj be újra a főoldalon.", "error");
+    } catch {
+      setStatus("A Google-belépés ablakát bezártad; nem változtattunk semmin.", "");
+    } finally {
+      sessionFix.disabled = false;
+    }
+  });
+
   function setStatus(message: string, kind = "") {
     status.textContent = message;
     status.dataset.kind = kind;
@@ -192,9 +222,10 @@ export function startChildPage(): void {
     // Új gyereknél az oldal címe már kimondja, mi történik; ne ismételjük meg.
     formTitle.hidden = mode === "new";
     formTitle.textContent = mode === "connect" ? "Online kapcsolás" : "Profil és KRÉTA-belépés";
-    formIntro.textContent = mode === "connect"
-      ? "A KRÉTA-jelszó csak a kapcsolat létrehozásához kell; nem mentjük el."
-      : "A KRÉTA-jelszó csak a kapcsolat létrehozásához kell; nem mentjük el. A profil a te Google-fiókodhoz tartozik.";
+    // A jelszó sorsát a mezők fölötti bizalmi keret mondja ki; itt csak az marad,
+    // ami módonként tényleg különbözik.
+    formIntro.textContent = mode === "connect" ? "" : "A profil a te Google-fiókodhoz tartozik.";
+    formIntro.hidden = mode === "connect";
     submitButton.textContent = mode === "connect" ? "Online kapcsolás" : "Mentés és kapcsolás";
     editor.hidden = false;
     details.hidden = mode !== "new" ? true : details.hidden;
@@ -338,6 +369,12 @@ export function startChildPage(): void {
     if (!current || !user) return;
     classroomConnect.disabled = true;
     setStatus("Az iskolai Google-belépés megnyitása…");
+    if (!sessionReady && !await ensureSession(user)) {
+      setStatus("A Google-munkamenet lejárt. Újítsd meg a belépést, aztán indulhat a Classroom.", "error");
+      classroomConnect.disabled = false;
+      sessionFix.focus();
+      return;
+    }
     try {
       location.assign(await startClassroomAuthorization(user, current.id, returnTo));
     } catch (error) {
@@ -425,11 +462,7 @@ export function startChildPage(): void {
       location.replace(backHref);
       return;
     }
-    try {
-      await establishSession(user);
-    } catch {
-      setStatus("A Google-munkamenetet nem sikerült megújítani. A Classroom összekapcsolásához lépj be újra.", "error");
-    }
+    await ensureSession(user);
     try {
       if (profileId) await load(user);
       else openEditor("new");
