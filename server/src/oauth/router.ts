@@ -8,6 +8,7 @@ import { readSessionCookie } from "../auth/session.js";
 import type { VerifySessionCookie } from "../auth/types.js";
 import type { Config } from "../config.js";
 import { connectionIsOnline } from "../profiles/connection.js";
+import { classroomConnectionIsActive } from "../classroom/connection.js";
 import type { ChildProfileStore } from "../profiles/store.js";
 import { randomId } from "../seal.js";
 import { issueClientId, openClientId } from "./clients.js";
@@ -166,8 +167,11 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
         return;
       }
 
-      const profiles = (await deps.childProfileStore.list(user.uid)).filter(
-        (profile) => profile.connection && connectionIsOnline(profile.connection),
+      const profiles = (await deps.childProfileStore.list(user.uid)).filter((profile) =>
+        Boolean(
+          (profile.connection && connectionIsOnline(profile.connection)) ||
+          (profile.classroomConnection && classroomConnectionIsActive(profile.classroomConnection)),
+        )
       );
       if (profiles.length === 0) {
         res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(req.originalUrl));

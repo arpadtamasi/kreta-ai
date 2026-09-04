@@ -3,7 +3,7 @@ import { randomBytes } from "node:crypto";
 import { test } from "node:test";
 import { createConnection, openConnectionCredential } from "../src/profiles/connection.js";
 import { refreshDueConnections } from "../src/profiles/refresher.js";
-import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore } from "../src/profiles/store.js";
+import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore, ClassroomConnection } from "../src/profiles/store.js";
 import { Sealer } from "../src/seal.js";
 
 const sealer = new Sealer(randomBytes(32));
@@ -49,6 +49,8 @@ class MemoryStore implements ChildProfileStore {
     this.connection = undefined;
     return true;
   }
+  async setClassroomConnection(_uid: string, _id: string, _connection: ClassroomConnection) { return false; }
+  async clearClassroomConnection() { return false; }
   async listDueConnections(now: Date) {
     if (!this.connection) return [];
     const dueAt = this.connection.mode === "keep_alive"

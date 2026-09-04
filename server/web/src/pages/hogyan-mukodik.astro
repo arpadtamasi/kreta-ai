@@ -1,12 +1,11 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
-import ArrowMark from "../components/ArrowMark.astro";
 ---
 
-<BaseLayout title="Hogyan működik? – Üzenőfüzet" description="Őszinte leírás arról, hogyan kezeli az Üzenőfüzet a KRÉTA-jelszót és az adatokat.">
+<BaseLayout title="Hogyan működik? – Üzenőfüzet" description="Őszinte leírás arról, hogyan kezeli az Üzenőfüzet a KRÉTA-, Classroom- és profiladatokat.">
   <header class="page-hero">
     <h1>Hogyan<br />működik?</h1>
-    <p>Az Üzenőfüzet kényelmesebb hozzáférést ad. Ettől még fontos pontosan értened, kiben és miben bízol meg.</p>
+    <p>Az Üzenőfüzet a KRÉTA-t és a Google Classroomot is elérhetővé teszi Claude-nak. Fontos pontosan értened a két eltérő kapcsolatot.</p>
   </header>
 
   <section class="password" id="jelszo" aria-labelledby="password-title">
@@ -15,8 +14,7 @@ import ArrowMark from "../components/ArrowMark.astro";
       <h2 id="password-title">A belépéskor a KRÉTA-jelszavad átmegy az Üzenőfüzet szerverén.</h2>
       <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak az Online kapcsolat létrehozásához használjuk, majd eldobjuk.</p>
       <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. A jelszó kezelése átmeneti, nem „zero knowledge”.</p>
-      <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> Futtasd a nyílt forrású változatot a saját gépeden, így a KRÉTA-jelszó nem megy át a mi szerverünkön.</aside>
-      <a class="button secondary" href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">Helyi változat a GitHubon <ArrowMark direction="up-right" /></a>
+      <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> A hosztolt szolgáltatás csak akkor való neked, ha ezt a szerveroldali bizalmi határt elfogadod.</aside>
     </div>
   </section>
 
@@ -28,9 +26,16 @@ import ArrowMark from "../components/ArrowMark.astro";
       <li><span>01</span><div><h3>Hozzáadod és Online kapcsolod a gyereket</h3><p>A Google-fiókodhoz a gyerek rendes neve, KRÉTA-felhasználóneve és intézménykódja kerül. A megadott jelszóval a szerver egyszer belép a KRÉTA-ba, majd a jelszót eldobja.</p></div></li>
       <li><span>02</span><div><h3>Te választod ki az időtartamot</h3><p>Jelölés nélkül ez 30 perces próba. Ha kéred a frissen tartást, az Üzenőfüzet 25 percenként megújítja a kapcsolatot. Opcionális befejezési napot is adhatsz.</p></div></li>
       <li><span>03</span><div><h3>A forgó token titkosítva marad</h3><p>A KRÉTA access és refresh tokenje lejáró AES-256-GCM titkosítással kerül a privát profilodba. A szerver birtokolja a kulcsot: ez nyugalmi titkosítás, nem „zero knowledge”.</p></div></li>
-      <li><span>04</span><div><h3>Claude-ban már csak Google-belépés van</h3><p>Claude az Online profilok hivatkozását kapja, KRÉTA-jelszót és KRÉTA-tokent nem. Ezután a rögzített eszközök csak olvasnak a naplóból.</p></div></li>
-      <li><span>05</span><div><h3>Az Online állapot bármikor kikapcsolható</h3><p>Kattints az Online állapotra: a kapcsolat és a titkosított token törlődik, a gyerek neve, intézménye és felhasználóneve megmarad.</p></div></li>
+      <li><span>04</span><div><h3>A Classroom külön, gyerekenként kapcsolódik</h3><p>A gyerek a Google saját oldalán választja ki az iskolai fiókját. A szülői Google-belépés csak a profilokat védi; nem helyettesíti a gyerek Classroom-engedélyét.</p></div></li>
+      <li><span>05</span><div><h3>Claude csak profilhivatkozást kap</h3><p>A Claude-nak kiadott tokenben nincs KRÉTA- vagy Google-hitelesítő adat. A rögzített eszközök kéréskor, gyermekenként külön nyitják meg a megfelelő titkosított kapcsolatot.</p></div></li>
+      <li><span>06</span><div><h3>Mindkét forrás külön leválasztható</h3><p>A KRÉTA Online állapota és a Classroom-kapcsolat egymástól függetlenül törölhető; a gyerekprofil mindkét esetben megmarad.</p></div></li>
     </ol>
+  </section>
+
+  <section class="why classroom" aria-labelledby="classroom-title">
+    <h2 id="classroom-title">Mit olvashat a Classroomból?</h2>
+    <p>Aktív kurzusokat, kiadott feladatokat, a gyerek saját beadási állapotát és jegyét, közleményeket és tananyagokat. Az Üzenőfüzet ehhez kizárólag read-only Google scope-okat kér.</p>
+    <p><strong>Nincs beadás vagy módosítás.</strong> Az iskola Workspace-rendszergazdája a külső alkalmazást letilthatja; ilyenkor az engedélyezést az iskola adminisztrátorának kell jóváhagynia.</p>
   </section>
 
   <section class="why" aria-labelledby="why-title">
@@ -39,12 +44,6 @@ import ArrowMark from "../components/ArrowMark.astro";
     <p><strong>Ez a bonyolultság a KRÉTA belépési modelljéből következik.</strong> Ha nem kéred, semmi nem frissül a háttérben: 30 perc után a próba Offline lesz.</p>
   </section>
 
-  <section class="advocacy">
-    <h2>2026-ban jár nekünk egy normális hozzáférési út.</h2>
-    <p>Ha az zavar jobban, hogy nincs hivatalos, dokumentált és biztonságos út a saját családod adataihoz, kérj ilyet az iskoládtól és az eKRÉTÁ-tól. Írj nekik. Beszéljetek róla más szülőkkel. Szerveződjetek.</p>
-    <blockquote>„Kérjük, tegyenek elérhetővé dokumentált, biztonságos, külső alkalmazások számára használható hozzáférést a szülők és tanulók saját KRÉTA-adataihoz.”</blockquote>
-    <a class="button" href="/#uzenetfal">Írd fel a neved a közös üzenethez <ArrowMark /></a>
-  </section>
 </BaseLayout>
 
 <style>
@@ -57,7 +56,6 @@ import ArrowMark from "../components/ArrowMark.astro";
   .password p { max-width: 64rem; color: #bac6d5; line-height: 1.75; }
   .password .large { color: white; font-size: clamp(1.15rem, 1.7vw, 1.6rem); line-height: 1.55; }
   aside { max-width: 64rem; margin: 2rem 0; padding: 1.3rem 1.5rem; border: 1px solid rgba(242, 200, 75, .65); color: #f3e8bd; background: #172433; line-height: 1.65; }
-  .password .button { border-color: #9cb9df; color: white; }
   .flow { display: grid; grid-template-columns: 37% 63%; }
   .flow > div { padding: clamp(4rem, 8vw, 8rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
   .flow h2 { margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 6vw, 7rem); font-weight: 600; line-height: .76; text-transform: uppercase; }
@@ -66,14 +64,11 @@ import ArrowMark from "../components/ArrowMark.astro";
   .flow li > span { color: var(--red); font-family: "IBM Plex Mono", monospace; }
   .flow h3 { margin: 0 0 .45rem; font-size: 1rem; }
   .flow li p { max-width: 45rem; margin: 0; color: var(--ink-muted); font-size: .84rem; line-height: 1.65; }
-  .advocacy { padding: clamp(4rem, 9vw, 9rem) var(--page-pad); background-color: var(--paper-bright); background-image: linear-gradient(var(--grid-line) 1px, transparent 1px), linear-gradient(90deg, var(--grid-line) 1px, transparent 1px); background-size: 28px 28px; }
   .why { display: grid; grid-template-columns: 37% minmax(0, 1fr); gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
   .why h2 { margin: 0; color: var(--blue); font-size: clamp(2rem, 4vw, 4rem); letter-spacing: -.045em; line-height: 1.04; }
   .why p { grid-column: 2; max-width: 50rem; margin: 0; color: var(--ink-muted); line-height: 1.75; }
   .why p + p { margin-top: -2rem; }
-  .advocacy h2 { max-width: 70rem; margin: 0 0 1.5rem; color: var(--blue); font-size: clamp(2.7rem, 5.5vw, 6rem); letter-spacing: -.055em; line-height: .98; }
-  .advocacy > p { max-width: 57rem; color: var(--ink-muted); font-size: 1rem; line-height: 1.75; }
-  blockquote { max-width: 67rem; margin: 3rem 0; padding: 1.5rem 2rem; border: 2px solid var(--blue); color: var(--blue); background: rgba(244, 247, 251, .9); font-size: clamp(1.05rem, 1.7vw, 1.45rem); font-weight: 750; line-height: 1.55; }
+  .classroom { border-bottom-color: var(--blue); background: var(--paper-bright); }
   @media (max-width: 800px) {
     .page-hero, .flow, .why { display: block; }
     .page-hero { min-height: auto; }

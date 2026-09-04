@@ -44,3 +44,13 @@ test("an unchecked keep-alive choice is explicitly a 30-minute trial", () => {
   assert.match(component, /25 percenként megújítja/);
   assert.match(component, /keepAlive: keepAliveInput\.checked/);
 });
+
+test("Classroom is a separate, per-child school account connection", () => {
+  assert.match(component, /Minden gyerek a saját iskolai Google-fiókját használhatja/);
+  assert.match(component, /data-classroom/);
+  assert.match(component, /Classroom · nincs/);
+  assert.match(component, /\/api\/classroom\/authorize/);
+  assert.match(component, /profileId: profile\.id/);
+  assert.match(component, /\/api\/classroom\/\$\{encodeURIComponent\(profile\.id\)\}\/connection/);
+  assert.match(component, /method: "DELETE"/);
+});

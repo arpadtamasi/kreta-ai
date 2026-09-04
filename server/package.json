@@ -2,7 +2,7 @@
   "name": "uzenofuzet-server",
   "version": "0.1.0",
   "private": true,
-  "description": "Hosted, read-only KRÉTA MCP server with Google OAuth and encrypted, parent-controlled connections.",
+  "description": "Hosted, read-only KRÉTA and Google Classroom MCP server with encrypted, parent-controlled connections.",
   "type": "module",
   "engines": {
     "node": ">=22.12"

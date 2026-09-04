@@ -1,19 +1,26 @@
-# Üzenőfüzet — hosztolt KRÉTA MCP-szerver
+# Üzenőfüzet — hosztolt KRÉTA + Classroom MCP-szerver
 
-Custom Connector Claude-hoz, ami a KRÉTA tanulói adatokat **csak olvasásra**
+Custom Connector Claude-hoz, ami a KRÉTA és Google Classroom tanulói adatokat **csak olvasásra**
 teszi elérhetővé. Google-fiókonként legfeljebb három privát gyerekprofilt
 tárol (rendes név, KRÉTA-felhasználónév, intézménykód). A **KRÉTA-jelszót
 nem tárolja**. Amíg egy gyerek Online, az access és refresh token lejáró,
 AES-256-GCM-mel titkosított formában a privát profilban van.
 
-A landing oldalon ettől elkülönül egy nyilvános üzenőfal. Az opcionális
-kiálláshoz a Firebase Authentication hitelesíti a Google-fiókot, a Firestore
-pedig a nyilvános nevet és üzenetet tárolja. A falhoz nem kell gyerekprofilt
-létrehozni, és az e-mail-cím nem jelenik meg az üzenőfalon.
+Ugyanezekhez a gyerekprofilokhoz külön Google Classroom-fiók kapcsolható.
+Minden gyerek a saját iskolai Google-fiókjával ad csak olvasási engedélyt;
+a szülő dashboard-belépése ettől külön Google-munkamenet. A Classroom refresh
+token lejáró AES-256-GCM borítékban marad a privát Firestore-profilban, és
+soha nem kerül a Claude-nak kiadott OAuth-tokenbe.
 
-Ez a repó helyben futó változatának (`python/`, `desktop/`) a párja. Az a
-kettő a szülő gépén fut; ez egy szerver, ami cserébe **claude.ai weben és
-mobilon is működik**, ahol a helyi MCP-szerverek nem.
+A korábban elkészített nyilvános üzenőfal jelenleg nem része a publikus
+felületnek. A landing egyetlen célja, hogy a szülő megértse az Üzenőfüzet
+hasznát és eljusson a Claude-kapcsolat beállításához. Az üzenőfal API-ja és
+komponense megmarad a forrásban, hogy egy későbbi, külön döntéssel újra
+bekapcsolható legyen.
+
+Az aktív termékvonal a Firebase Hosting és Cloud Run mögött futó webapp:
+**claude.ai weben és mobilon is működik**, és nem igényel helyi desktop
+folyamatot.
 
 > Független projekt. Nem áll kapcsolatban az eKRÉTA Zrt.-vel, és nem hivatalos
 > KRÉTA-termék. A KRÉTA tanulói API nem nyilvános integrációs API; a belépés
@@ -91,12 +98,13 @@ gcloud run deploy uzenofuzet \
   --region europe-west1 \
   --allow-unauthenticated \
   --max-instances=1 \
-  --set-env-vars OAUTH_ISSUER=https://<a-te-domained>,REFRESH_JOB_AUDIENCE=https://<run-url>,REFRESH_JOB_SERVICE_ACCOUNT=uzenofuzet-refresher@<project>.iam.gserviceaccount.com \
-  --set-secrets TOKEN_SEALING_KEY=uzenofuzet-sealing-key:latest
+  --set-env-vars OAUTH_ISSUER=https://uzenofuzet.hu,REFRESH_JOB_AUDIENCE=https://<run-url>,REFRESH_JOB_SERVICE_ACCOUNT=uzenofuzet-refresher@<project>.iam.gserviceaccount.com,GOOGLE_CLASSROOM_CLIENT_ID=<web-client-id> \
+  --set-secrets TOKEN_SEALING_KEY=uzenofuzet-sealing-key:latest,GOOGLE_CLASSROOM_CLIENT_SECRET=uzenofuzet-classroom-client-secret:latest
 ```
 
-A `--max-instances=1` az authorization code memóriabeli replay-védelme miatt
-marad. A KRÉTA-tokenek rotációját a Firestore verzióellenőrzése védi.
+A `--max-instances=1` az authorization code és a Classroom OAuth state
+memóriabeli replay-védelme miatt marad. A KRÉTA-tokenek rotációját a Firestore
+verzióellenőrzése védi.
 
 Az Online kapcsolatokhoz hozz létre egy külön, belépési jog nélküli service
 accountot és egy ötpercenként futó Cloud Scheduler HTTP jobot. A job a közvetlen
@@ -109,7 +117,7 @@ Ezután Claude-ban: Settings → Connectors → Add custom connector → a
 szolgáltatás URL-je. Claude felfedezi a `/.well-known/...` végpontokat, maga
 regisztrál, és megnyitja a bejelentkező oldalt.
 
-### Firebase Hosting, Google-belépés, gyerekprofilok és üzenőfal
+### Firebase Hosting, Google-belépés és gyerekprofilok
 
 Az Astro frontend statikusan a `public/` könyvtárba épül. A Firebase Hosting
 csak az API-, MCP- és OAuth-útvonalakat továbbítja a fenti Cloud Run
@@ -128,6 +136,22 @@ kapja; az ID tokent és az OAuth-hoz használt, `HttpOnly` `__session` sütit a
 backend Firebase Adminnal ellenőrzi. A Firestore kliensszabályok mindent
 tiltanak: a gyerekprofilokat, a titkosított kapcsolatokat és az üzenőfalat
 csak a Cloud Run szolgáltatás olvassa és írja.
+
+A Classroomhoz ugyanebben a Google Cloud projektben engedélyezd a **Google
+Classroom API-t**, majd hozz létre egy **Web application** OAuth klienst. Az
+engedélyezett redirect URI pontosan
+`https://uzenofuzet.hu/api/classroom/callback`. Az OAuth consent screenen a
+`openid`, `email` és a kurzusok, feladatok/beadási állapotok, közlemények,
+valamint tananyagok read-only Classroom scope-jai szerepelnek. Publikus
+használat előtt ezekhez Google-verifikációra lehet szükség; az iskola Workspace
+rendszergazdája külön is letilthat külső alkalmazásokat.
+
+A dashboard gyermekenként indít OAuth web-server folyamatot PKCE-vel és
+egyszer használható, tízperces lezárt state-tel. A kapcsolás után öt rögzített
+MCP-tool érhető el: `classroom_courses`, `classroom_coursework`,
+`classroom_submissions`, `classroom_announcements`, `classroom_materials`.
+Mind kizárólag `GET` kérést küld, és minden hívás a kiválasztott gyerek saját
+titkosított grantjából indul.
 
 Az intézmény mező három karakter után a nyilvános eKRÉTA intézménykeresőt
 hívja a Cloud Run szerveren keresztül. A backend a kapott HTML-listából csak
@@ -186,7 +210,8 @@ redirect URI-t; alapból csak Claude két connector-callbackje szerepel benne.
 | `src/kreta/client.ts` | csak olvasó Student API kliens |
 | `src/kreta/relay.ts` | eKRÉTA-hostokra korlátozott, titkosított relay transzport |
 | `src/relay.ts` | magyar lakossági hálózaton futó helyi relay folyamat |
-| `src/mcp/server.ts` | a 20 csak-olvasó tool |
+| `src/classroom/` | gyermekenkénti Google OAuth, titkosított grant és rögzített Classroom API-kliens |
+| `src/mcp/server.ts` | a 20 KRÉTA- és 5 Classroom-tool, mind csak olvasásra |
 | `src/pledges/router.ts` | hitelesített nyilvános üzenetek API-ja |
 | `src/pledges/store.ts` | az üzenőfal Firestore-adattára |
 | `src/profiles/router.ts` | a Google-fiókhoz kötött gyerekprofilok API-ja |
@@ -208,6 +233,6 @@ beállítás — a KRÉTA-scope ennél többet engedne.
   néz ki, mint a credential stuffing.
 - **Adatvédelem.** Ha nem csak a saját gyerekeid adatait szolgálod ki,
   kiskorúak oktatási adatai felett adatkezelővé válsz, egy nem dokumentált,
-  nem engedélyezett API-n. A helyben futó változat README-je ma kifejezetten
-  azt ígéri, hogy nincs hosztolt szolgáltatás — ezt együtt kell frissíteni
-  azzal, hogy ez élesbe megy.
+  nem engedélyezett KRÉTA API-n. A publikus adatkezelési és hozzájárulási
+  dokumentációt az éles használat előtt külön jogi felülvizsgálatnak kell
+  alávetni.

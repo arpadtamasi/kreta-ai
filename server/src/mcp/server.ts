@@ -15,6 +15,8 @@ import type { KretaClient } from "../kreta/client.js";
 import { KretaError } from "../kreta/institute.js";
 import type { SealedSession } from "../oauth/types.js";
 import { createClient, resolveChild, ToolError, type ClientFactoryDeps } from "./context.js";
+import { createClassroomClient } from "./context.js";
+import { ClassroomApiError, type ClassroomClient } from "../classroom/client.js";
 import { dateRange, MAX_ITEMS, pack, requireUid, studyTaskUids, validateLimit } from "./shape.js";
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true } as const;
@@ -40,7 +42,7 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
       instructions:
         "A toolok érzékeny oktatási adatokat adhatnak vissza. Csak a felhasználó kifejezett " +
         "kérésére kérj le adatot, és csak a válaszhoz szükséges mezőket jelenítsd meg. " +
-        "Módosító vagy törlő művelet nincs. Ha több gyerek van csatlakoztatva, minden tool " +
+        "A KRÉTA- és Google Classroom-adatokhoz sincs módosító vagy törlő művelet. Ha több gyerek van csatlakoztatva, minden tool " +
         "elfogad egy 'child' paramétert (a gyerek neve) — ha a felhasználó név szerint kérdez " +
         "('Mi van Lillának?'), azt add át; ha egy tool 'child' nélkül hibát ad, a hibaüzenet " +
         "felsorolja az elérhető neveket.",
@@ -76,6 +78,42 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
       },
     );
   };
+
+  const classroomTool = (
+    name: string,
+    description: string,
+    schema: z.ZodRawShape,
+    handler: (args: Record<string, unknown>, client: ClassroomClient) => Promise<unknown>,
+  ): void => {
+    server.registerTool(
+      name,
+      { description, inputSchema: schema, annotations: { ...READ_ONLY, title: description } },
+      async (args: Record<string, unknown>) => {
+        try {
+          const child = resolveChild(session, args.child as string | undefined);
+          const client = await createClassroomClient(session, child, factoryDeps);
+          const payload = await handler(args, client);
+          return { content: [{ type: "text", text: JSON.stringify(payload) }] };
+        } catch (error) {
+          const message = error instanceof ToolError || error instanceof ClassroomApiError
+            ? error.message
+            : "Váratlan hiba a Google Classroom-lekérdezés közben.";
+          return { isError: true, content: [{ type: "text", text: message }] };
+        }
+      },
+    );
+  };
+
+  const classroomId = (value: unknown, label: string): string =>
+    encodeURIComponent(requireUid(String(value ?? ""), label));
+
+  const classroomList = async (
+    client: ClassroomClient,
+    path: string,
+    responseKey: string,
+    params: Record<string, string | number | undefined>,
+    limit: number,
+  ) => pack(await client.list(path, responseKey, params, Math.min(MAX_ITEMS + 1, limit + 1)), limit);
 
   /** A tool that is one GET returning a list. */
   const listTool = (
@@ -143,6 +181,111 @@ export function buildMcpServer(options: BuildServerOptions): McpServer {
         refresh_token_rotation_observed: instance.rotationObserved,
       };
     },
+  );
+
+  classroomTool(
+    "classroom_courses",
+    "A gyerek Google Classroom-kurzusainak lekérése.",
+    {
+      active_only: z.boolean().default(true).describe("Alapból csak az aktív kurzusok jelennek meg."),
+      limit: limitArg(100),
+      child: childArg,
+    },
+    async (args, client) => classroomList(
+      client,
+      "courses",
+      "courses",
+      {
+        studentId: "me",
+        ...(args.active_only ? { courseStates: "ACTIVE" } : {}),
+        fields: "nextPageToken,courses(id,name,section,room,descriptionHeading,courseState,alternateLink)",
+      },
+      validateLimit(args.limit as number),
+    ),
+  );
+
+  classroomTool(
+    "classroom_coursework",
+    "Egy Google Classroom-kurzus kiadott feladatainak lekérése.",
+    {
+      course_id: z.string().describe("A kurzus azonosítója a classroom_courses válaszából."),
+      limit: limitArg(100),
+      child: childArg,
+    },
+    async (args, client) => classroomList(
+      client,
+      `courses/${classroomId(args.course_id, "Classroom-kurzusazonosító")}/courseWork`,
+      "courseWork",
+      {
+        courseWorkStates: "PUBLISHED",
+        orderBy: "dueDate asc,updateTime desc",
+        fields: "nextPageToken,courseWork(id,title,description,materials,state,alternateLink,creationTime,updateTime,dueDate,dueTime,maxPoints,topicId,workType,scheduledTime)",
+      },
+      validateLimit(args.limit as number),
+    ),
+  );
+
+  classroomTool(
+    "classroom_submissions",
+    "A gyerek beadási állapotainak és jegyeinek lekérése egy Google Classroom-kurzusban.",
+    {
+      course_id: z.string().describe("A kurzus azonosítója a classroom_courses válaszából."),
+      course_work_id: z.string().default("-").describe("Feladatazonosító; '-' esetén a kurzus összes feladata."),
+      limit: limitArg(100),
+      child: childArg,
+    },
+    async (args, client) => classroomList(
+      client,
+      `courses/${classroomId(args.course_id, "Classroom-kurzusazonosító")}/courseWork/${classroomId(args.course_work_id, "Classroom-feladatazonosító")}/studentSubmissions`,
+      "studentSubmissions",
+      {
+        userId: "me",
+        fields: "nextPageToken,studentSubmissions(id,courseId,courseWorkId,state,late,assignedGrade,draftGrade,alternateLink,creationTime,updateTime)",
+      },
+      validateLimit(args.limit as number),
+    ),
+  );
+
+  classroomTool(
+    "classroom_announcements",
+    "Egy Google Classroom-kurzus közleményeinek lekérése.",
+    {
+      course_id: z.string().describe("A kurzus azonosítója a classroom_courses válaszából."),
+      limit: limitArg(100),
+      child: childArg,
+    },
+    async (args, client) => classroomList(
+      client,
+      `courses/${classroomId(args.course_id, "Classroom-kurzusazonosító")}/announcements`,
+      "announcements",
+      {
+        announcementStates: "PUBLISHED",
+        orderBy: "updateTime desc",
+        fields: "nextPageToken,announcements(id,text,state,alternateLink,creationTime,updateTime,scheduledTime)",
+      },
+      validateLimit(args.limit as number),
+    ),
+  );
+
+  classroomTool(
+    "classroom_materials",
+    "Egy Google Classroom-kurzus tananyagainak lekérése.",
+    {
+      course_id: z.string().describe("A kurzus azonosítója a classroom_courses válaszából."),
+      limit: limitArg(100),
+      child: childArg,
+    },
+    async (args, client) => classroomList(
+      client,
+      `courses/${classroomId(args.course_id, "Classroom-kurzusazonosító")}/courseWorkMaterials`,
+      "courseWorkMaterial",
+      {
+        courseWorkMaterialStates: "PUBLISHED",
+        orderBy: "updateTime desc",
+        fields: "nextPageToken,courseWorkMaterial(id,title,description,materials,state,alternateLink,creationTime,updateTime,scheduledTime,topicId)",
+      },
+      validateLimit(args.limit as number),
+    ),
   );
 
   tool("kreta_student_profile", "A tanuló adatlapjának lekérése.", { child: childArg }, async (_args, client) =>

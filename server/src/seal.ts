@@ -21,7 +21,14 @@ const VERSION = "v1";
 const IV_BYTES = 12;
 const KEY_BYTES = 32;
 
-export type SealPurpose = "code" | "access" | "client" | "request" | "credential";
+export type SealPurpose =
+  | "code"
+  | "access"
+  | "client"
+  | "request"
+  | "credential"
+  | "classroom_state"
+  | "classroom_credential";
 
 export class SealError extends Error {
   constructor(message: string) {

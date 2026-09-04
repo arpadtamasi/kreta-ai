@@ -149,7 +149,7 @@ components:
 
 Üzenőfüzet is a cool exercise-book page made digital: pale blue-white paper, disciplined cobalt ink, ledger rules, and selective vermilion corrections. It should feel authored and specific to a Hungarian parent's school-day questions—not like a generic SaaS landing page or a child-facing school portal. The public surfaces are open, flat compositions; hierarchy comes from scale, section boundaries, and the contrast between paper and ink.
 
-The system changes register when the job changes. The landing's transcript is explicitly synthetic Lilla–Áron product proof; the public Google pledge wall becomes a dark civic ledger; and the backend-served credential page is a contained, utilitarian form with its own system-font and rounded-control vocabulary. These flows must remain visually and conceptually distinct because they carry different data and trust boundaries.
+The system changes register when the job changes. The landing uses one compact synthetic question-and-answer as product proof, while the backend-served credential page is a contained, utilitarian form with its own system-font and rounded-control vocabulary. The implemented public Google pledge wall is dormant and must not be rendered or linked from public pages unless the campaign is explicitly reactivated.
 
 **Key Characteristics:**
 
@@ -180,7 +180,7 @@ The public-site palette behaves like ink on cool stationery; saturated color is 
 
 - **Cool Paper** (#f4f7fb): Default public-site canvas and browser theme color.
 - **Bright Paper** (#fbfcfe): Transcript sheets, grid-backed sections, field surfaces, and light text on dark ink.
-- **Carbon Ink** (#0b121c): Primary reading color and the dark advocacy-wall foundation.
+- **Carbon Ink** (#0b121c): Primary reading color and the landing's closing action band.
 - **Muted Ink** (#516071): Explanatory body copy and secondary links.
 - **Blue Graph Rule** (rgba(17, 63, 122, .115)): Low-opacity 28px graph-paper lines; this remains materially tied to notebook content.
 - **Night Surface** (#101a27): Raised tonal band within the dark pledge wall.
@@ -200,9 +200,9 @@ The public-site palette behaves like ink on cool stationery; saturated color is 
 
 **The Ink-and-Correction Rule.** Cobalt carries structure and action; vermilion marks exceptions, annotations, sequence, and focus. Do not let the correction color become a general fill.
 
-**The Paper Has a Job Rule.** Graph lines appear only where the interface is acting like school paper—the synthetic transcript, the advocacy statement, and the 404 ledger page.
+**The Paper Has a Job Rule.** Graph lines appear only where the interface is acting like school paper—the synthetic transcript and the 404 ledger page.
 
-**The Trust Registers Stay Separate Rule.** Keep the pale editorial site, dark public pledge ledger, and neutral credential sheet visually distinct; they represent separate data flows.
+**The Trust Registers Stay Separate Rule.** Keep the pale editorial site and neutral credential sheet visually distinct; they represent separate data flows. If the pledge ledger returns, it remains a third, clearly separated register.
 
 ## Typography
 
@@ -235,11 +235,11 @@ The public-site palette behaves like ink on cool stationery; saturated color is 
 
 ## Layout
 
-Public pages use full-width, edge-connected sections with a fluid page inset. The primary desktop grammar is a 37/63 split: question or label on the left, proof or explanation on the right. The landing hero uses `minmax(360px, 37%) / minmax(0, 63%)`, tightens to 36/64 below 1050px, and becomes a vertical stack at 760px. The value, pledge, dashboard, and explanatory flows stack at 800px; the footer stacks at 760px; compact navigation applies at 600px; and the long privacy heading receives an additional 480px safeguard. The body accepts screens down to 320px, with 390px treated as the practical mobile proof point.
+Public pages use full-width, edge-connected sections with a fluid page inset. The primary desktop grammar is an asymmetrical split: question or label on the left, proof or explanation on the right. The landing hero uses `minmax(23rem, 41%) / minmax(0, 59%)`, tightens below 1050px, and becomes a vertical stack at 760px. The three landing capabilities become a vertical ruled list at 760px; dashboard and explanatory flows stack at 800px; the footer stacks at 760px; compact navigation applies at 600px; and the long privacy heading receives an additional 480px safeguard. The body accepts screens down to 320px, with 390px treated as the practical mobile proof point.
 
 The page inset is fluid from 1.25rem to 4.5rem. Major bands normally use 4–9rem of vertical padding via fluid clamps. There is no applied centered max-width on the public composition: the declared 1600px maximum is not currently used. Reading copy, however, is locally constrained to roughly 28–70rem according to role.
 
-Ledger layouts align information with thin 1px washed-cobalt rules and stronger 2px cobalt starts. The transcript's 28px grid, red margin rule, top ruler, and four-column lesson rows make it the signature spatial component. On mobile, lesson topics wrap into a third-column continuation; registry rows and three-column prompt/value bands become stacked records instead of horizontally compressed tables.
+Ledger layouts align information with thin 1px washed-cobalt rules and stronger 2px cobalt starts. The transcript's 28px grid, red margin rule, top ruler, one parent question, and one corrected answer make it the signature spatial component without becoming a reading task. On mobile, the hero and proof stack; the three capabilities become full-width ruled records.
 
 The `/authorize` route is intentionally separate: a viewport-centered sheet capped at 42rem, with 18–48px outer padding and 24–40px inner padding. It displays the active Google account and turns each saved child into a familiar name/password pair. Additional child fieldsets disclose progressively and remain in the single-column form flow.
 
@@ -286,26 +286,27 @@ Public actions feel like small printed controls stamped in cobalt.
 - **Registration Mark:** A dashed 1px left rule is inset into every shared `.button`; preserve it alongside the authored ArrowMark when the action navigates.
 - **Hover / Focus / Active:** Hover shifts to Cobalt Ink, active to Carbon Ink, and focus receives a 3px vermilion outline with 4px offset. Fill changes run for 120ms with `ease`.
 - **Secondary:** Transparent with Press Cobalt text and border; on dark warning panels the border and text become light blue/white.
-- **Google:** The pledge wall uses a square white provider button with the official four-color inline Google mark. It authenticates the public wall only and is not a KRÉTA connection control.
+- **Google:** The dashboard's four-color Google button authenticates the parent and protects all profiles. Per-child Classroom controls are separate ruled source rows labeled with the selected school e-mail; never collapse these two identities into one control. The dormant pledge wall remains a third, unrelated Google-authenticated surface.
 
 ### Cards / Containers
 
 Containers feel like connected ledger sections, not detachable objects.
 
 - **Corner Style:** Square throughout the public site.
-- **Background:** Cool Paper by default, Bright Paper for worked examples, Carbon/Night Surface for high-stakes and public pledge sections.
+- **Background:** Cool Paper by default, Bright Paper for worked examples, and Carbon Ink for high-stakes or closing action bands.
 - **Shadow Strategy:** None on public surfaces.
 - **Border:** 1px Washed Cobalt for ordinary divisions; 2px Cobalt Ink for list starts, statements, and important wells.
 - **Internal Padding:** Fluid page and section spacing; dense records use roughly .35–2rem.
 
 ### Inputs / Fields
 
-- **Pledge textarea:** Square Bright Paper field, full width, 2px blue-gray border, 1rem inset, and vertical resizing.
+- **Pledge textarea (dormant):** Square Bright Paper field, full width, 2px blue-gray border, 1rem inset, and vertical resizing.
 - **Consent:** Native square checkbox with Attention Yellow accent.
 - **Focus:** All public controls inherit the vermilion 3px focus outline and 4px offset.
 - **Status:** Success and failure messages use pale mint and coral against the dark pledge surface; empty/loading records switch to mono metadata.
 - **Credential fields:** Only `/authorize` uses 8px controls with a 1px cool-gray border, 42px minimum height, and a restrained blue focus ring.
 - **Institution finder:** The dashboard profile form keeps its square printed field. After three characters it uses the browser's native suggestion surface, then replaces the chosen school name with the exact KRÉTA institution code. Loading, empty, failure, and manual-entry fallback copy sits directly below the field.
+- **Source connections:** Each child record groups two square, ruled source controls: KRÉTA uses the green Online state, while Classroom uses cobalt and displays the connected school e-mail. On narrow screens the source controls stack with the rest of the record; neither becomes an unlabeled icon toggle.
 
 ### Navigation
 
@@ -313,11 +314,11 @@ The header begins with a 5px cobalt press stripe and a 1px bottom rule. The auth
 
 ### Synthetic Transcript
 
-The landing's principal proof component is a Bright Paper graph sheet with a 28px grid, top ruler, red margin rule, speaker marks, lesson ledger, and a yellow-tinted insight annotated in vermilion. Its tag must continue to state that the Lilla–Áron data is a demonstration and not real student data. Messages enter over 420ms with the custom acceleration curve; later records use 80ms, 150ms, and 220ms staging. Under reduced motion, animation and transition durations collapse to .01ms and smooth scrolling is disabled.
+The landing's principal proof component is a Bright Paper graph sheet with a 28px grid, top ruler, red margin rule, one parent question, and one yellow-tinted insight annotated in vermilion. Its tag must state that the content is a demonstration and not real student data. Keep the proof short enough to understand at a glance; do not expand it back into a full timetable or multi-turn conversation.
 
-### Pledge Registry
+### Pledge Registry (Dormant)
 
-The Google-authenticated public wall is a dark, two-register composition: advocacy and count on the left, identity/form controls on the right, followed by a ruled three-column public list. At 800px it becomes a vertical sequence and list headers yield to self-contained rows. It must never look like or imply a connected KRÉTA/student account.
+The Google-authenticated public wall remains implemented for possible later reactivation, but it is not rendered or linked from the current public product UI. If reactivated, it must remain visually and conceptually separate from KRÉTA/student accounts.
 
 ### Credential Sheet
 
@@ -334,8 +335,8 @@ Use BrandMark for the open-book identity, ArrowMark for directional action, and 
 - **Do** use the 37/63 ledger split for major question-and-proof compositions, then stack it between 760px and 800px according to content density.
 - **Do** keep cobalt structural, vermilion corrective, yellow attentive, and green confirmatory.
 - **Do** preserve square, flat, edge-connected public-site components and the dashed registration rule on shared buttons.
-- **Do** label the landing transcript as synthetic and retain only the fictional Lilla–Áron demonstration data.
-- **Do** keep the public Google pledge wall and KRÉTA credential form visibly separate from each other and from the Claude connection dashboard.
+- **Do** label the landing transcript as synthetic and keep the demonstration to one fictional, compact question-and-answer.
+- **Do** keep the dormant Google pledge wall out of the public navigation and landing until it is explicitly reactivated.
 - **Do** preserve keyboard focus, 390px responsiveness, and the reduced-motion override.
 
 ### Don't:
@@ -345,4 +346,4 @@ Use BrandMark for the open-book identity, ArrowMark for directional action, and 
 - **Don't** use Big Shoulders for prose or IBM Plex Mono as a general body face.
 - **Don't** replace the authored book, arrow, or spark marks with library icons.
 - **Don't** migrate the `/authorize` sheet's rounded application styling into landing, dashboard, explanatory, legal, pledge, or error surfaces.
-- **Don't** soften, bury, or visually de-emphasize the credential warning, and never imply that Google identity is linked to a student.
+- **Don't** soften, bury, or visually de-emphasize the credential warning. Never imply that the parent's Google identity is a student's account; only the explicit per-child Classroom consent links a school Google identity to that child profile.

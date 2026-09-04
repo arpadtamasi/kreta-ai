@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { after, test } from "node:test";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
-import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore } from "../src/profiles/store.js";
+import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore, ClassroomConnection } from "../src/profiles/store.js";
 
 interface PublicProfile {
   id: string;
@@ -43,6 +43,7 @@ class MemoryChildProfileStore implements ChildProfileStore {
       ...input,
       id: input.id ?? `profile-${String(this.nextId++).padStart(4, "0")}`,
       ...(connection ? { connection } : previous?.connection ? { connection: previous.connection } : {}),
+      ...(previous?.classroomConnection ? { classroomConnection: previous.classroomConnection } : {}),
       createdAt: previous?.createdAt ?? now,
       updatedAt: now,
     };
@@ -61,6 +62,20 @@ class MemoryChildProfileStore implements ChildProfileStore {
     const profile = await this.get(uid, id);
     if (!profile) return false;
     delete profile.connection;
+    return true;
+  }
+
+  async setClassroomConnection(uid: string, id: string, connection: ClassroomConnection) {
+    const profile = await this.get(uid, id);
+    if (!profile) return false;
+    profile.classroomConnection = connection;
+    return true;
+  }
+
+  async clearClassroomConnection(uid: string, id: string) {
+    const profile = await this.get(uid, id);
+    if (!profile) return false;
+    delete profile.classroomConnection;
     return true;
   }
 

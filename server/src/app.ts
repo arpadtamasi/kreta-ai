@@ -20,6 +20,7 @@ import { FirestorePledgeStore, type PledgeStore } from "./pledges/store.js";
 import { createChildProfileRouter } from "./profiles/router.js";
 import { FirestoreChildProfileStore, type ChildProfileStore } from "./profiles/store.js";
 import { createConnectionRefreshRouter, type VerifyRefreshJob } from "./profiles/refreshRouter.js";
+import { createClassroomRouter } from "./classroom/router.js";
 
 export interface AppDeps {
   config: Config;
@@ -108,6 +109,16 @@ export function createApp(deps: AppDeps): Express {
       ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
     }),
   );
+  app.use(
+    "/api/classroom",
+    createClassroomRouter({
+      config,
+      store: childProfileStore,
+      verifyIdToken: verifyFirebaseIdToken,
+      stateReplayCache: new ReplayCache(15 * 60 * 1000),
+      ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
+    }),
+  );
   const verifyRefreshJob: VerifyRefreshJob = deps.verifyRefreshJob ?? (async (token) => {
     if (!config.refreshJobAudience || !config.refreshJobServiceAccount) return false;
     const ticket = await oidcClient.verifyIdToken({ idToken: token, audience: config.refreshJobAudience });
@@ -138,6 +149,8 @@ export function createApp(deps: AppDeps): Express {
   const mcpDeps = {
     childProfileStore,
     sealer: config.sealer,
+    ...(config.classroomClientId ? { classroomClientId: config.classroomClientId } : {}),
+    ...(config.classroomClientSecret ? { classroomClientSecret: config.classroomClientSecret } : {}),
     ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
   };
   const guard = requireSealedToken(config.sealer, issuerOf);

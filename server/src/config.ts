@@ -10,6 +10,10 @@ export interface Config {
   accessTokenTtlSeconds: number;
   refreshJobAudience: string | undefined;
   refreshJobServiceAccount: string | undefined;
+  /** Google OAuth web client used only for per-child Classroom consent. */
+  classroomClientId: string | undefined;
+  classroomClientSecret: string | undefined;
+  classroomCredentialTtlSeconds: number;
   port: number;
 }
 
@@ -55,6 +59,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
   }
 
   const configured = parseList(env.OAUTH_ALLOWED_REDIRECT_URIS);
+  const classroomClientId = env.GOOGLE_CLASSROOM_CLIENT_ID?.trim() || undefined;
+  const classroomClientSecret = env.GOOGLE_CLASSROOM_CLIENT_SECRET?.trim() || undefined;
+  if (Boolean(classroomClientId) !== Boolean(classroomClientSecret)) {
+    throw new ConfigError(
+      "GOOGLE_CLASSROOM_CLIENT_ID and GOOGLE_CLASSROOM_CLIENT_SECRET must be configured together.",
+    );
+  }
   return {
     issuer: env.OAUTH_ISSUER,
     allowedRedirectUris: configured.length > 0 ? configured : DEFAULT_REDIRECT_URIS,
@@ -66,6 +77,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     ),
     refreshJobAudience: env.REFRESH_JOB_AUDIENCE?.trim() || undefined,
     refreshJobServiceAccount: env.REFRESH_JOB_SERVICE_ACCOUNT?.trim() || undefined,
+    classroomClientId,
+    classroomClientSecret,
+    classroomCredentialTtlSeconds: parseIntEnv(
+      env.GOOGLE_CLASSROOM_CREDENTIAL_TTL_SECONDS,
+      60 * 60 * 24 * 366,
+    ),
     port: parseIntEnv(env.PORT, 8080),
   };
 }

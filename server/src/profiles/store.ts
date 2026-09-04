@@ -19,6 +19,15 @@ export interface ChildConnection {
   lastErrorAt?: string;
 }
 
+export interface ClassroomConnection {
+  /** AES-GCM sealed Google refresh token. Never returned by the HTTP API. */
+  credential: string;
+  email: string;
+  connectedAt: string;
+  expiresAt: string;
+  scopes: string[];
+}
+
 export interface ChildProfile {
   id: string;
   childName: string;
@@ -26,6 +35,7 @@ export interface ChildProfile {
   kretaUsername: string;
   instituteCode: string;
   connection?: ChildConnection;
+  classroomConnection?: ClassroomConnection;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +62,8 @@ export interface ChildProfileStore {
     connection: ChildConnection,
   ): Promise<boolean>;
   clearConnection(uid: string, id: string, expectedVersion?: number): Promise<boolean>;
+  setClassroomConnection(uid: string, id: string, connection: ClassroomConnection): Promise<boolean>;
+  clearClassroomConnection(uid: string, id: string): Promise<boolean>;
   listDueConnections(now: Date, limit: number): Promise<Array<{ uid: string; profile: ChildProfile }>>;
   delete(uid: string, id: string): Promise<boolean>;
 }
@@ -75,6 +87,7 @@ interface StoredProfile {
   kretaUsername?: unknown;
   instituteCode?: unknown;
   connection?: unknown;
+  classroomConnection?: unknown;
   createdAt?: { toDate?: () => Date };
   updatedAt?: { toDate?: () => Date };
 }
@@ -91,6 +104,14 @@ interface StoredConnection {
   version?: unknown;
   consecutiveFailures?: unknown;
   lastErrorAt?: { toDate?: () => Date };
+}
+
+interface StoredClassroomConnection {
+  credential?: unknown;
+  email?: unknown;
+  connectedAt?: { toDate?: () => Date };
+  expiresAt?: { toDate?: () => Date };
+  scopes?: unknown;
 }
 
 function timestampToIso(value: StoredProfile["createdAt"]): string {
@@ -136,6 +157,22 @@ function storedConnection(value: unknown): ChildConnection | undefined {
   };
 }
 
+function storedClassroomConnection(value: unknown): ClassroomConnection | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const data = value as StoredClassroomConnection;
+  const connectedAt = optionalTimestampToIso(data.connectedAt);
+  const expiresAt = optionalTimestampToIso(data.expiresAt);
+  if (
+    typeof data.credential !== "string" ||
+    typeof data.email !== "string" ||
+    !connectedAt ||
+    !expiresAt ||
+    !Array.isArray(data.scopes) ||
+    !data.scopes.every((scope): scope is string => typeof scope === "string")
+  ) return undefined;
+  return { credential: data.credential, email: data.email, connectedAt, expiresAt, scopes: data.scopes };
+}
+
 function firestoreConnection(connection: ChildConnection) {
   return {
     credential: connection.credential,
@@ -152,6 +189,16 @@ function firestoreConnection(connection: ChildConnection) {
   };
 }
 
+function firestoreClassroomConnection(connection: ClassroomConnection) {
+  return {
+    credential: connection.credential,
+    email: connection.email,
+    connectedAt: new Date(connection.connectedAt),
+    expiresAt: new Date(connection.expiresAt),
+    scopes: connection.scopes,
+  };
+}
+
 function storedProfile(id: string, data: StoredProfile): ChildProfile {
   return {
     id,
@@ -160,6 +207,9 @@ function storedProfile(id: string, data: StoredProfile): ChildProfile {
     kretaUsername: typeof data.kretaUsername === "string" ? data.kretaUsername : "",
     instituteCode: typeof data.instituteCode === "string" ? data.instituteCode : "",
     ...(storedConnection(data.connection) ? { connection: storedConnection(data.connection) } : {}),
+    ...(storedClassroomConnection(data.classroomConnection)
+      ? { classroomConnection: storedClassroomConnection(data.classroomConnection) }
+      : {}),
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
   };
@@ -236,12 +286,14 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
       const now = new Date();
       const createdAt = previous?.createdAt ?? now.toISOString();
       const savedConnection = connection ?? previous?.connection;
+      const classroomConnection = previous?.classroomConnection;
       transaction.set(ref, {
         childName: input.childName,
         normalizedName: input.normalizedName,
         kretaUsername: input.kretaUsername,
         instituteCode: input.instituteCode,
         ...(savedConnection ? { connection: firestoreConnection(savedConnection) } : {}),
+        ...(classroomConnection ? { classroomConnection: firestoreClassroomConnection(classroomConnection) } : {}),
         createdAt: new Date(createdAt),
         updatedAt: now,
       });
@@ -254,6 +306,7 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
         kretaUsername: input.kretaUsername,
         instituteCode: input.instituteCode,
         ...(savedConnection ? { connection: savedConnection } : {}),
+        ...(classroomConnection ? { classroomConnection } : {}),
         createdAt,
         updatedAt: now.toISOString(),
       };
@@ -306,6 +359,29 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
       }
       transaction.update(ref, { connection: FieldValue.delete(), updatedAt: new Date() });
       transaction.delete(this.#queue().doc(this.#queueId(uid, id)));
+      return true;
+    });
+  }
+
+  async setClassroomConnection(uid: string, id: string, connection: ClassroomConnection): Promise<boolean> {
+    const ref = this.#collection(uid).doc(id);
+    return this.#firestore.runTransaction(async (transaction) => {
+      const existing = await transaction.get(ref);
+      if (!existing.exists) return false;
+      transaction.update(ref, {
+        classroomConnection: firestoreClassroomConnection(connection),
+        updatedAt: new Date(),
+      });
+      return true;
+    });
+  }
+
+  async clearClassroomConnection(uid: string, id: string): Promise<boolean> {
+    const ref = this.#collection(uid).doc(id);
+    return this.#firestore.runTransaction(async (transaction) => {
+      const existing = await transaction.get(ref);
+      if (!existing.exists) return false;
+      transaction.update(ref, { classroomConnection: FieldValue.delete(), updatedAt: new Date() });
       return true;
     });
   }

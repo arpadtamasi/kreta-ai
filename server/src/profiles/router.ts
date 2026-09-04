@@ -11,6 +11,8 @@ import {
   type ChildProfile,
   type ChildProfileStore,
 } from "./store.js";
+import { revokeClassroomToken } from "../classroom/auth.js";
+import { classroomConnectionIsActive, openClassroomCredential } from "../classroom/connection.js";
 
 export interface ChildProfileRouterDeps {
   store: ChildProfileStore;
@@ -40,6 +42,7 @@ function bearer(req: Request): string | undefined {
 function publicProfile(profile: ChildProfile) {
   const connection = profile.connection;
   const status = !connection ? "disconnected" : connectionIsOnline(connection) ? connection.state : "expired";
+  const classroom = profile.classroomConnection;
   return {
     id: profile.id,
     childName: profile.childName,
@@ -52,6 +55,12 @@ function publicProfile(profile: ChildProfile) {
       refreshedAt: connection?.refreshedAt ?? null,
       expiresAt: connection?.expiresAt ?? null,
       keepAliveUntil: connection?.keepAliveUntil ?? null,
+    },
+    classroom: {
+      status: !classroom ? "disconnected" : classroomConnectionIsActive(classroom) ? "connected" : "expired",
+      email: classroom?.email ?? null,
+      connectedAt: classroom?.connectedAt ?? null,
+      expiresAt: classroom?.expiresAt ?? null,
     },
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
@@ -256,6 +265,14 @@ export function createChildProfileRouter(deps: ChildProfileRouterDeps): Router {
           await revokeRefreshToken(credential.refreshToken, deps.fetchImpl ?? fetch);
         } catch {
           // Expired or unreachable credentials must not prevent profile deletion.
+        }
+      }
+      if (profile?.classroomConnection) {
+        try {
+          const credential = openClassroomCredential(deps.config.sealer, profile.classroomConnection);
+          await revokeClassroomToken(credential.refreshToken, deps.fetchImpl ?? fetch);
+        } catch {
+          // An expired or unreachable Google grant must not prevent profile deletion.
         }
       }
       const deleted = await deps.store.delete(user.uid, id);

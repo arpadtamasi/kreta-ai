@@ -12,7 +12,8 @@ import { after, test } from "node:test";
 import { createApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { createConnection } from "../src/profiles/connection.js";
-import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore } from "../src/profiles/store.js";
+import { createClassroomConnection } from "../src/classroom/connection.js";
+import type { ChildConnection, ChildProfile, ChildProfileInput, ChildProfileStore, ClassroomConnection } from "../src/profiles/store.js";
 import type { Sealer } from "../src/seal.js";
 
 const REDIRECT_URI = "https://claude.ai/api/mcp/auth_callback";
@@ -20,6 +21,7 @@ const SEALING_KEY = randomBytes(32).toString("base64");
 
 class MemoryChildProfileStore implements ChildProfileStore {
   readonly profiles: ChildProfile[];
+  readonly classroomOnlyProfile: ChildProfile;
 
   constructor(sealer: Sealer) {
     const tokens = (suffix: string) => ({
@@ -36,6 +38,13 @@ class MemoryChildProfileStore implements ChildProfileStore {
         kretaUsername: "lilla-diak",
         instituteCode: "klik123456",
         connection: createConnection(sealer, tokens("lilla-diak"), "keep_alive"),
+        classroomConnection: createClassroomConnection(
+          sealer,
+          "classroom-refresh-lilla",
+          "lilla@iskola.example",
+          ["https://www.googleapis.com/auth/classroom.courses.readonly"],
+          86_400,
+        ),
         createdAt: new Date(0).toISOString(),
         updatedAt: new Date(0).toISOString(),
       },
@@ -46,18 +55,45 @@ class MemoryChildProfileStore implements ChildProfileStore {
         kretaUsername: "kata-diak",
         instituteCode: "klik999999",
         connection: createConnection(sealer, tokens("kata-diak"), "keep_alive"),
+        classroomConnection: createClassroomConnection(
+          sealer,
+          "classroom-refresh-kata",
+          "kata@iskola.example",
+          ["https://www.googleapis.com/auth/classroom.courses.readonly"],
+          86_400,
+        ),
         createdAt: new Date(1).toISOString(),
         updatedAt: new Date(1).toISOString(),
       },
     ];
+    this.classroomOnlyProfile = {
+      id: "profile-aron",
+      childName: "Áron",
+      normalizedName: "áron",
+      kretaUsername: "aron-diak",
+      instituteCode: "klik777777",
+      classroomConnection: createClassroomConnection(
+        sealer,
+        "classroom-refresh-aron",
+        "aron@iskola.example",
+        ["https://www.googleapis.com/auth/classroom.courses.readonly"],
+        86_400,
+      ),
+      createdAt: new Date(2).toISOString(),
+      updatedAt: new Date(2).toISOString(),
+    };
   }
 
   async list(uid: string) {
-    return uid === "parent-uid" ? this.profiles : [];
+    if (uid === "parent-uid") return this.profiles;
+    return uid === "classroom-only-uid" ? [this.classroomOnlyProfile] : [];
   }
 
   async get(uid: string, id: string) {
-    return uid === "parent-uid" ? this.profiles.find((profile) => profile.id === id) : undefined;
+    if (uid === "parent-uid") return this.profiles.find((profile) => profile.id === id);
+    return uid === "classroom-only-uid" && id === this.classroomOnlyProfile.id
+      ? this.classroomOnlyProfile
+      : undefined;
   }
 
   async save(_uid: string, input: ChildProfileInput & { id?: string }, connection?: ChildConnection) {
@@ -85,6 +121,20 @@ class MemoryChildProfileStore implements ChildProfileStore {
     return true;
   }
 
+  async setClassroomConnection(uid: string, id: string, connection: ClassroomConnection) {
+    const profile = await this.get(uid, id);
+    if (!profile) return false;
+    profile.classroomConnection = connection;
+    return true;
+  }
+
+  async clearClassroomConnection(uid: string, id: string) {
+    const profile = await this.get(uid, id);
+    if (!profile) return false;
+    delete profile.classroomConnection;
+    return true;
+  }
+
   async listDueConnections(now: Date, limit: number) {
     return this.profiles
       .filter((profile) => {
@@ -102,9 +152,29 @@ class MemoryChildProfileStore implements ChildProfileStore {
   }
 }
 
-/** Stands in for the KRÉTA token endpoint and the institute's Student API. */
-const stubFetch: typeof fetch = async (input) => {
+const classroomRequests: Array<{ url: string; method: string; authorization: string }> = [];
+
+/** Stands in for the KRÉTA/Google token endpoints and their read-only student APIs. */
+const stubFetch: typeof fetch = async (input, init) => {
   const url = String(input);
+  if (url === "https://oauth2.googleapis.com/token") {
+    const body = String(init?.body ?? "");
+    const refreshToken = new URLSearchParams(body).get("refresh_token") ?? "unknown";
+    return new Response(JSON.stringify({
+      access_token: refreshToken.replace("refresh", "access"),
+      expires_in: 3600,
+      scope: "https://www.googleapis.com/auth/classroom.courses.readonly",
+    }), { status: 200, headers: { "content-type": "application/json" } });
+  }
+  if (url.startsWith("https://classroom.googleapis.com/v1/courses")) {
+    const authorization = new Headers(init?.headers).get("authorization") ?? "";
+    classroomRequests.push({ url, method: init?.method ?? "GET", authorization });
+    const child = authorization.includes("lilla") ? "Lilla" : authorization.includes("kata") ? "Kata" : "ismeretlen";
+    return new Response(JSON.stringify({ courses: [{ id: `course-${child.toLowerCase()}`, name: `${child} matematika` }] }), {
+      status: 200,
+      headers: { "content-type": "application/json" },
+    });
+  }
   if (url.startsWith("https://idp.e-kreta.hu/connect/token")) {
     return new Response(
       JSON.stringify({ access_token: "kreta-access", refresh_token: "kreta-refresh-lilla-diak", expires_in: 300 }),
@@ -123,6 +193,8 @@ const stubFetch: typeof fetch = async (input) => {
 const config = loadConfig({
   TOKEN_SEALING_KEY: SEALING_KEY,
   OAUTH_ALLOWED_REDIRECT_URIS: REDIRECT_URI,
+  GOOGLE_CLASSROOM_CLIENT_ID: "classroom-client",
+  GOOGLE_CLASSROOM_CLIENT_SECRET: "classroom-secret",
 } as NodeJS.ProcessEnv);
 const profileStore = new MemoryChildProfileStore(config.sealer);
 
@@ -133,6 +205,7 @@ const server = createApp({
   verifyFirebaseSessionCookie: async (cookie) => {
     if (cookie === "parent-session") return { uid: "parent-uid", name: "Anna Példa" };
     if (cookie === "other-session") return { uid: "other-uid", name: "Másik Szülő" };
+    if (cookie === "classroom-only-session") return { uid: "classroom-only-uid", name: "Classroom Szülő" };
     throw new Error("invalid session");
   },
 }).listen(0);
@@ -312,6 +385,13 @@ test("a Google account without online children returns to profile setup", async 
   assert.match(response.headers.get("location") ?? "", /^\/dashboard\?return_to=/);
 });
 
+test("a Classroom-only child is enough to authorize the Claude connector", async () => {
+  const { clientId } = await register();
+  const response = await authorize(clientId, pkce().challenge, "st", "classroom-only-session");
+  assert.equal(response.status, 302);
+  assert.equal(new URL(response.headers.get("location")!).origin + new URL(response.headers.get("location")!).pathname, REDIRECT_URI);
+});
+
 test("the connected session reaches the MCP tools and answers KRÉTA data", async () => {
   const { accessToken } = await connect();
 
@@ -321,7 +401,7 @@ test("the connected session reaches the MCP tools and answers KRÉTA data", asyn
   const names = listed.result.tools.map((entry) => entry.name);
   assert.ok(names.includes("kreta_homework"));
   assert.ok(names.includes("kreta_login"));
-  assert.equal(names.length, 20);
+  assert.equal(names.length, 25);
   assert.ok(
     listed.result.tools.every((entry) => entry.annotations?.readOnlyHint === true),
     "every tool must be annotated read-only",
@@ -340,6 +420,28 @@ test("the connected session reaches the MCP tools and answers KRÉTA data", asyn
   const payload = JSON.parse(called.result.content[0]!.text) as { total: number; items: Array<{ Uid: string }> };
   assert.equal(payload.total, 2);
   assert.equal(payload.items[0]!.Uid, "hf-1");
+});
+
+test("Classroom tools use the selected child's separate Google account", async () => {
+  classroomRequests.length = 0;
+  const { accessToken } = await connect();
+
+  for (const [child, expectedCourse] of [["Lilla", "Lilla matematika"], ["Kata", "Kata matematika"]] as const) {
+    const called = (await callMcp(accessToken, {
+      jsonrpc: "2.0",
+      id: child,
+      method: "tools/call",
+      params: { name: "classroom_courses", arguments: { child } },
+    })) as { result: { isError?: boolean; content: Array<{ text: string }> } };
+    assert.notEqual(called.result.isError, true);
+    const payload = JSON.parse(called.result.content[0]!.text) as { items: Array<{ name: string }> };
+    assert.equal(payload.items[0]!.name, expectedCourse);
+  }
+  assert.equal(classroomRequests.length, 2);
+  assert.ok(classroomRequests.every((request) => request.method === "GET"));
+  assert.ok(classroomRequests.every((request) => new URL(request.url).searchParams.has("fields")));
+  assert.match(classroomRequests[0]!.authorization, /classroom-access-lilla/);
+  assert.match(classroomRequests[1]!.authorization, /classroom-access-kata/);
 });
 
 test("client-facing OAuth artifacts contain profile references, never KRÉTA credentials", async () => {

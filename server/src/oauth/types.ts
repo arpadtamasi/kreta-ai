@@ -15,7 +15,7 @@ export interface SealedSession {
   /** Stable id for this connection; the rotation cache's key. */
   sid: string;
   children: SealedChild[];
-  /** When the parent completed the KRÉTA login, epoch milliseconds. */
+  /** When the parent approved this Claude connector grant, epoch milliseconds. */
   connectedAt: number;
 }
 

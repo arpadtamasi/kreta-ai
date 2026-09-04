@@ -5,7 +5,7 @@ import BaseLayout from "../layouts/BaseLayout.astro";
 <BaseLayout title="Adatkezelés – Üzenőfüzet" description="Az Üzenőfüzet rövid, közérthető adatkezelési tájékoztatója.">
   <article class="legal">
     <h1>Adatkezelés</h1>
-    <p class="intro">Három külön adatfolyam van: a privát gyerekprofil, a Claude–KRÉTA kapcsolat és a nyilvános üzenetfal. Nem keverjük össze őket.</p>
+    <p class="intro">A privát gyerekprofilt, a KRÉTA-kapcsolatot és a gyermekenként külön engedélyezett Google Classroom-kapcsolatot elkülönítve kezeljük. A korábban elkészített nyilvános üzenetfal jelenleg nem érhető el a publikus felületen.</p>
 
     <h2>Privát gyerekprofil</h2>
     <p>Google-belépés után a Firestore-ban, a fiókod technikai azonosítója alatt legfeljebb három profil menthető. A profil a gyerek rendes nevét, KRÉTA-felhasználónevét, intézménykódját, valamint a létrehozás és módosítás időpontját tartalmazza. A KRÉTA-jelszó nem kerül az adatbázisba.</p>
@@ -17,16 +17,21 @@ import BaseLayout from "../layouts/BaseLayout.astro";
     <p>Frissen tartás nélkül a kapcsolat és a titkosított hitelesítő adat legfeljebb 30 percig él. Bekapcsolt frissen tartásnál a szerver 25 percenként cseréli a KRÉTA tokent; opcionális határidő adható. Az Online állapotra kattintva a kapcsolat bármikor kikapcsolható: a tokent eltávolítjuk, a gyerekprofil megmarad.</p>
     <p>A szerver üzemeltetési naplói technikai adatokat — például időpontot, kért végpontot és hálózati adatokat — tartalmazhatnak. KRÉTA-jelszót szándékosan nem naplózunk.</p>
 
-    <h2>Nyilvános üzenetfal</h2>
-    <p>A Google-belépéskor a Firebase Authentication azonosítja a fiókot. A szerver megkapja a fiók egyedi azonosítóját és megjelenített nevét; az e-mail-címet nem tesszük közzé és nem mentjük az üzenet mellé.</p>
-    <p>A Firestore-ban a megjelenített nevet, az üzenetet, a fiók technikai azonosítóját és a létrehozás/módosítás időpontját tároljuk. A név, az üzenet és a dátum nyilvános. Egy fiókhoz egy bejegyzés tartozik.</p>
+    <h2>Google Classroom-kapcsolat</h2>
+    <p>Minden gyerekprofilhoz külön iskolai Google-fiók engedélyezhető. Ez nem a dashboardra belépő szülői Google-fiók: a kapcsoláskor a Google saját oldalán választod ki az adott gyerek fiókját. Az Üzenőfüzet csak olvasási jogot kér a kurzusokhoz, feladatokhoz, a gyerek saját beadási állapotaihoz és jegyeihez, közleményekhez, valamint tananyagokhoz.</p>
+    <p>A Google által kiadott refresh tokent lejáró AES-256-GCM titkosítással a gyerek privát profiljában tároljuk; a profil API-ja és a Claude-nak kiadott OAuth-token nem tartalmazza. A kapcsolati pulton csak a kapcsolt iskolai e-mail-cím és az állapot jelenik meg. A Classroom gombra kattintva a Google-engedély visszavonását megkíséreljük, majd a helyi titkosított tokent töröljük.</p>
+    <p>Claude csak akkor kér le Classroom-adatot, amikor a beszélgetésben erre kéred. Az Üzenőfüzet öt rögzített, csak olvasó végpontot használ; nincs általános Google API-hozzáférés, nincs feladatbeadás, módosítás vagy törlés.</p>
+
+    <h2>Korábbi nyilvános üzenetfal</h2>
+    <p>Az üzenetfal jelenleg nem érhető el a publikus felületen. A korábban beküldött adatok kezelésének leírását átláthatósági okból megtartjuk: a Firebase Authentication a fiók technikai azonosítóját és megjelenített nevét adta át, az e-mail-cím nem került az üzenet mellé.</p>
+    <p>A Firestore-ban a megjelenített név, az üzenet, a fiók technikai azonosítója és a létrehozás/módosítás időpontja szerepelhet.</p>
 
     <h2>Törlés</h2>
-    <p>A saját üzenetedet belépés után közvetlenül törölheted a listáról. A kapcsolati pulton az Online állapotra kattintva csak a KRÉTA-kapcsolatot kapcsolhatod ki, a Törlés gombbal pedig a teljes gyerekprofilt eltávolíthatod. A Claude-csatlakozó külön a Claude beállításaiban törölhető.</p>
+    <p>Korábbi üzenetfal-bejegyzés törlését a projekt GitHub-kapcsolati felületén kérheted. A kapcsolati pulton külön leválaszthatod a KRÉTA- és a Classroom-kapcsolatot; a Törlés gomb a teljes gyerekprofilt és mindkét helyi titkosított kapcsolatot eltávolítja. A Claude-csatlakozó külön a Claude beállításaiban törölhető.</p>
 
     <h2>Szolgáltatók és kapcsolat</h2>
-    <p>A tárhelyet, a futtatást, a hitelesítést és az üzenetfal adatbázisát a Google Cloud és Firebase biztosítja. A forráskód, a hibajelzés és a projekt kapcsolati felülete a <a href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">GitHub-tárolóban</a> érhető el.</p>
-    <p class="updated">Utolsó frissítés: 2026. szeptember 3.</p>
+    <p>A tárhelyet, a futtatást, a hitelesítést, a Classroom API-t és az adatbázist a Google Cloud, Google Workspace és Firebase biztosítja. A forráskód, a hibajelzés és a projekt kapcsolati felülete a <a href="https://github.com/arpadtamasi/kreta-ai" rel="noreferrer">GitHub-tárolóban</a> érhető el.</p>
+    <p class="updated">Utolsó frissítés: 2026. szeptember 4.</p>
   </article>
 </BaseLayout>
 

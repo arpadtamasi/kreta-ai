@@ -1,8 +1,11 @@
-const connectorUrl = "https://uzenofuzet.tilosazai.org/mcp";
+const connectorUrl = new URL("/mcp", window.location.origin).href;
 const button = document.querySelector("#copy-url");
+const connectorUrlLabel = document.querySelector(".url-row code");
 const copyStatus = document.querySelector("#copy-status");
 const serviceStatus = document.querySelector("#service-status");
 const serviceStatusLabel = document.querySelector("#service-status-label");
+
+if (connectorUrlLabel) connectorUrlLabel.textContent = connectorUrl;
 
 button?.addEventListener("click", async () => {
   try {
