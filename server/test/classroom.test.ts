@@ -171,7 +171,10 @@ test("each child stores a separate encrypted Classroom grant and exposes only co
   for (const [profileId, code] of [["profile-lilla", "lilla"], ["profile-kata", "kata"]] as const) {
     const response = await finish(await begin(profileId), code);
     assert.equal(response.status, 302);
-    assert.match(response.headers.get("location") ?? "", /classroom=connected/);
+    const location = new URL(response.headers.get("location")!);
+    assert.equal(location.searchParams.get("classroom"), "connected");
+    assert.equal(location.pathname, "/gyerek", "the parent returns to the child they were connecting");
+    assert.equal(location.searchParams.get("id"), profileId);
   }
 
   const lilla = await store.get("parent-uid", "profile-lilla");

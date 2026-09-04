@@ -1,0 +1,246 @@
+---
+/** Egy gyerek két külön csatlakozója egymás mellett, saját leválasztással. */
+---
+
+<section class="details" id="child-details" hidden>
+  <button class="edit-profile" id="child-edit" type="button">Profil szerkesztése</button>
+
+  <div class="sources">
+    <div class="tabs" role="tablist" aria-label="Csatlakozók">
+      <button class="tab" id="tab-kreta" type="button" role="tab" aria-controls="panel-kreta" aria-selected="true">
+        <span class="tab-name">KRÉTA-napló</span>
+        <span class="tab-state" id="tab-kreta-state"></span>
+      </button>
+      <button class="tab" id="tab-classroom" type="button" role="tab" aria-controls="panel-classroom" aria-selected="false" tabindex="-1">
+        <span class="tab-name">Google Classroom</span>
+        <span class="tab-state" id="tab-classroom-state"></span>
+      </button>
+    </div>
+
+    <section class="panel" id="panel-kreta" role="tabpanel" aria-labelledby="tab-kreta">
+      <dl class="facts">
+        <div><dt>KRÉTA-felhasználónév</dt><dd id="child-username"></dd></div>
+        <div><dt>Intézmény</dt><dd id="child-institute"></dd></div>
+      </dl>
+      <p class="detail" id="child-kreta-detail"></p>
+      <button class="source-action" id="child-kreta-connect" type="button">Online kapcsolás</button>
+
+      <div class="source-danger" id="danger-kreta">
+        <div class="danger-head">
+          <div>
+            <strong>KRÉTA-kapcsolat leállítása</strong>
+            <span>A gyerekprofil és a Classroom-kapcsolat megmarad, csak a napló adatai nem lesznek elérhetők Claude-nak.</span>
+          </div>
+          <button type="button" data-danger-open>Leállítás</button>
+        </div>
+        <div class="danger-confirm" data-danger-confirm-box hidden>
+          <p>Biztosan leállítod <span data-child-name></span> KRÉTA-kapcsolatát?</p>
+          <div>
+            <button type="button" data-danger-confirm>Igen, leállítom</button>
+            <button type="button" data-danger-cancel>Mégse</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" id="panel-classroom" role="tabpanel" aria-labelledby="tab-classroom" hidden>
+      <dl class="facts" id="child-classroom-facts" hidden>
+        <div><dt>Iskolai Google-fiók</dt><dd id="child-classroom-account"></dd></div>
+      </dl>
+      <p class="detail" id="child-classroom-detail"></p>
+      <button class="source-action" id="child-classroom-connect" type="button">Classroom összekapcsolása</button>
+      <p class="hint" id="child-classroom-hint">A Google oldalán a gyerek iskolai fiókját válaszd. Ha „Access blocked” üzenet fogad, ott nyomd meg a <strong>Request Access</strong> gombot: a kérés az iskola rendszergazdájához kerül.</p>
+
+      <div class="blocked" id="child-classroom-blocked" hidden>
+        <h3>Az iskola blokkolja az engedélyezést</h3>
+        <p>A Google azt válaszolta, hogy az intézmény rendszergazdájának előbb jóvá kell hagynia az Üzenőfüzetet. Ez nem a te hibád, és a KRÉTA-kapcsolatot nem érinti.</p>
+        <ol>
+          <li>Próbáld újra, és a hibaoldalon — <strong>a gyerek iskolai fiókjával belépve</strong> — nyomd meg a <strong>Request Access</strong> gombot. A kérés az iskola Admin konzoljába kerül.</li>
+          <li>Ha nincs ilyen gomb, vagy nem érkezik válasz, küldd el az iskolának a rendszergazdai leírást.</li>
+        </ol>
+        <div class="blocked-actions">
+          <button id="copy-school-letter" type="button">Levélszöveg másolása</button>
+          <a href="/iskolai-admin">Mit lát ebből az iskola?</a>
+        </div>
+        <p class="blocked-status" id="child-classroom-blocked-status" role="status" aria-live="polite"></p>
+      </div>
+
+      <div class="source-danger" id="danger-classroom">
+        <div class="danger-head">
+          <div>
+            <strong>Classroom-fiók leválasztása</strong>
+            <span>A gyerekprofil és a KRÉTA-kapcsolat megmarad, csak a Classroom-adatok nem lesznek elérhetők Claude-nak.</span>
+          </div>
+          <button type="button" data-danger-open>Leválasztás</button>
+        </div>
+        <div class="danger-confirm" data-danger-confirm-box hidden>
+          <p>Biztosan leválasztod <span data-child-name></span> Classroom-fiókját?</p>
+          <div>
+            <button type="button" data-danger-confirm>Igen, leválasztom</button>
+            <button type="button" data-danger-cancel>Mégse</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <section class="danger" aria-labelledby="child-danger-title">
+    <h2 id="child-danger-title">Veszélyzóna</h2>
+
+    <div class="danger-item" id="danger-delete">
+      <div class="danger-head">
+        <div>
+          <strong>Gyerekprofil törlése</strong>
+          <span>A profillal együtt a KRÉTA- és a Classroom-kapcsolat is törlődik. Ez nem vonható vissza.</span>
+        </div>
+        <button type="button" data-danger-open>Törlés</button>
+      </div>
+      <div class="danger-confirm" data-danger-confirm-box hidden>
+        <p>Törlöd <span data-child-name></span> gyerekprofilját? A KRÉTA- és a Classroom-kapcsolata is megszűnik.</p>
+        <div>
+          <button type="button" data-danger-confirm>Igen, törlöm</button>
+          <button type="button" data-danger-cancel>Mégse</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<style>
+  .edit-profile {
+    min-height: 2.6rem;
+    margin: .9rem 0 1.4rem;
+    padding: .45rem 1rem;
+    border: 1px solid var(--blue);
+    border-radius: 0;
+    color: var(--blue);
+    background: transparent;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .edit-profile:hover { color: white; background: var(--blue); }
+
+  .sources { border: 1px solid var(--blue-soft); background: var(--paper-bright); }
+  .tabs { display: flex; border-bottom: 1px solid var(--blue-soft); }
+
+  .tab {
+    min-height: 3.4rem;
+    flex: 1 1 0;
+    padding: .6rem 1rem;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    border-radius: 0;
+    color: var(--ink-muted);
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .tab + .tab { border-left: 1px solid var(--blue-soft); }
+  .tab:hover { background: var(--paper); }
+  .tab[aria-selected="true"] { border-bottom-color: var(--blue); color: var(--blue); background: var(--paper); }
+  .tab-name { display: block; font-size: .82rem; font-weight: 800; letter-spacing: -.01em; }
+  .tab-state { display: block; margin-top: .2rem; font-family: "IBM Plex Mono", monospace; font-size: .66rem; font-weight: 500; }
+  .tab-state.online { color: var(--green); }
+
+  .panel { padding: 1.15rem clamp(.9rem, 3vw, 1.4rem) 1.3rem; }
+  .facts { margin: 0 0 .9rem; padding: 0; }
+  .facts > div { display: grid; grid-template-columns: minmax(10rem, .7fr) minmax(0, 1.3fr); gap: .4rem 1.5rem; padding: .55rem 0; border-bottom: 1px solid var(--blue-soft); }
+  dt { color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
+  dd { margin: 0; overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .8rem; }
+  .detail { max-width: 46rem; margin: 0; color: var(--ink-muted); font-size: .8rem; line-height: 1.55; }
+
+  .source-action {
+    min-height: 2.9rem;
+    margin-top: .9rem;
+    padding: .5rem 1.1rem;
+    border: 2px solid var(--blue-strong);
+    border-radius: 0;
+    color: white;
+    background: var(--blue-strong);
+    font-size: .8rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .source-action:hover { background: var(--blue); }
+  .source-action:disabled { cursor: wait; opacity: .65; }
+
+  .hint { max-width: 46rem; margin: .6rem 0 0; color: var(--ink-muted); font-size: .76rem; line-height: 1.6; }
+  .hint strong { color: var(--ink); }
+
+  .blocked { margin-top: 1rem; padding: .1rem 1.1rem 1rem; border: 1px solid #c29a20; background: #fff4c9; }
+  .blocked h3 { margin: 1rem 0 .45rem; color: #382b0d; font-size: .88rem; }
+  .blocked p { max-width: 44rem; margin: 0; color: #5a4816; font-size: .8rem; line-height: 1.6; }
+  .blocked ol { max-width: 44rem; margin: .7rem 0 0; padding-left: 1.2rem; color: #5a4816; font-size: .8rem; line-height: 1.6; }
+  .blocked li { padding: .2rem 0; }
+  .blocked strong { color: #382b0d; }
+  .blocked-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem 1.2rem; margin-top: 1rem; }
+
+  .blocked-actions button {
+    min-height: 2.8rem;
+    padding: .5rem 1.1rem;
+    border: 2px solid #7a5f10;
+    border-radius: 0;
+    color: white;
+    background: #7a5f10;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .blocked-actions button:disabled { cursor: wait; opacity: .65; }
+  .blocked-actions a { min-height: 2.6rem; padding: .6rem 0; color: #5a4816; font-size: .78rem; font-weight: 800; text-underline-offset: .25rem; }
+  .blocked-status { min-height: 1.2rem; margin-top: .55rem; color: #5a4816; font-size: .76rem; }
+
+  .source-danger { margin-top: 1.5rem; border-top: 1px solid var(--blue-soft); }
+  .danger { margin-top: 1.4rem; padding: 0 1.15rem 1rem; border: 1px solid #d7a49a; background: #fff6f4; }
+  .danger h2 { padding: .9rem 0 .5rem; color: #a62f22; font-size: .85rem; }
+  .danger-head { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: .8rem 0; }
+  .danger-head strong { display: block; font-size: .82rem; }
+  .danger-head span { display: block; max-width: 44rem; margin-top: .2rem; color: var(--ink-muted); font-size: .78rem; line-height: 1.45; }
+
+  .danger-head button {
+    min-height: 2.6rem;
+    flex: 0 0 auto;
+    padding: .4rem 1rem;
+    border: 1px solid #a62f22;
+    border-radius: 0;
+    color: #a62f22;
+    background: transparent;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .danger-head button:hover { color: white; background: #a62f22; }
+  .danger-confirm { padding: .2rem 0 .9rem; }
+  .danger-confirm p { margin: 0 0 .6rem; color: #6e2018; font-size: .8rem; font-weight: 700; line-height: 1.5; }
+  .danger-confirm > div { display: flex; flex-wrap: wrap; gap: .6rem; }
+
+  .danger-confirm button {
+    min-height: 2.7rem;
+    padding: .45rem 1.1rem;
+    border: 2px solid #a62f22;
+    border-radius: 0;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  [data-danger-confirm] { color: white; background: #a62f22; }
+  [data-danger-cancel] { border-color: var(--blue-soft); color: var(--blue); background: transparent; }
+  [data-danger-confirm]:disabled { cursor: wait; opacity: .65; }
+
+  @media (max-width: 620px) {
+    .facts > div { grid-template-columns: 1fr; gap: .2rem; }
+    .tab { padding: .55rem .7rem; }
+    .tab-name { font-size: .76rem; }
+    .danger-head { align-items: stretch; flex-direction: column; gap: .7rem; }
+    .danger-head button, .danger-confirm button { width: 100%; }
+    .blocked-actions { align-items: stretch; flex-direction: column; }
+    .blocked-actions button, .blocked-actions a { width: 100%; text-align: center; }
+  }
+</style>

@@ -1,0 +1,94 @@
+---
+/** Az iskolai Google-adminnak szóló engedélyezési adatok.
+ *  A műhelyben csak Classroom-tiltás esetén nyílik meg; a Hogy működik? oldalon mindig elérhető. */
+interface Props {
+  variant?: "workspace" | "page";
+}
+
+const { variant = "workspace" } = Astro.props;
+---
+
+<details class="classroom-admin-help" id="classroom-admin-help" hidden={variant === "workspace"}>
+  <summary>Iskolai Google-adminnak: engedélyezési adatok</summary>
+  <div class="admin-help-body">
+    <div class="admin-help-intro">
+      <h3>Az Üzenőfüzet csak olvassa a gyerek Classroom-adatait</h3>
+      <p>Nem ad be feladatot, nem ír jegyet, és nem módosít vagy töröl semmit. Az iskolai rendszergazda az alábbi kliensazonosítóval engedélyezheti az alkalmazást.</p>
+      <p class="admin-request-tip"><strong>Gyorsabb út:</strong> a Google hibaoldalán — a gyerek iskolai fiókjával belépve — kattints a <strong>Request Access / Hozzáférés kérése</strong> gombra. Ettől a kérés megjelenik az iskola adminisztrátori felületén felülvizsgálatra. Magánfiókból küldve a kérés nem jut el az iskolához.</p>
+    </div>
+
+    <div class="admin-client">
+      <span>OAuth-kliensazonosító</span>
+      <code id="classroom-client-id">652545082668-28jv22mkvkjl85hd1rhfard3egnb4dtc.apps.googleusercontent.com</code>
+    </div>
+
+    <h4>Kért hozzáférések</h4>
+    <ul class="admin-scope-list" id="classroom-scope-list">
+      <li><strong>Google-fiók azonosítása</strong><code>openid</code></li>
+      <li><strong>Iskolai e-mail-cím megtekintése</strong><code>https://www.googleapis.com/auth/userinfo.email</code></li>
+      <li><strong>Kurzusok megtekintése</strong><code>https://www.googleapis.com/auth/classroom.courses.readonly</code></li>
+      <li><strong>Saját feladatok és beadások megtekintése</strong><code>https://www.googleapis.com/auth/classroom.coursework.me.readonly</code></li>
+      <li><strong>Közlemények megtekintése</strong><code>https://www.googleapis.com/auth/classroom.announcements.readonly</code></li>
+      <li><strong>Tananyagok megtekintése</strong><code>https://www.googleapis.com/auth/classroom.courseworkmaterials.readonly</code></li>
+    </ul>
+
+    <div class="admin-steps">
+      <h4>Beállítás a Google Admin konzolban</h4>
+      <ol id="classroom-admin-steps">
+        <li><strong>Biztonság (Security) → Hozzáférés és adatkezelés (Access and data control) → API-vezérlők (API controls) → Alkalmazáshozzáférés kezelése (Manage App Access)</strong></li>
+        <li>Válaszd az <strong>Új alkalmazás konfigurálása (Configure new app)</strong> lehetőséget, majd keress a fenti kliensazonosítóra.</li>
+        <li>Válaszd ki a gyerek szervezeti egységét, majd az <strong>Adott Google-adatok (Specific Google data)</strong> hozzáférést és a fenti scope-okat.</li>
+        <li>Ellenőrizd, hogy a Classroom beállításainál a <strong>Classroom API adathozzáférés</strong> engedélyezve van.</li>
+      </ol>
+    </div>
+
+    <div class="admin-help-actions">
+      <button id="copy-classroom-admin-data" type="button">Adminadatok másolása</button>
+      <a href="/iskolai-admin">Teljes leírás az adminnak</a>
+      <a href="https://support.google.com/a/answer/7281227?hl=hu" rel="noreferrer">Google rendszergazdai útmutató</a>
+    </div>
+    <p class="admin-copy-status" id="classroom-admin-copy-status" role="status" aria-live="polite"></p>
+  </div>
+</details>
+
+<script>
+  import { startClassroomAdminHelp } from "../../scripts/dashboard/classroomAdmin";
+  startClassroomAdminHelp();
+</script>
+
+<style>
+  .classroom-admin-help { margin-top: 1.2rem; border-block: 1px solid var(--blue-soft); }
+  .classroom-admin-help[data-emphasis="true"] { padding-inline: 1rem; border-block-color: #c29a20; background: #fff4c9; }
+  .classroom-admin-help summary { padding: .9rem 0; color: var(--blue); font-size: .8rem; font-weight: 850; line-height: 1.4; cursor: pointer; }
+  .classroom-admin-help summary::marker { color: var(--red); }
+  .classroom-admin-help summary:focus-visible { outline: 3px solid var(--red); outline-offset: .25rem; }
+  .admin-help-body { padding: .35rem 0 1.5rem; }
+  .admin-help-intro { max-width: 44rem; }
+  .admin-help-intro h3 { margin: 0 0 .55rem; color: var(--ink); font-size: 1.05rem; letter-spacing: -.02em; }
+  .admin-help-intro p { margin: 0; color: var(--ink-muted); font-size: .78rem; line-height: 1.65; }
+  .admin-help-intro .admin-request-tip { margin-top: 1rem; padding: .8rem 0; border-block: 1px solid #c29a20; color: #5a4816; }
+  .admin-request-tip strong { color: #382b0d; }
+  .admin-client { margin: 1.35rem 0; padding: 1rem 0; border-block: 2px solid var(--blue); }
+  .admin-client span { display: block; margin-bottom: .45rem; color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .62rem; font-weight: 700; text-transform: uppercase; }
+  .admin-client code { display: block; overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .75rem; font-weight: 650; line-height: 1.55; }
+  .admin-help-body h4 { margin: 1.5rem 0 .55rem; color: var(--ink); font-size: .8rem; }
+  .admin-scope-list { margin: 0; padding: 0; list-style: none; }
+  .admin-scope-list li { display: grid; grid-template-columns: minmax(10rem, .8fr) minmax(0, 1.2fr); gap: .75rem 1rem; padding: .7rem 0; border-top: 1px solid var(--blue-soft); }
+  .admin-scope-list li:last-child { border-bottom: 1px solid var(--blue-soft); }
+  .admin-scope-list strong { font-size: .75rem; line-height: 1.45; }
+  .admin-scope-list code { overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .68rem; line-height: 1.55; }
+  .admin-steps ol { margin: 0; padding-left: 1.35rem; color: var(--ink-muted); font-size: .78rem; line-height: 1.65; }
+  .admin-steps li { padding: .25rem 0 .25rem .35rem; }
+  .admin-steps strong { color: var(--ink); }
+  .admin-help-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem 1.2rem; margin-top: 1.35rem; }
+  .admin-help-actions button { min-height: 2.9rem; padding: .7rem 1rem; border: 2px solid var(--blue-strong); border-radius: 0; color: white; background: var(--blue-strong); font-size: .78rem; font-weight: 800; cursor: pointer; }
+  .admin-help-actions button:disabled { cursor: wait; opacity: .65; }
+  .admin-help-actions a { min-height: 2.75rem; padding: .75rem 0; color: var(--blue); font-size: .78rem; font-weight: 800; text-underline-offset: .25rem; }
+  .admin-copy-status { min-height: 1.25rem; margin: .65rem 0 0; color: var(--green); font-size: .75rem; line-height: 1.5; }
+
+  @media (max-width: 560px) {
+    .admin-scope-list li { grid-template-columns: 1fr; gap: .25rem; }
+    .admin-help-actions { align-items: stretch; flex-direction: column; }
+    .admin-help-actions button, .admin-help-actions a { width: 100%; text-align: center; }
+  }
+</style>

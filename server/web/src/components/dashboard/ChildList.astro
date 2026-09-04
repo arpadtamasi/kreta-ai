@@ -1,0 +1,46 @@
+---
+/** A napi gyereklista a „+ Gyerek” másodlagos gombbal. */
+import ChildRowTemplate from "./ChildRowTemplate.astro";
+---
+
+<section class="children" aria-labelledby="children-title">
+  <header>
+    <h2 id="children-title">Gyerekek</h2>
+    <a class="add-child" id="add-child" href="/gyerek">+ Gyerek</a>
+  </header>
+  <ol class="child-list" id="child-list" aria-live="polite"></ol>
+  <p class="child-empty" id="child-empty" hidden>
+    Még nincs gyerekprofilod. <a id="child-empty-link" href="/gyerek">Add hozzá az elsőt</a> — nagyjából egy perc.
+  </p>
+  <ChildRowTemplate />
+</section>
+
+<style>
+  .children header {
+    display: flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    border-bottom: 2px solid var(--blue);
+  }
+
+  h2 { margin: 0; font-size: .95rem; letter-spacing: -.02em; }
+
+  .add-child {
+    display: inline-flex;
+    min-height: 2.25rem;
+    align-items: center;
+    padding: .3rem .7rem;
+    border: 1px solid var(--blue-soft);
+    color: var(--blue);
+    font-size: .75rem;
+    font-weight: 800;
+    text-decoration: none;
+  }
+
+  .add-child:hover { border-color: var(--blue); background: var(--paper); }
+  .child-list { margin: 0; padding: 0; list-style: none; }
+  .child-empty { margin: 0; padding: 1.25rem 0; color: var(--ink-muted); font-size: .82rem; line-height: 1.6; }
+  .child-empty a { color: var(--blue); font-weight: 800; text-underline-offset: .25rem; }
+</style>

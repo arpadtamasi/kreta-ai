@@ -379,7 +379,7 @@ test("/authorize identifies the parent with Google, then returns a code without 
   });
   const withoutSession = await fetch(`${base}/authorize?${query}`, { redirect: "manual" });
   assert.equal(withoutSession.status, 302);
-  assert.match(withoutSession.headers.get("location") ?? "", /^\/dashboard\?return_to=/);
+  assert.match(withoutSession.headers.get("location") ?? "", /^\/\?return_to=/);
 
   const withSession = await fetch(`${base}/authorize?${query}`, {
     headers: { cookie: "__session=parent-session" },
@@ -457,7 +457,7 @@ test("a Google account without online children returns to profile setup", async 
   const { clientId } = await register();
   const response = await authorize(clientId, pkce().challenge, "st", "other-session");
   assert.equal(response.status, 302);
-  assert.match(response.headers.get("location") ?? "", /^\/dashboard\?return_to=/);
+  assert.match(response.headers.get("location") ?? "", /^\/\?return_to=/);
 });
 
 test("a Classroom-only child is enough to authorize the Claude connector", async () => {

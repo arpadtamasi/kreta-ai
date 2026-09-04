@@ -1,0 +1,63 @@
+---
+/** Egy gyereksor napi tartalma: név, KRÉTA-állapot, Classroom-állapot, Kezelés. */
+---
+
+<template id="child-row">
+  <li class="child-row">
+    <strong class="child-name"></strong>
+    <div class="child-states">
+      <span class="state kreta-state"><i aria-hidden="true"></i><span class="state-label">KRÉTA · Offline</span></span>
+      <span class="state classroom-state"><i aria-hidden="true"></i><span class="state-label">Classroom · nincs</span></span>
+    </div>
+    <a class="child-manage" href="/gyerek">Kezelés</a>
+  </li>
+</template>
+
+<style>
+  .child-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    gap: .4rem 1.25rem;
+    align-items: center;
+    min-height: 3.25rem;
+    padding: .55rem 0;
+    border-bottom: 1px solid var(--blue-soft);
+  }
+
+  .child-name { overflow-wrap: anywhere; font-size: .95rem; letter-spacing: -.02em; }
+  .child-states { display: flex; flex-wrap: wrap; gap: .3rem 1.1rem; }
+
+  .state {
+    display: inline-flex;
+    align-items: center;
+    gap: .45rem;
+    color: var(--ink-muted);
+    font-size: .78rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .state i { width: .5rem; height: .5rem; border: 1px solid currentColor; }
+  .state.online i { background: currentColor; }
+  .kreta-state.online { color: var(--green); }
+  .classroom-state.online { color: var(--blue); }
+
+  .child-manage {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    color: var(--blue);
+    font-size: .78rem;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: .25rem;
+  }
+
+  .child-manage:hover { color: var(--blue-strong); }
+
+  @media (max-width: 680px) {
+    .child-row { grid-template-columns: minmax(0, 1fr) auto; }
+    .child-states { grid-column: 1 / -1; }
+    .child-manage { grid-column: 2; grid-row: 1; }
+  }
+</style>

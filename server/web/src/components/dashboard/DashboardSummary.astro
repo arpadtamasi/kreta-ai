@@ -1,0 +1,123 @@
+---
+/** A műhely fejléce: hol vagyok, mi a következő lépés, és él-e a szolgáltatás. */
+---
+
+<header class="workspace-head">
+  <div class="identity">
+    <div>
+      <span class="eyebrow">Üzenőfüzet</span>
+      <h1>A gyerekeid iskolai adatai Claude-ban.</h1>
+    </div>
+    <div class="account">
+      <span class="service-status" id="service-status">
+        <i aria-hidden="true"></i>
+        <span id="service-status-label">Ellenőrzés…</span>
+      </span>
+      <span class="account-name" id="profiles-account-name" hidden></span>
+      <button id="profiles-signout" type="button" hidden>Kijelentkezés</button>
+    </div>
+  </div>
+
+  <ol class="steps" id="workspace-steps">
+    <li data-state="todo"><span class="marker" aria-hidden="true">1</span><span id="step-signin-note">Belépés Google-fiókkal</span></li>
+    <li data-state="todo"><span class="marker" aria-hidden="true">2</span><span id="claude-summary" role="status">Gyerek hozzáadása és kapcsolása</span></li>
+    <li data-state="todo"><span class="marker" aria-hidden="true">3</span><span>Csatlakozó másolása Claude-ba</span></li>
+  </ol>
+</header>
+
+<script>
+  import { startServiceStatus } from "../../scripts/dashboard/serviceStatus";
+  startServiceStatus();
+</script>
+
+<style>
+  .identity {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .5rem 1.5rem;
+    padding: 1.1rem clamp(1.25rem, 3vw, 2.25rem) 1rem;
+  }
+
+  .eyebrow {
+    display: block;
+    color: var(--ink-muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    max-width: 34ch;
+    margin: .3rem 0 0;
+    color: var(--ink);
+    font-size: clamp(1.3rem, 2vw, 1.6rem);
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.2;
+  }
+
+  .account { display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .9rem; margin-top: .3rem; }
+
+  .service-status {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    color: var(--ink-muted);
+    font-size: .75rem;
+    font-weight: 750;
+  }
+
+  .service-status i { width: .5rem; height: .5rem; background: var(--yellow); }
+  .service-status.online { color: var(--green); }
+  .service-status.online i { background: var(--green); }
+  .service-status.offline { color: #a62f22; }
+  .service-status.offline i { background: var(--red); }
+  .account-name { color: var(--ink-muted); font-size: .75rem; }
+
+  .account button {
+    min-height: 2.25rem;
+    padding: .2rem .1rem;
+    border: 0;
+    color: var(--blue);
+    background: transparent;
+    font-size: .75rem;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: .25rem;
+    cursor: pointer;
+  }
+
+  .steps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: .4rem clamp(.9rem, 2vw, 1.6rem);
+    margin: 0;
+    padding: .5rem clamp(1.25rem, 3vw, 2.25rem);
+    border-top: 1px solid var(--blue-soft);
+    list-style: none;
+  }
+
+  .steps li { display: inline-flex; align-items: center; gap: .5rem; font-size: .78rem; }
+
+  .marker {
+    display: grid;
+    width: 1.2rem;
+    height: 1.2rem;
+    flex: 0 0 auto;
+    place-items: center;
+    border: 1px solid var(--blue-soft);
+    color: var(--ink-muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem;
+    font-weight: 700;
+  }
+
+  .steps li > span:last-child { color: var(--ink-muted); }
+  [data-state="current"] .marker { border-color: var(--blue-strong); color: white; background: var(--blue-strong); }
+  [data-state="current"] > span:last-child { color: var(--blue-strong); font-weight: 800; }
+  [data-state="done"] .marker { border-color: var(--green); color: white; background: var(--green); }
+</style>

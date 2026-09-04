@@ -15,6 +15,8 @@ export default defineConfig({
   // The backend's Express tree also depends on the older CommonJS `cookie`
   // package. Keep Astro's ESM copy explicit during prerendering.
   vite: {
+    // A produkciós CSP csak külső scriptet enged: ne inlineoljon apró chunkokat.
+    build: { assetsInlineLimit: 0 },
     resolve: {
       alias: {
         cookie: fileURLToPath(

@@ -1,0 +1,81 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ChildDetails from "../components/child/ChildDetails.astro";
+import ProfileForm from "../components/child/ProfileForm.astro";
+import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro";
+---
+
+<BaseLayout title="Gyerek – Üzenőfüzet" description="Egy gyerek adatai, KRÉTA- és Classroom-kapcsolata.">
+  <div class="child-page">
+    <a class="back" id="child-back" href="/">← Vissza a gyerekekhez</a>
+
+    <p class="child-loading" id="child-loading">Betöltés…</p>
+    <noscript>
+      <p class="child-loading">Az Üzenőfüzethez JavaScript kell: a gyerek adatai e nélkül nem tölthetők be.</p>
+    </noscript>
+
+    <div id="child-body" hidden>
+      <header class="child-head">
+        <span class="eyebrow">Gyerek</span>
+        <h1 id="child-title"></h1>
+      </header>
+
+      <ChildDetails />
+      <ProfileForm />
+      <ClassroomAdminHelp />
+    </div>
+
+    <p class="child-status" id="child-status" role="status" tabindex="-1"></p>
+  </div>
+</BaseLayout>
+
+<script>
+  import { startChildPage } from "../scripts/child/page";
+  startChildPage();
+</script>
+
+<style>
+  .child-page {
+    width: min(100%, 52rem);
+    margin: 0 auto;
+    padding: clamp(1.25rem, 2.5vw, 2.25rem) var(--page-pad) clamp(3rem, 6vw, 5rem);
+  }
+
+  .back {
+    display: inline-flex;
+    min-height: 2.5rem;
+    align-items: center;
+    color: var(--blue);
+    font-size: .8rem;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: .25rem;
+  }
+
+  .child-loading { margin: 1.5rem 0; color: var(--ink-muted); font-size: .85rem; }
+
+  .child-head { padding: .75rem 0 1.1rem; border-bottom: 2px solid var(--blue); }
+
+  .eyebrow {
+    display: block;
+    color: var(--ink-muted);
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .62rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: .3rem 0 0;
+    color: var(--ink);
+    font-size: clamp(1.5rem, 3vw, 2.1rem);
+    font-weight: 800;
+    letter-spacing: -.03em;
+    line-height: 1.15;
+  }
+
+  .child-status { min-height: 1.3rem; margin: 1.2rem 0 0; color: var(--ink-muted); font-size: .8rem; line-height: 1.5; }
+  .child-status:focus-visible { outline: 3px solid var(--red); outline-offset: .35rem; }
+  .child-status[data-kind="error"] { color: #a62f22; }
+  .child-status[data-kind="success"] { color: var(--green); }
+</style>
