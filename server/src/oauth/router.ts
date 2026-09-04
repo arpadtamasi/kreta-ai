@@ -12,7 +12,7 @@ import { classroomConnectionIsActive } from "../classroom/connection.js";
 import type { ChildProfileStore } from "../profiles/store.js";
 import { randomId } from "../seal.js";
 import { issueClientId, openClientId } from "./clients.js";
-import { renderErrorPage } from "./pages.js";
+import { renderConsentPage, renderErrorPage } from "./pages.js";
 import { verifyCodeVerifier } from "./pkce.js";
 import type { ReplayCache } from "./replayCache.js";
 import type { SealedAuthorizationCode, SealedChild, SealedSession } from "./types.js";
@@ -23,6 +23,18 @@ export interface OAuthRouterDeps {
   childProfileStore: ChildProfileStore;
   verifySessionCookie: VerifySessionCookie;
 }
+
+interface SealedAuthorizationRequest {
+  jti: string;
+  uid: string;
+  clientId: string;
+  redirectUri: string;
+  codeChallenge: string;
+  returnTo: string;
+  state?: string;
+}
+
+const AUTHORIZATION_REQUEST_TTL_SECONDS = 10 * 60;
 
 /** Public origin of this deployment: explicit config wins, else the proxied request. */
 function issuerOf(req: { protocol: string; get(name: string): string | undefined }, config: Config): string {
@@ -178,6 +190,108 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
         return;
       }
 
+      const authorizationRequest: SealedAuthorizationRequest = {
+        jti: randomId(),
+        uid: user.uid,
+        clientId,
+        redirectUri,
+        codeChallenge,
+        returnTo: req.originalUrl,
+        ...(state ? { state } : {}),
+      };
+      res
+        .set("Cache-Control", "no-store")
+        .set("Content-Security-Policy", "default-src 'none'; style-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'")
+        .type("html")
+        .send(renderConsentPage({
+          clientName: client.n ?? "Claude",
+          ...(user.name ? { parentName: user.name } : {}),
+          childNames: profiles.map((profile) => profile.childName),
+          authorizationRequest: sealer.seal(
+            "request",
+            authorizationRequest,
+            AUTHORIZATION_REQUEST_TTL_SECONDS,
+          ),
+        }));
+    })().catch(() => {
+      res.status(503).type("html").send(
+        renderErrorPage("A profilok nem érhetők el", "A gyerekprofilokat most nem sikerült betölteni. Próbáld újra."),
+      );
+    });
+  });
+
+  router.post("/authorize", (req, res) => {
+    void (async () => {
+      if (req.get("origin") !== issuerOf(req, config)) {
+        res.status(403).type("html").send(
+          renderErrorPage("Érvénytelen jóváhagyás", "A kapcsolódást csak az Üzenőfüzet oldalán lehet jóváhagyni."),
+        );
+        return;
+      }
+
+      const rawRequest = firstString(req.body?.authorization_request);
+      const decision = firstString(req.body?.decision);
+      let authorizationRequest: SealedAuthorizationRequest;
+      try {
+        if (!rawRequest) throw new Error("missing_request");
+        authorizationRequest = sealer.open<SealedAuthorizationRequest>("request", rawRequest);
+      } catch {
+        res.status(400).type("html").send(
+          renderErrorPage("Lejárt kérés", "Indítsd újra a Claude csatlakoztatását."),
+        );
+        return;
+      }
+
+      const client = openClientId(sealer, authorizationRequest.clientId);
+      if (
+        !client ||
+        !client.r.includes(authorizationRequest.redirectUri) ||
+        !config.allowedRedirectUris.includes(authorizationRequest.redirectUri)
+      ) {
+        res.status(400).type("html").send(
+          renderErrorPage("Ismeretlen kliens", "A kapcsolódási kérés nem érvényes."),
+        );
+        return;
+      }
+
+      const sessionCookie = readSessionCookie(req);
+      let user;
+      try {
+        if (!sessionCookie) throw new Error("missing_session");
+        user = await deps.verifySessionCookie(sessionCookie);
+        if (user.uid !== authorizationRequest.uid) throw new Error("session_mismatch");
+      } catch {
+        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(authorizationRequest.returnTo));
+        return;
+      }
+
+      if (!codeReplayCache.claim(authorizationRequest.jti)) {
+        res.status(400).type("html").send(
+          renderErrorPage("Már felhasznált kérés", "Indítsd újra a Claude csatlakoztatását."),
+        );
+        return;
+      }
+
+      const target = new URL(authorizationRequest.redirectUri);
+      if (authorizationRequest.state) target.searchParams.set("state", authorizationRequest.state);
+      if (decision !== "approve") {
+        target.searchParams.set("error", "access_denied");
+        target.searchParams.set("error_description", "A felhasználó nem hagyta jóvá a kapcsolódást.");
+        res.set("Cache-Control", "no-store").redirect(302, target.toString());
+        return;
+      }
+
+      const profiles = (await deps.childProfileStore.list(user.uid)).filter((profile) =>
+        Boolean(
+          (profile.connection && connectionIsOnline(profile.connection)) ||
+          (profile.classroomConnection && classroomConnectionIsActive(profile.classroomConnection)),
+        )
+      );
+      if (profiles.length === 0) {
+        res.set("Cache-Control", "no-store").redirect(302, dashboardRedirect(authorizationRequest.returnTo));
+        return;
+      }
+
       const session: SealedSession = {
         uid: user.uid,
         sid: randomId(),
@@ -190,15 +304,12 @@ export function createOAuthRouter(deps: OAuthRouterDeps): Router {
       };
       const code: SealedAuthorizationCode = {
         jti: randomId(),
-        clientId,
-        redirectUri,
-        codeChallenge,
+        clientId: authorizationRequest.clientId,
+        redirectUri: authorizationRequest.redirectUri,
+        codeChallenge: authorizationRequest.codeChallenge,
         session,
       };
-
-      const target = new URL(redirectUri);
       target.searchParams.set("code", sealer.seal("code", code, config.authorizationCodeTtlSeconds));
-      if (state) target.searchParams.set("state", state);
       res.set("Cache-Control", "no-store").redirect(302, target.toString());
     })().catch(() => {
       res.status(503).type("html").send(

@@ -1,11 +1,10 @@
 /**
  * A tiny cookie-keeping HTTP session.
  *
- * The Python client gets this for free from `requests.Session`. The KRÉTA
- * login flow genuinely needs it: the IDP sets an anti-forgery cookie on the
+ * The KRÉTA login flow needs this because the IDP sets an anti-forgery cookie on the
  * `/connect/authorize` page and refuses the credential POST without it, and
  * the post-login `ReturnUrl` hop needs the session cookie the POST set. Node
- * `fetch` keeps no cookies and, when it follows redirects itself, hides the
+ * Node `fetch` keeps no cookies and, when it follows redirects itself, hides the
  * intermediate `Set-Cookie` headers — so redirects are followed here by hand.
  */
 import { HTTP_TIMEOUT_MS } from "./constants.js";
@@ -79,6 +78,7 @@ export class HttpSession {
   async follow(
     url: string,
     init: { method?: string; headers?: Record<string, string>; body?: string } = {},
+    allowRedirect: (url: string) => boolean = () => true,
   ): Promise<SessionResponse> {
     let current = url;
     let response = await this.request(current, init);
@@ -87,6 +87,9 @@ export class HttpSession {
       const location = response.headers.get("location");
       if (!location) return response;
       current = new URL(location, current).toString();
+      if (!allowRedirect(current)) {
+        throw new Error("redirect_not_allowed");
+      }
       // A redirect after a POST is followed as a GET, per RFC 9110 §15.4.
       response = await this.request(current, { headers: init.headers });
     }

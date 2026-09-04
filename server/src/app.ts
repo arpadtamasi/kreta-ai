@@ -115,6 +115,7 @@ export function createApp(deps: AppDeps): Express {
       config,
       store: childProfileStore,
       verifyIdToken: verifyFirebaseIdToken,
+      verifySessionCookie: verifyFirebaseSessionCookie,
       stateReplayCache: new ReplayCache(15 * 60 * 1000),
       ...(deps.fetchImpl ? { fetchImpl: deps.fetchImpl } : {}),
     }),

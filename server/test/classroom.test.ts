@@ -15,6 +15,7 @@ import type {
 } from "../src/profiles/store.js";
 
 class MemoryStore implements ChildProfileStore {
+  rejectNextClassroomSet = false;
   readonly profiles: ChildProfile[] = [
     {
       id: "profile-lilla",
@@ -46,6 +47,10 @@ class MemoryStore implements ChildProfileStore {
   async updateConnection() { return false; }
   async clearConnection() { return false; }
   async setClassroomConnection(uid: string, id: string, connection: ClassroomConnection) {
+    if (this.rejectNextClassroomSet) {
+      this.rejectNextClassroomSet = false;
+      return false;
+    }
     const profile = await this.get(uid, id);
     if (!profile) return false;
     profile.classroomConnection = connection;
@@ -106,6 +111,11 @@ const server = createApp({
     if (token === "other-token") return { uid: "other-uid", name: "Más" };
     throw new Error("invalid token");
   },
+  verifyFirebaseSessionCookie: async (cookie) => {
+    if (cookie === "parent-session") return { uid: "parent-uid", name: "Szülő" };
+    if (cookie === "other-session") return { uid: "other-uid", name: "Más" };
+    throw new Error("invalid session");
+  },
 }).listen(0);
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 after(() => void server.close());
@@ -121,11 +131,11 @@ async function begin(profileId: string, token = "parent-token", returnTo = ""): 
   return new URL(data.authorizationUrl);
 }
 
-async function finish(authorizationUrl: URL, code: string): Promise<Response> {
+async function finish(authorizationUrl: URL, code: string, session = "parent-session"): Promise<Response> {
   const callback = new URL("/api/classroom/callback", base);
   callback.searchParams.set("state", authorizationUrl.searchParams.get("state")!);
   callback.searchParams.set("code", code);
-  return fetch(callback, { redirect: "manual" });
+  return fetch(callback, { headers: { cookie: `__session=${session}` }, redirect: "manual" });
 }
 
 test("Classroom authorization is parent-authenticated, read-only and uses a web callback with PKCE", async () => {
@@ -194,6 +204,25 @@ test("Classroom state is single-use and tamper resistant", async () => {
   tampered.searchParams.set("state", `${state.slice(0, -1)}x`);
   const result = await finish(tampered, "tampered");
   assert.match(result.headers.get("location") ?? "", /classroom=invalid_state/);
+});
+
+test("Classroom callback stays bound to the parent session that started it", async () => {
+  const before = (await store.get("parent-uid", "profile-lilla"))?.classroomConnection?.credential;
+  const authorization = await begin("profile-lilla");
+  const response = await finish(authorization, "foreign", "other-session");
+  assert.equal(response.status, 302);
+  assert.match(response.headers.get("location") ?? "", /classroom=invalid_state/);
+  assert.ok(!revoked.includes("refresh-foreign"));
+  assert.equal((await store.get("parent-uid", "profile-lilla"))?.classroomConnection?.credential, before);
+});
+
+test("an unstored Classroom grant is revoked when the profile changes during OAuth", async () => {
+  const authorization = await begin("profile-lilla");
+  store.rejectNextClassroomSet = true;
+  const response = await finish(authorization, "orphaned");
+  assert.equal(response.status, 302);
+  assert.match(response.headers.get("location") ?? "", /classroom=profile_missing/);
+  assert.ok(revoked.includes("refresh-orphaned"));
 });
 
 test("disconnect revokes and removes only the selected child's Classroom grant", async () => {

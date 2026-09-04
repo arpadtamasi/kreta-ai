@@ -1,6 +1,6 @@
 /**
  * KRÉTA authentication: OAuth 2.0 Authorization Code + PKCE against
- * idp.e-kreta.hu, ported from python/kreta_smoke_test.py.
+ * idp.e-kreta.hu.
  *
  * The password is a parameter of `login()` and nothing else. It is never
  * returned, never logged, never sealed into a token, and never written
@@ -47,6 +47,19 @@ function base64UrlSha256(value: string): string {
   return createHash("sha256").update(value, "ascii").digest("base64url");
 }
 
+function trustedIdpUrl(value: string, base: string): string {
+  let url: URL;
+  try {
+    url = new URL(value, base);
+  } catch {
+    throw new KretaError("A KRÉTA bejelentkezési oldal érvénytelen címet adott vissza.");
+  }
+  if (url.origin !== IDP_BASE_URL || url.username || url.password) {
+    throw new KretaError("A KRÉTA bejelentkezési oldal nem megbízható címet adott vissza.");
+  }
+  return url.toString();
+}
+
 function findCode(location: string | null, base: string, expectedState: string): string | null {
   if (!location) return null;
   let query: URLSearchParams;
@@ -91,9 +104,8 @@ function readTokens(payload: unknown, presentedRefreshToken?: string): KretaToke
  *
  * KRÉTA publishes no third-party client registration, so this drives the
  * official mobile client's authorization request and submits the IDP's own
- * login form on the user's behalf — exactly what the local Python client
- * does on the parent's machine, moved to a server the parent is choosing to
- * trust for the seconds the credential is in flight.
+ * login form on the user's behalf. The parent explicitly trusts this server
+ * for the seconds the credential is in flight.
  */
 export async function login(
   credentials: LoginCredentials,
@@ -118,6 +130,9 @@ export async function login(
   try {
     loginPage = await session.follow(`${AUTHORIZE_URL}?${params.toString()}`, {
       headers: { "user-agent": WEB_USER_AGENT },
+    }, (url) => {
+      trustedIdpUrl(url, IDP_BASE_URL);
+      return true;
     });
   } catch {
     throw new KretaError("A KRÉTA bejelentkezési oldal nem érhető el.");
@@ -138,9 +153,10 @@ export async function login(
   payload.set("IsTemporaryLogin", "False");
   payload.set("loginType", "InstituteLogin");
 
+  const formAction = trustedIdpUrl(form.action, loginPage.url);
   let submitted;
   try {
-    submitted = await session.request(new URL(form.action, loginPage.url).toString(), {
+    submitted = await session.request(formAction, {
       method: "POST",
       headers: {
         "user-agent": WEB_USER_AGENT,
@@ -163,7 +179,7 @@ export async function login(
         "Sikertelen bejelentkezés. Ellenőrizd az azonosítót, a jelszót és az intézmény kódját.",
       );
     }
-    const callback = await session.request(new URL(returnUrl, IDP_BASE_URL).toString(), {
+    const callback = await session.request(trustedIdpUrl(returnUrl, IDP_BASE_URL), {
       headers: { "user-agent": WEB_USER_AGENT },
     });
     code = findCode(callback.headers.get("location"), callback.url, state);

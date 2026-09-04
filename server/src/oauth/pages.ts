@@ -82,3 +82,41 @@ export function renderErrorPage(title: string, detail: string): string {
 </body>
 </html>`;
 }
+
+/** Explicit user confirmation for a client authorization request. */
+export function renderConsentPage(input: {
+  clientName: string;
+  parentName?: string;
+  childNames: string[];
+  authorizationRequest: string;
+}): string {
+  const children = input.childNames.map(escapeHtml).join(", ");
+  return `<!doctype html>
+<html lang="hu">
+<head>
+<meta charset="utf-8">
+<title>Kapcsolódás jóváhagyása — ${escapeHtml(BRAND.name)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="/authorize.css">
+</head>
+<body>
+<main>
+  <header class="head"><span class="book" aria-hidden="true"></span><div><p class="mark">${escapeHtml(BRAND.name)}</p><p class="tagline">${escapeHtml(BRAND.tagline)}</p></div></header>
+  <div class="content">
+    <h1>Kapcsolódhat a ${escapeHtml(input.clientName)}?</h1>
+    <p class="intro">Az Üzenőfüzet kizárólag olvasási hozzáférést ad a már összekapcsolt gyerekek iskolai adataihoz.</p>
+    ${input.parentName ? `<div class="account"><p>Bejelentkezve<strong>${escapeHtml(input.parentName)}</strong></p></div>` : ""}
+    <div class="notice"><strong>Érintett gyerekprofilok</strong>${children}</div>
+    <form method="post" action="/authorize">
+      <input type="hidden" name="authorization_request" value="${escapeHtml(input.authorizationRequest)}">
+      <button class="secondary" type="submit" name="decision" value="deny">Mégse</button>
+      <button class="primary" type="submit" name="decision" value="approve">Igen, kapcsolódhat</button>
+      <p class="form-note">A jóváhagyást csak ezen az oldalon, ezzel a gombbal lehet megadni.</p>
+    </form>
+  </div>
+  <footer>${escapeHtml(BRAND.disclaimer)}</footer>
+</main>
+</body>
+</html>`;
+}

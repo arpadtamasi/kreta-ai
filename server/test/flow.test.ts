@@ -242,8 +242,22 @@ async function authorize(
     code_challenge_method: "S256",
     state,
   });
-  return fetch(`${base}/authorize?${query}`, {
+  const consent = await fetch(`${base}/authorize?${query}`, {
     headers: { cookie: `__session=${cookie}` },
+    redirect: "manual",
+  });
+  if (consent.status !== 200) return consent;
+  const html = await consent.text();
+  const authorizationRequest = /name="authorization_request" value="([^"]+)"/.exec(html)?.[1];
+  assert.ok(authorizationRequest, "the consent page must carry a sealed authorization request");
+  return fetch(`${base}/authorize`, {
+    method: "POST",
+    headers: {
+      cookie: `__session=${cookie}`,
+      origin: base,
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ authorization_request: authorizationRequest, decision: "approve" }),
     redirect: "manual",
   });
 }
@@ -371,11 +385,72 @@ test("/authorize identifies the parent with Google, then returns a code without 
     headers: { cookie: "__session=parent-session" },
     redirect: "manual",
   });
-  assert.equal(withSession.status, 302);
-  const location = new URL(withSession.headers.get("location")!);
+  assert.equal(withSession.status, 200);
+  const consent = await withSession.text();
+  assert.match(consent, /Igen, kapcsolódhat/);
+  assert.match(consent, /Lilla/);
+  assert.ok(!consent.includes("lilla-diak"));
+
+  const authorizationRequest = /name="authorization_request" value="([^"]+)"/.exec(consent)?.[1];
+  assert.ok(authorizationRequest);
+  const approved = await fetch(`${base}/authorize`, {
+    method: "POST",
+    headers: {
+      cookie: "__session=parent-session",
+      origin: base,
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ authorization_request: authorizationRequest, decision: "approve" }),
+    redirect: "manual",
+  });
+  assert.equal(approved.status, 302);
+  const location = new URL(approved.headers.get("location")!);
   assert.equal(location.origin + location.pathname, REDIRECT_URI);
   assert.ok(location.searchParams.get("code"));
   assert.equal(location.searchParams.get("state"), "st");
+});
+
+test("/authorize requires an explicit same-origin confirmation", async () => {
+  const { clientId } = await register();
+  const query = new URLSearchParams({
+    response_type: "code",
+    client_id: clientId,
+    redirect_uri: REDIRECT_URI,
+    code_challenge: pkce().challenge,
+    code_challenge_method: "S256",
+    state: "csrf",
+  });
+  const consent = await fetch(`${base}/authorize?${query}`, {
+    headers: { cookie: "__session=parent-session" },
+  });
+  assert.equal(consent.status, 200);
+  const authorizationRequest = /name="authorization_request" value="([^"]+)"/.exec(await consent.text())?.[1];
+  assert.ok(authorizationRequest);
+
+  const crossOrigin = await fetch(`${base}/authorize`, {
+    method: "POST",
+    headers: {
+      cookie: "__session=parent-session",
+      origin: "https://evil.example",
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ authorization_request: authorizationRequest, decision: "approve" }),
+    redirect: "manual",
+  });
+  assert.equal(crossOrigin.status, 403);
+
+  const approved = await fetch(`${base}/authorize`, {
+    method: "POST",
+    headers: {
+      cookie: "__session=parent-session",
+      origin: base,
+      "content-type": "application/x-www-form-urlencoded",
+    },
+    body: new URLSearchParams({ authorization_request: authorizationRequest, decision: "approve" }),
+    redirect: "manual",
+  });
+  assert.equal(approved.status, 302);
+  assert.ok(new URL(approved.headers.get("location")!).searchParams.get("code"));
 });
 
 test("a Google account without online children returns to profile setup", async () => {

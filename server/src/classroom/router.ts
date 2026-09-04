@@ -1,5 +1,6 @@
 import { Router, type Request, type Response } from "express";
-import type { VerifyIdToken, VerifiedUser } from "../auth/types.js";
+import { readSessionCookie } from "../auth/session.js";
+import type { VerifyIdToken, VerifiedUser, VerifySessionCookie } from "../auth/types.js";
 import type { Config } from "../config.js";
 import type { ReplayCache } from "../oauth/replayCache.js";
 import type { ChildProfileStore } from "../profiles/store.js";
@@ -30,6 +31,7 @@ export interface ClassroomRouterDeps {
   config: Config;
   store: ChildProfileStore;
   verifyIdToken: VerifyIdToken;
+  verifySessionCookie: VerifySessionCookie;
   stateReplayCache: ReplayCache;
   fetchImpl?: typeof fetch;
 }
@@ -132,6 +134,10 @@ export function createClassroomRouter(deps: ClassroomRouterDeps): Router {
     let state: ClassroomState;
     try {
       state = deps.config.sealer.open<ClassroomState>("classroom_state", rawState);
+      const sessionCookie = readSessionCookie(req);
+      if (!sessionCookie) throw new Error("missing_session");
+      const user = await deps.verifySessionCookie(sessionCookie);
+      if (user.uid !== state.uid) throw new Error("session_mismatch");
       if (!deps.stateReplayCache.claim(state.jti)) throw new Error("replayed_state");
     } catch {
       redirect(req, res, "invalid_state");
@@ -151,6 +157,7 @@ export function createClassroomRouter(deps: ClassroomRouterDeps): Router {
       return;
     }
 
+    let unstoredRefreshToken: string | undefined;
     try {
       const profile = await deps.store.get(state.uid, state.profileId);
       if (!profile) {
@@ -160,6 +167,7 @@ export function createClassroomRouter(deps: ClassroomRouterDeps): Router {
       const tokens = await exchangeClassroomCode(client, code, state.codeVerifier, fetchImpl);
       const refreshToken = tokens.refreshToken;
       if (!refreshToken) throw new ClassroomAuthError("invalid", "Hiányzó Google refresh token.");
+      unstoredRefreshToken = refreshToken;
       const email = await fetchClassroomEmail(tokens.accessToken, fetchImpl);
       const scopes = tokens.scopes.length > 0 ? tokens.scopes : [...CLASSROOM_SCOPES];
       const connection = createClassroomConnection(
@@ -170,9 +178,12 @@ export function createClassroomRouter(deps: ClassroomRouterDeps): Router {
         deps.config.classroomCredentialTtlSeconds,
       );
       if (!await deps.store.setClassroomConnection(state.uid, state.profileId, connection)) {
+        await revokeClassroomToken(refreshToken, fetchImpl).catch(() => undefined);
+        unstoredRefreshToken = undefined;
         redirect(req, res, "profile_missing", state.returnTo);
         return;
       }
+      unstoredRefreshToken = undefined;
       if (profile.classroomConnection && profile.classroomConnection.email !== email) {
         try {
           const previous = openClassroomCredential(deps.config.sealer, profile.classroomConnection);
@@ -183,6 +194,9 @@ export function createClassroomRouter(deps: ClassroomRouterDeps): Router {
       }
       redirect(req, res, "connected", state.returnTo);
     } catch (error) {
+      if (unstoredRefreshToken) {
+        await revokeClassroomToken(unstoredRefreshToken, fetchImpl).catch(() => undefined);
+      }
       const result = error instanceof ClassroomAuthError && error.code === "blocked" ? "blocked" : "failed";
       redirect(req, res, result, state.returnTo);
     }

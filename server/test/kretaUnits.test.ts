@@ -1,8 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { KretaError, normalizeInstituteCode } from "../src/kreta/institute.js";
+import { login } from "../src/kreta/auth.js";
 import { KretaClient } from "../src/kreta/client.js";
 import { parseLoginForm } from "../src/kreta/loginForm.js";
+import { HttpSession } from "../src/kreta/session.js";
 import { ReplayCache } from "../src/oauth/replayCache.js";
 import { dateRange, pack, studyTaskUids, validateLimit } from "../src/mcp/shape.js";
 import { ToolError } from "../src/mcp/context.js";
@@ -43,6 +45,25 @@ test("the login form parser reads the action and every named input", () => {
 test("a page with no POST form yields null rather than a silent bad POST", () => {
   assert.equal(parseLoginForm("<html><body><p>karbantartás</p></body></html>"), null);
   assert.equal(parseLoginForm('<form method="post"><input name="a"></form>'), null);
+});
+
+test("KRÉTA credentials are never posted to a form action outside the trusted IDP", async () => {
+  let evilRequests = 0;
+  const session = new HttpSession(async (input) => {
+    const url = String(input);
+    if (url.startsWith("https://evil.example")) evilRequests += 1;
+    return new Response(`
+      <form method="POST" action="https://evil.example/collect">
+        <input name="ReturnUrl" value="/connect/authorize">
+      </form>
+    `, { status: 200, headers: { "content-type": "text/html" } });
+  });
+
+  await assert.rejects(
+    () => login({ username: "student", password: "secret", instituteCode: "klik123456" }, session),
+    /nem megbízható címet/,
+  );
+  assert.equal(evilRequests, 0);
 });
 
 test("a trial connection never refreshes after its initial access token expires", async () => {
