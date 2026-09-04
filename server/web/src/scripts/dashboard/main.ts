@@ -10,9 +10,7 @@ import {
 } from "firebase/auth";
 import { clearSession, establishSession, fetchProfiles } from "./api";
 import { renderChildList } from "./childList";
-import { createProfileEditor } from "./editor";
 import { auth, provider } from "./firebase";
-import { createManagePanel } from "./managePanel";
 import { claudeSummary, hasClaudeSource, type Profile } from "./profiles";
 
 export function startDashboard(): void {
@@ -27,14 +25,14 @@ export function startDashboard(): void {
   const steps = document.querySelectorAll<HTMLElement>("#workspace-steps li");
   const status = document.querySelector<HTMLElement>("#profiles-status")!;
   const summary = document.querySelector<HTMLElement>("#claude-summary")!;
-  const addButton = document.querySelector<HTMLButtonElement>("#add-child")!;
+  const addButton = document.querySelector<HTMLAnchorElement>("#add-child")!;
+  const emptyLink = document.querySelector<HTMLAnchorElement>("#child-empty-link")!;
   const returnPanel = document.querySelector<HTMLElement>("#profiles-return-panel")!;
   const returnTitle = document.querySelector<HTMLElement>("#profiles-return-title")!;
   const returnNote = document.querySelector<HTMLElement>("#profiles-return-note")!;
   const adminHelp = document.querySelector<HTMLDetailsElement>("#classroom-admin-help")!;
 
   let profiles: Profile[] = [];
-  let editorPrompted = false;
   let authResolved = false;
 
   const candidateReturn = new URLSearchParams(location.search).get("return_to") ?? "";
@@ -47,6 +45,13 @@ export function startDashboard(): void {
   function setStatus(message: string, kind = "") {
     status.textContent = message;
     status.dataset.kind = kind;
+  }
+
+  /** A gyerek oldaláról visszahozott eredmény (mentés, törlés) itt jelenik meg. */
+  function handedOverStatus(): string {
+    const message = sessionStorage.getItem("uzenofuzet-status") ?? "";
+    if (message) sessionStorage.removeItem("uzenofuzet-status");
+    return message;
   }
 
   function getUser(): User | null {
@@ -82,39 +87,17 @@ export function startDashboard(): void {
     });
   }
 
-  const editor = createProfileEditor({
-    getUser,
-    setStatus,
-    onSaved: async () => {
-      const user = getUser();
-      if (!user) return;
-      let canContinue = true;
-      try {
-        await establishSession(user);
-        hideReturnAction();
-      } catch {
-        canContinue = false;
-        showReturnAction();
-      }
-      await loadProfiles(user, canContinue);
-      if (!returnTo || !canContinue) {
-        setStatus("A gyerekprofilt elmentettük.", "success");
-        status.focus();
-      }
-    },
-  });
+  /** A gyerek kezelése és hozzáadása külön oldalon történik. */
+  function childHref(id?: string): string {
+    const query = new URLSearchParams();
+    if (id) query.set("id", id);
+    if (returnTo) query.set("return_to", returnTo);
+    const search = query.toString();
+    return search ? `/gyerek?${search}` : "/gyerek";
+  }
 
-  const managePanel = createManagePanel({
-    getUser,
-    setStatus,
-    reload: async () => {
-      const user = getUser();
-      if (user) await loadProfiles(user, false);
-    },
-    focusStatus: () => status.focus(),
-    editProfile: (profile, mode) => editor.open(profile, mode),
-    getReturnTo: () => returnTo,
-  });
+  addButton.href = childHref();
+  emptyLink.href = childHref();
 
   function showReturnAction() {
     if (!returnTo) return;
@@ -185,18 +168,13 @@ export function startDashboard(): void {
   function renderProfiles() {
     summary.textContent = claudeSummary(profiles);
     updateSteps(true);
-    renderChildList(profiles, (profile) => managePanel.open(profile));
+    renderChildList(profiles, (profile) => childHref(profile.id));
     addButton.hidden = profiles.length >= 3;
 
     if (profiles.length === 0) {
       showProfileRequired();
-      if (!editorPrompted) {
-        editorPrompted = true;
-        editor.open();
-      }
       return;
     }
-    editorPrompted = true;
     if (returnTo && !profiles.some(hasClaudeSource)) showConnectionRequired();
   }
 
@@ -208,8 +186,6 @@ export function startDashboard(): void {
       location.assign(returnTo);
     }
   }
-
-  addButton.addEventListener("click", () => editor.open());
 
   signInButton.addEventListener("click", async () => {
     signInButton.disabled = true;
@@ -226,8 +202,7 @@ export function startDashboard(): void {
   signOutButton.addEventListener("click", async () => {
     await Promise.allSettled([signOut(auth), clearSession()]);
     profiles = [];
-    editorPrompted = false;
-    renderChildList([], () => {});
+    renderChildList([], () => "/gyerek");
     summary.textContent = "Gyerek hozzáadása és kapcsolása";
     signinNote.textContent = "Belépés Google-fiókkal";
     accountName.hidden = true;
@@ -281,8 +256,11 @@ export function startDashboard(): void {
         showReturnAction();
       }
       await loadProfiles(user, canContinue);
+      const handedOver = handedOverStatus();
       if (!canContinue && returnTo && profiles.some(hasClaudeSource)) {
         setStatus("");
+      } else if (handedOver) {
+        setStatus(handedOver, "success");
       } else if (!returnTo && !showClassroomResult()) {
         setStatus("");
       }

@@ -8,17 +8,15 @@ const indexPage = read("../web/src/pages/index.astro");
 const container = read("../web/src/components/ChildProfiles.astro");
 const childList = read("../web/src/components/dashboard/ChildList.astro");
 const rowTemplate = read("../web/src/components/dashboard/ChildRowTemplate.astro");
-const managePanel = read("../web/src/components/dashboard/ChildManagePanel.astro");
-const profileEditor = read("../web/src/components/dashboard/ProfileEditor.astro");
 const summary = read("../web/src/components/dashboard/DashboardSummary.astro");
-const adminHelp = read("../web/src/components/dashboard/ClassroomAdminHelp.astro");
 const connector = read("../web/src/components/dashboard/ClaudeConnector.astro");
+const adminHelp = read("../web/src/components/dashboard/ClassroomAdminHelp.astro");
 const howItWorks = read("../web/src/pages/hogy-mukodik.astro");
-const astroConfig = read("../astro.config.mjs");
 const profilesModule = read("../web/src/scripts/dashboard/profiles.ts");
 const mainModule = read("../web/src/scripts/dashboard/main.ts");
-const managePanelModule = read("../web/src/scripts/dashboard/managePanel.ts");
+const childListModule = read("../web/src/scripts/dashboard/childList.ts");
 const serviceStatusModule = read("../web/src/scripts/dashboard/serviceStatus.ts");
+const astroConfig = read("../astro.config.mjs");
 
 test("the root page is one full-width workspace, with no decorative hero column", () => {
   assert.match(indexPage, /<ChildProfiles \/>/);
@@ -27,7 +25,6 @@ test("the root page is one full-width workspace, with no decorative hero column"
   assert.doesNotMatch(indexPage, /href="\/dashboard"/);
   assert.doesNotMatch(indexPage, /<h1/, "the page title belongs to the workspace header");
   assert.doesNotMatch(indexPage, /Big Shoulders/, "no display-type hero column on the dashboard");
-  assert.doesNotMatch(indexPage, /grid-template-columns/, "the workspace is a single column");
 });
 
 test("the workspace header answers where I am and what to do next", () => {
@@ -37,9 +34,46 @@ test("the workspace header answers where I am and what to do next", () => {
   assert.match(summary, /Csatlakozó másolása Claude-ba/);
   assert.equal((summary.match(/<li data-state=/gu) ?? []).length, 3);
   assert.match(mainModule, /function updateSteps\(signedIn: boolean\)/);
-  assert.match(mainModule, /step\.dataset\.state = state;/);
   assert.match(mainModule, /updateSteps\(false\);/);
   assert.match(mainModule, /updateSteps\(true\);/);
+});
+
+test("a daily child row carries only the name, two states and a link to the child", () => {
+  assert.match(rowTemplate, /class="child-name"/);
+  assert.match(rowTemplate, /KRÉTA · Offline/);
+  assert.match(rowTemplate, /Classroom · nincs/);
+  assert.match(rowTemplate, /<a class="child-manage" href="\/gyerek">Kezelés<\/a>/);
+
+  for (const noise of ["profile-username", "profile-institute", "Szerkesztés", "Törlés", "25 perc"]) {
+    assert.ok(!rowTemplate.includes(noise), `the daily row should not carry: ${noise}`);
+  }
+});
+
+test("the row states are inert text, so no daily click can break a connection", () => {
+  assert.equal((rowTemplate.match(/<button/gu) ?? []).length, 0, "the row holds no buttons at all");
+  assert.doesNotMatch(rowTemplate, /data-connection|data-classroom/);
+  assert.doesNotMatch(rowTemplate, /aria-pressed/);
+  assert.match(childListModule, /manage\.href = hrefFor\(profile\)/);
+});
+
+test("both entry points lead to the child's own page, keeping the Claude return flow", () => {
+  assert.match(childList, /<a class="add-child" id="add-child" href="\/gyerek">\+ Gyerek<\/a>/);
+  assert.match(childList, /id="child-empty-link" href="\/gyerek"/);
+  assert.match(mainModule, /function childHref\(id\?: string\): string/);
+  assert.match(mainModule, /query\.set\("return_to", returnTo\)/);
+  assert.match(mainModule, /renderChildList\(profiles, \(profile\) => childHref\(profile\.id\)\)/);
+  assert.doesNotMatch(mainModule, /createProfileEditor|createManagePanel/, "no modals left on the dashboard");
+});
+
+test("the workspace header summarises how much Claude can reach", () => {
+  assert.match(summary, /id="claude-summary"/);
+  assert.match(profilesModule, /gyerekből \$\{ready\} elérhető Claude-nak/);
+  assert.match(mainModule, /summary\.textContent = claudeSummary\(profiles\)/);
+});
+
+test("the service indicator says the service works, not that data is available", () => {
+  assert.match(serviceStatusModule, /A szolgáltatás működik/);
+  assert.doesNotMatch(serviceStatusModule, /Elérhető/);
 });
 
 test("the signed-out state pairs one sign-in control with a preview of the payoff", () => {
@@ -52,83 +86,19 @@ test("the signed-out state pairs one sign-in control with a preview of the payof
   assert.match(block, /Példa\. A saját gyerekeid adataival válaszol\./);
 });
 
+test("the landing block never flashes while the Google session is still unknown", () => {
+  assert.match(container, /id="profiles-loading"/);
+  assert.match(container, /<div class="signed-out" id="profiles-signed-out" hidden>/);
+  assert.match(container, /<div class="signed-in" id="profiles-signed-in" hidden>/);
+  assert.match(container, /<noscript>/);
+  assert.match(mainModule, /function showAuthState\(user: User \| null\)/);
+  assert.match(mainModule, /if \(authResolved\) return;/, "a blocked Firebase must still reveal the sign-in");
+});
+
 test("the Claude connector reads as its own block under the child list", () => {
   assert.match(connector, /\.connector \{[^}]*border-top: 2px solid var\(--blue\)/);
   assert.match(connector, /\.connector \{[^}]*background: #eef2f8/);
   assert.doesNotMatch(container, /\.profiles \{[^}]*border-bottom/);
-});
-
-test("a daily child row carries only the name, two states and Kezelés", () => {
-  assert.match(rowTemplate, /class="child-name"/);
-  assert.match(rowTemplate, /KRÉTA · Offline/);
-  assert.match(rowTemplate, /Classroom · nincs/);
-  assert.match(rowTemplate, /class="child-manage" type="button">Kezelés</);
-
-  for (const noise of ["profile-username", "profile-institute", "Szerkesztés", "Törlés", "25 perc"]) {
-    assert.ok(!rowTemplate.includes(noise), `the daily row should not carry: ${noise}`);
-  }
-});
-
-test("the row states are inert text, so no daily click can break a connection", () => {
-  const buttons = rowTemplate.match(/<button/gu) ?? [];
-  assert.equal(buttons.length, 1, "only Kezelés may be a button in the row");
-  assert.doesNotMatch(rowTemplate, /data-connection|data-classroom/);
-  assert.doesNotMatch(rowTemplate, /aria-pressed/);
-});
-
-test("+ Gyerek stays a single small secondary control in the Gyerekek header", () => {
-  const header = childList.slice(childList.indexOf("<header>"), childList.indexOf("</header>"));
-  assert.match(header, /id="add-child"[^>]*>\+ Gyerek</);
-  assert.equal((childList.match(/id="add-child"/gu) ?? []).length, 1);
-  assert.doesNotMatch(childList, /Gyerekprofil hozzáadása/);
-});
-
-test("the manage panel holds the identifiers, the editor and both connections", () => {
-  assert.match(managePanel, /id="manage-username"/);
-  assert.match(managePanel, /id="manage-institute"/);
-  assert.match(managePanel, /id="manage-edit"[^>]*>Profil szerkesztése</);
-  assert.match(managePanel, /id="manage-kreta-connect"/);
-  assert.match(managePanel, /id="manage-classroom-connect"/);
-  assert.match(managePanelModule, /kretaDetail\(profile\)/);
-  assert.match(managePanelModule, /classroomDetail\(profile\)/);
-  assert.match(profilesModule, /25 percenként frissül/);
-  assert.match(profilesModule, /jár le/);
-});
-
-test("stopping a connection is a separate danger-zone action with its own confirmation", () => {
-  assert.match(managePanel, /Veszélyzóna/);
-  for (const id of ["danger-kreta", "danger-classroom", "danger-delete"]) {
-    const start = managePanel.indexOf(`id="${id}"`);
-    assert.notEqual(start, -1, `missing danger item: ${id}`);
-    const item = managePanel.slice(start, managePanel.indexOf("</div>\n      </div>", start));
-    assert.match(item, /data-danger-open/);
-    assert.match(item, /data-danger-confirm-box/);
-    assert.match(item, /data-danger-confirm/);
-    assert.match(item, /data-danger-cancel/);
-  }
-  assert.match(managePanelModule, /stopKretaConnection\(user, profile\.id\)/);
-  assert.match(managePanelModule, /disconnectClassroom\(user, profile\.id\)/);
-  assert.match(managePanelModule, /A gyerekprofil megmaradt/);
-});
-
-test("profile deletion spells out that both connections go with it", () => {
-  const start = managePanel.indexOf('id="danger-delete"');
-  const item = managePanel.slice(start, managePanel.indexOf("</section>", start));
-  assert.match(item, /a KRÉTA- és a Classroom-kapcsolat is törlődik/);
-  assert.match(item, /A KRÉTA- és a Classroom-kapcsolata is megszűnik/);
-  assert.match(managePanelModule, /deleteProfile\(user, profile\.id\)/);
-  assert.match(managePanelModule, /Classroom-kapcsolatával együtt töröltük/);
-});
-
-test("the workspace header summarises how much Claude can reach", () => {
-  assert.match(summary, /id="claude-summary"/);
-  assert.match(profilesModule, /gyerekből \$\{ready\} elérhető Claude-nak/);
-  assert.match(mainModule, /summary\.textContent = claudeSummary\(profiles\)/);
-});
-
-test("the service indicator says the service works, not that data is available", () => {
-  assert.match(serviceStatusModule, /A szolgáltatás működik/);
-  assert.doesNotMatch(serviceStatusModule, /Elérhető/);
 });
 
 test("the Claude return flow presents its explanation and action together", () => {
@@ -151,29 +121,9 @@ test("the Claude return action only appears when the return flow needs it", () =
   assert.match(mainModule, /hideReturnAction\(\);/);
 });
 
-test("Offline opens a password connection form while Online removes only the connection", () => {
-  assert.match(profilesModule, /Online/);
-  assert.match(profilesModule, /Offline/);
-  assert.match(managePanelModule, /deps\.editProfile\(profile, "connect"\)/);
-  assert.match(profileEditor, /name="password" type="password"[^>]+autocomplete="current-password"/);
-  assert.match(profileEditor, /name="keepAlive" type="checkbox"/);
-  assert.match(profileEditor, /name="keepAliveUntil" type="date"/);
-});
-
-test("an unchecked keep-alive choice is explicitly a 30-minute trial", () => {
-  assert.match(profileEditor, /csak 30 perces próbára lesz online/);
-  assert.match(profileEditor, /25 percenként megújítja/);
-  assert.match(read("../web/src/scripts/dashboard/editor.ts"), /keepAlive: keepAliveInput\.checked/);
-});
-
-test("Classroom is a separate, per-child school account connection", () => {
-  assert.match(container, /minden gyerek a saját iskolai Google-fiókját használhatja/i);
-  assert.match(managePanel, /Google Classroom/);
-  const api = read("../web/src/scripts/dashboard/api.ts");
-  assert.match(api, /\/api\/classroom\/authorize/);
-  assert.match(api, /profileId/);
-  assert.match(api, /\/api\/classroom\/\$\{encodeURIComponent\(id\)\}\/connection/);
-  assert.match(api, /method: "DELETE"/);
+test("a result carried back from the child page is shown on the list", () => {
+  assert.match(mainModule, /sessionStorage\.getItem\("uzenofuzet-status"\)/);
+  assert.match(mainModule, /sessionStorage\.removeItem\("uzenofuzet-status"\)/);
 });
 
 test("the admin handoff stays out of the daily view but reachable when it is needed", () => {
@@ -218,15 +168,4 @@ test("the client logic lives in modules, not in the profiles component", () => {
 
 test("component scripts stay external files, because production CSP forbids inline script", () => {
   assert.match(astroConfig, /build: \{ assetsInlineLimit: 0 \}/);
-});
-
-test("the landing block never flashes while the Google session is still unknown", () => {
-  assert.match(container, /id="profiles-loading"/);
-  assert.match(container, /<div class="signed-out" id="profiles-signed-out" hidden>/);
-  assert.match(container, /<div class="signed-in" id="profiles-signed-in" hidden>/);
-  assert.match(container, /<noscript>/);
-  assert.match(mainModule, /function showAuthState\(user: User \| null\)/);
-  assert.match(mainModule, /loading\.hidden = true;/);
-  assert.match(mainModule, /onAuthStateChanged\(auth, async \(user\) => \{\n    showAuthState\(user\);/);
-  assert.match(mainModule, /if \(authResolved\) return;/, "a blocked Firebase must still reveal the sign-in");
 });

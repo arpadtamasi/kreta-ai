@@ -1,0 +1,135 @@
+---
+/** Gyerekprofil hozzáadása, szerkesztése és KRÉTA-online kapcsolása. */
+---
+
+<section class="editor" id="child-editor" hidden aria-labelledby="profile-form-title">
+  <h2 id="profile-form-title">Gyerek hozzáadása</h2>
+  <p id="profile-form-intro">A KRÉTA-jelszó csak a kapcsolat létrehozásához kell; nem mentjük el.</p>
+
+  <form id="profile-form" novalidate>
+    <input id="profile-id" type="hidden" />
+
+    <label class="profile-detail" for="child-name">A gyerek rendes neve
+      <span>A jelszókezelő ezt párosíthatja a KRÉTA-jelszóval; Claude-nak is ezen a néven hivatkozhatsz rá.</span>
+      <input id="child-name" name="childName" type="text" minlength="2" maxlength="80" autocomplete="username" required placeholder="pl. Lilla" />
+    </label>
+
+    <label class="profile-detail" for="kreta-username">KRÉTA-felhasználónév
+      <span>Az eKRÉTA belépési azonosítója. Csak a te profilodban tároljuk.</span>
+      <input id="kreta-username" name="kretaUsername" type="text" maxlength="120" autocomplete="off" autocapitalize="none" spellcheck="false" required />
+    </label>
+
+    <label class="profile-detail" for="institute-code">Intézmény
+      <span id="institute-help">Írj be legalább 3 karaktert az iskola nevéből vagy kódjából, majd válassz a találatok közül. A kód kézzel is megadható.</span>
+      <input id="institute-code" name="instituteCode" type="text" maxlength="200" autocomplete="off" autocapitalize="none" spellcheck="false" list="institute-options" aria-describedby="institute-help institute-search-status" aria-busy="false" required placeholder="pl. Budenz vagy klik034802001" />
+    </label>
+    <datalist id="institute-options"></datalist>
+    <p class="institute-status" id="institute-search-status" role="status" aria-live="polite"></p>
+
+    <label for="kreta-password">KRÉTA-jelszó
+      <span>A kapcsolat most készül el. A jelszó átmegy a szerveren, de nem mentjük el.</span>
+      <input id="kreta-password" name="password" type="password" maxlength="512" autocomplete="current-password" required />
+    </label>
+
+    <fieldset class="keep-alive" id="keep-alive">
+      <legend>Meddig maradjon online?</legend>
+      <p class="keep-alive-lead">Az online tartáshoz a forgó KRÉTA-tokent titkosítva tároljuk, és 25 percenként megújítjuk. A jelszót nem tároljuk.</p>
+      <label><input type="radio" name="keepAliveWindow" value="trial" checked /><span><strong>30 perces próba</strong>Nem tartjuk online; 30 perc múlva Offline lesz.</span></label>
+      <label><input type="radio" name="keepAliveWindow" value="7" /><span><strong>1 hét</strong></span></label>
+      <label><input type="radio" name="keepAliveWindow" value="14" /><span><strong>2 hét</strong></span></label>
+      <label><input type="radio" name="keepAliveWindow" value="30" /><span><strong>1 hónap</strong></span></label>
+      <label><input type="radio" name="keepAliveWindow" value="none" /><span><strong>Határidő nélkül</strong>Amíg le nem állítod a kapcsolatot.</span></label>
+      <p class="keep-alive-note" id="keep-alive-note" role="status"></p>
+    </fieldset>
+
+    <div class="form-actions">
+      <button class="save-profile" type="submit">Mentés és kapcsolás</button>
+      <button class="cancel-profile" id="cancel-profile" type="button">Mégse</button>
+    </div>
+  </form>
+</section>
+
+<style>
+  .editor { padding-top: 1.5rem; }
+  h2 { margin: 0; font-size: 1.05rem; letter-spacing: -.025em; }
+  #profile-form-intro { max-width: 44rem; margin: .35rem 0 .5rem; color: var(--ink-muted); font-size: .8rem; line-height: 1.55; }
+
+  label { display: block; max-width: 34rem; padding: 1rem 0; color: var(--ink); font-size: .85rem; font-weight: 800; }
+  label + label { border-top: 1px solid var(--blue-soft); }
+  label > span { display: block; margin: .3rem 0 .6rem; color: var(--ink-muted); font-size: .78rem; font-weight: 450; line-height: 1.5; }
+
+  input:not([type="checkbox"]):not([type="radio"]) {
+    width: 100%;
+    min-height: 3rem;
+    padding: 0 .8rem;
+    border: 1px solid #8799af;
+    border-radius: 0;
+    color: var(--ink);
+    background: var(--paper-bright);
+    caret-color: var(--blue);
+  }
+
+  #profile-form[data-mode="connect"] .profile-detail,
+  #profile-form[data-mode="connect"] .institute-status { display: none; }
+
+  .institute-status { max-width: 34rem; min-height: 1.2rem; margin: -.5rem 0 .9rem; color: var(--ink-muted); font-size: .78rem; line-height: 1.5; }
+  .institute-status[data-kind="error"] { color: #a62f22; }
+
+  .keep-alive { max-width: 34rem; margin: 1.25rem 0 0; padding: .25rem 1.1rem 1rem; border: 1px solid var(--blue-soft); }
+  legend { padding: 0 .45rem; color: var(--blue); font-size: .8rem; font-weight: 800; }
+  .keep-alive-lead { margin: .6rem 0 .9rem; color: var(--ink-muted); font-size: .78rem; line-height: 1.55; }
+
+  .keep-alive label {
+    display: grid;
+    grid-template-columns: 1.1rem minmax(0, 1fr);
+    gap: .75rem;
+    align-items: start;
+    max-width: none;
+    padding: .55rem 0;
+    border: 0;
+    font-size: .82rem;
+  }
+
+  .keep-alive label + label { border-top: 1px solid var(--blue-soft); }
+  .keep-alive input { width: 1.1rem; height: 1.1rem; margin: .1rem 0 0; accent-color: var(--blue-strong); }
+  .keep-alive label > span { margin: 0; color: var(--ink); font-weight: 800; }
+  .keep-alive label span strong { display: block; font-size: .82rem; }
+  .keep-alive label span { color: var(--ink-muted); font-size: .76rem; font-weight: 450; line-height: 1.45; }
+  .keep-alive label span strong { color: var(--ink); }
+  .keep-alive-note { min-height: 1.2rem; margin: .8rem 0 0; color: var(--blue); font-size: .76rem; font-weight: 700; line-height: 1.45; }
+
+  .form-actions { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 1.4rem; }
+
+  .save-profile {
+    min-height: 3.3rem;
+    padding: .8rem 1.5rem;
+    border: 2px solid var(--blue-strong);
+    border-radius: 0;
+    color: white;
+    background: var(--blue-strong);
+    font-size: .85rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .save-profile:hover { background: var(--blue); }
+  .save-profile:disabled { cursor: wait; opacity: .6; }
+
+  .cancel-profile {
+    min-height: 3.3rem;
+    padding: .8rem 1rem;
+    border: 0;
+    color: var(--blue);
+    background: transparent;
+    font-size: .8rem;
+    font-weight: 800;
+    text-decoration: underline;
+    text-underline-offset: .25rem;
+    cursor: pointer;
+  }
+
+  @media (max-width: 560px) {
+    .form-actions { align-items: stretch; flex-direction: column; }
+    .save-profile, .cancel-profile { width: 100%; }
+  }
+</style>

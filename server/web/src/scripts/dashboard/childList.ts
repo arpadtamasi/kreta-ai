@@ -7,7 +7,7 @@ import {
   type Profile,
 } from "./profiles";
 
-export function renderChildList(profiles: Profile[], onManage: (profile: Profile) => void): void {
+export function renderChildList(profiles: Profile[], hrefFor: (profile: Profile) => string): void {
   const list = document.querySelector<HTMLOListElement>("#child-list")!;
   const empty = document.querySelector<HTMLElement>("#child-empty")!;
   const template = document.querySelector<HTMLTemplateElement>("#child-row")!;
@@ -27,9 +27,9 @@ export function renderChildList(profiles: Profile[], onManage: (profile: Profile
     classroom.querySelector<HTMLElement>(".state-label")!.textContent = classroomLabel(profile);
     classroom.classList.toggle("online", isClassroomConnected(profile));
 
-    const manage = row.querySelector<HTMLButtonElement>(".child-manage")!;
+    const manage = row.querySelector<HTMLAnchorElement>(".child-manage")!;
+    manage.href = hrefFor(profile);
     manage.setAttribute("aria-label", `${profile.childName} kezelése`);
-    manage.addEventListener("click", () => onManage(profile));
 
     list.append(row);
   }

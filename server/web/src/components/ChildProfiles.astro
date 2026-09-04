@@ -1,9 +1,7 @@
 ---
 /** A gyerekek munkafelülete: belépés, napi lista, Kezelés panel és szerkesztő. */
 import ChildList from "./dashboard/ChildList.astro";
-import ChildManagePanel from "./dashboard/ChildManagePanel.astro";
 import ClassroomAdminHelp from "./dashboard/ClassroomAdminHelp.astro";
-import ProfileEditor from "./dashboard/ProfileEditor.astro";
 ---
 
 <section class="profiles" id="gyerekek" aria-label="Gyerekek és kapcsolatok">
@@ -46,8 +44,6 @@ import ProfileEditor from "./dashboard/ProfileEditor.astro";
 
   <p class="profiles-status" id="profiles-status" role="status" tabindex="-1"></p>
   <ClassroomAdminHelp />
-  <ChildManagePanel />
-  <ProfileEditor />
 </section>
 
 <script>

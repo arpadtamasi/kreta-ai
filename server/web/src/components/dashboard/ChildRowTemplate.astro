@@ -9,7 +9,7 @@
       <span class="state kreta-state"><i aria-hidden="true"></i><span class="state-label">KRÉTA · Offline</span></span>
       <span class="state classroom-state"><i aria-hidden="true"></i><span class="state-label">Classroom · nincs</span></span>
     </div>
-    <button class="child-manage" type="button">Kezelés</button>
+    <a class="child-manage" href="/gyerek">Kezelés</a>
   </li>
 </template>
 
@@ -46,15 +46,11 @@
     display: inline-flex;
     min-height: 2.5rem;
     align-items: center;
-    padding: .3rem .2rem;
-    border: 0;
     color: var(--blue);
-    background: transparent;
     font-size: .78rem;
     font-weight: 800;
     text-decoration: underline;
     text-underline-offset: .25rem;
-    cursor: pointer;
   }
 
   .child-manage:hover { color: var(--blue-strong); }

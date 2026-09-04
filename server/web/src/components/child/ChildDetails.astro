@@ -1,0 +1,170 @@
+---
+/** Egy gyerek adatai, kapcsolatai és veszélyzónája a saját oldalán. */
+---
+
+<section class="details" id="child-details" hidden>
+  <dl class="facts">
+    <div><dt>KRÉTA-felhasználónév</dt><dd id="child-username"></dd></div>
+    <div><dt>Intézmény</dt><dd id="child-institute"></dd></div>
+  </dl>
+
+  <section class="source" aria-labelledby="child-kreta-title">
+    <h2 id="child-kreta-title">KRÉTA-kapcsolat</h2>
+    <p class="state" id="child-kreta-state"></p>
+    <p class="detail" id="child-kreta-detail"></p>
+    <button class="source-action" id="child-kreta-connect" type="button">Online kapcsolás</button>
+  </section>
+
+  <section class="source" aria-labelledby="child-classroom-title">
+    <h2 id="child-classroom-title">Google Classroom</h2>
+    <p class="state" id="child-classroom-state"></p>
+    <p class="detail" id="child-classroom-detail"></p>
+    <button class="source-action" id="child-classroom-connect" type="button">Classroom összekapcsolása</button>
+  </section>
+
+  <button class="edit-profile" id="child-edit" type="button">Profil szerkesztése</button>
+
+  <section class="danger" aria-labelledby="child-danger-title">
+    <h2 id="child-danger-title">Veszélyzóna</h2>
+
+    <div class="danger-item" id="danger-kreta">
+      <div class="danger-head">
+        <div>
+          <strong>KRÉTA-kapcsolat leállítása</strong>
+          <span>A gyerekprofil megmarad, de a KRÉTA-adatok nem lesznek elérhetők Claude-nak.</span>
+        </div>
+        <button type="button" data-danger-open>Leállítás</button>
+      </div>
+      <div class="danger-confirm" data-danger-confirm-box hidden>
+        <p>Biztosan leállítod <span data-child-name></span> KRÉTA-kapcsolatát?</p>
+        <div>
+          <button type="button" data-danger-confirm>Igen, leállítom</button>
+          <button type="button" data-danger-cancel>Mégse</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="danger-item" id="danger-classroom">
+      <div class="danger-head">
+        <div>
+          <strong>Classroom-fiók leválasztása</strong>
+          <span>A gyerekprofil megmarad, de a Classroom-adatok nem lesznek elérhetők Claude-nak.</span>
+        </div>
+        <button type="button" data-danger-open>Leválasztás</button>
+      </div>
+      <div class="danger-confirm" data-danger-confirm-box hidden>
+        <p>Biztosan leválasztod <span data-child-name></span> Classroom-fiókját?</p>
+        <div>
+          <button type="button" data-danger-confirm>Igen, leválasztom</button>
+          <button type="button" data-danger-cancel>Mégse</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="danger-item" id="danger-delete">
+      <div class="danger-head">
+        <div>
+          <strong>Gyerekprofil törlése</strong>
+          <span>A profillal együtt a KRÉTA- és a Classroom-kapcsolat is törlődik. Ez nem vonható vissza.</span>
+        </div>
+        <button type="button" data-danger-open>Törlés</button>
+      </div>
+      <div class="danger-confirm" data-danger-confirm-box hidden>
+        <p>Törlöd <span data-child-name></span> gyerekprofilját? A KRÉTA- és a Classroom-kapcsolata is megszűnik.</p>
+        <div>
+          <button type="button" data-danger-confirm>Igen, törlöm</button>
+          <button type="button" data-danger-cancel>Mégse</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</section>
+
+<style>
+  .facts { margin: 0; padding: 0; }
+  .facts > div { display: grid; grid-template-columns: minmax(10rem, .7fr) minmax(0, 1.3fr); gap: .4rem 1.5rem; padding: .8rem 0; border-bottom: 1px solid var(--blue-soft); }
+  dt { color: var(--ink-muted); font-family: "IBM Plex Mono", monospace; font-size: .7rem; }
+  dd { margin: 0; overflow-wrap: anywhere; color: var(--blue); font-family: "IBM Plex Mono", monospace; font-size: .8rem; }
+
+  .source { padding: 1.15rem 0; border-bottom: 1px solid var(--blue-soft); }
+  h2 { margin: 0; font-size: .9rem; letter-spacing: -.02em; }
+  .state { margin: .45rem 0 0; color: var(--ink-muted); font-size: .85rem; font-weight: 800; }
+  .state.online { color: var(--green); }
+  .detail { max-width: 46rem; margin: .3rem 0 0; color: var(--ink-muted); font-size: .8rem; line-height: 1.55; }
+
+  .source-action {
+    min-height: 2.9rem;
+    margin-top: .9rem;
+    padding: .5rem 1.1rem;
+    border: 2px solid var(--blue-strong);
+    border-radius: 0;
+    color: white;
+    background: var(--blue-strong);
+    font-size: .8rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .source-action:hover { background: var(--blue); }
+  .source-action:disabled { cursor: wait; opacity: .65; }
+
+  .edit-profile {
+    min-height: 2.9rem;
+    margin: 1.15rem 0;
+    padding: .5rem 1.1rem;
+    border: 1px solid var(--blue);
+    border-radius: 0;
+    color: var(--blue);
+    background: transparent;
+    font-size: .8rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .edit-profile:hover { color: white; background: var(--blue); }
+
+  .danger { margin-top: .5rem; padding: 0 1.15rem 1rem; border: 1px solid #d7a49a; background: #fff6f4; }
+  .danger h2 { padding: .9rem 0 .5rem; color: #a62f22; font-size: .85rem; }
+  .danger-item + .danger-item { border-top: 1px solid #e8cdc7; }
+  .danger-head { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: .8rem 0; }
+  .danger-head strong { display: block; font-size: .82rem; }
+  .danger-head span { display: block; max-width: 44rem; margin-top: .2rem; color: var(--ink-muted); font-size: .78rem; line-height: 1.45; }
+
+  .danger-head button {
+    min-height: 2.6rem;
+    flex: 0 0 auto;
+    padding: .4rem 1rem;
+    border: 1px solid #a62f22;
+    border-radius: 0;
+    color: #a62f22;
+    background: transparent;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .danger-head button:hover { color: white; background: #a62f22; }
+  .danger-confirm { padding: .2rem 0 .9rem; }
+  .danger-confirm p { margin: 0 0 .6rem; color: #6e2018; font-size: .8rem; font-weight: 700; line-height: 1.5; }
+  .danger-confirm > div { display: flex; flex-wrap: wrap; gap: .6rem; }
+
+  .danger-confirm button {
+    min-height: 2.7rem;
+    padding: .45rem 1.1rem;
+    border: 2px solid #a62f22;
+    border-radius: 0;
+    font-size: .78rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  [data-danger-confirm] { color: white; background: #a62f22; }
+  [data-danger-cancel] { border-color: var(--blue-soft); color: var(--blue); background: transparent; }
+  [data-danger-confirm]:disabled { cursor: wait; opacity: .65; }
+
+  @media (max-width: 620px) {
+    .facts > div { grid-template-columns: 1fr; gap: .2rem; }
+    .danger-head { align-items: stretch; flex-direction: column; gap: .7rem; }
+    .danger-head button, .danger-confirm button { width: 100%; }
+  }
+</style>
