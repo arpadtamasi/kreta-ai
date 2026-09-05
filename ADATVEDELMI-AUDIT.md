@@ -93,7 +93,7 @@ Ezeket nem kell újra végigfésülni, csak akkor, ha a mögöttes kód változi
       KRÉTA- és Classroom-hozzáférését kibontja — a lejárt borítékokat is,
       visszamenőleg.
 
-- [ ] **K4 — A kiskorúak azonosító adatai titkosítás nélkül állnak a
+- [x] **K4 — A kiskorúak azonosító adatai titkosítás nélkül állnak a
       Firestore-ban.**
       `server/src/profiles/store.ts:290-299`: `childName`, `normalizedName`,
       `kretaUsername`, `instituteCode` sima mezők;
@@ -332,7 +332,7 @@ Mind a 12 tétel lefuttatva. A felénél a kockázat nem áll fenn.
 
 ### Ebből fakadó új tétel
 
-- [ ] **F11 — A titkosító kulcs és a naplók nem EU-ra rögzítettek.**
+- [x] **F11 — A titkosító kulcs és a naplók nem EU-ra rögzítettek.**
       A Secret Manager `automatic` replikációja globális (M5), a `_Default`
       logbucket `global` (M6). Az `/adatkezeles` viszont azt állítja, hogy „az
       adatkezelés az Európai Unión belül történik". A replikáció utólag nem

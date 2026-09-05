@@ -18,6 +18,8 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const VERSION = "v1";
+/** A mezőtitkosítás nem lejárati védelem: száz év gyakorlatilag „soha". */
+const FIELD_TTL_MS = 100 * 365 * 24 * 60 * 60 * 1000;
 const IV_BYTES = 12;
 const KEY_BYTES = 32;
 
@@ -28,7 +30,8 @@ export type SealPurpose =
   | "request"
   | "credential"
   | "classroom_state"
-  | "classroom_credential";
+  | "classroom_credential"
+  | "profile_field";
 
 export class SealError extends Error {
   constructor(message: string) {
@@ -127,6 +130,27 @@ export class Sealer {
       throw new SealError("Sealed token has expired.");
     }
     return envelope.v;
+  }
+
+  /**
+   * K4 — nyugalmi mezőtitkosítás. A gyerek neve, KRÉTA-azonosítója,
+   * intézménykódja és iskolai e-mail-címe nem lejáró adat, ezért a
+   * boríték határideje távoli; a védelem maga a titkosítás.
+   */
+  sealField(value: string): string {
+    return this.seal("profile_field", value, FIELD_TTL_MS);
+  }
+
+  openField(sealed: string): string {
+    return this.open<string>("profile_field", sealed);
+  }
+
+  /**
+   * Keresőujjlenyomat: a normalizált névből determinisztikus MAC, hogy a
+   * duplikátumszűrés a nyílt név tárolása nélkül is működjön.
+   */
+  fingerprint(value: string): string {
+    return createHmac("sha256", this.key).update(`profile:${value}`).digest("base64url");
   }
 
   /**

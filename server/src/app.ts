@@ -58,7 +58,7 @@ export function createApp(deps: AppDeps): Express {
   const firebaseApp = getApps()[0] ?? initializeApp();
   const firebaseAuth = getAuth(firebaseApp);
   const pledgeStore = deps.pledgeStore ?? new FirestorePledgeStore(getFirestore(firebaseApp));
-  const childProfileStore = deps.childProfileStore ?? new FirestoreChildProfileStore(getFirestore(firebaseApp));
+  const childProfileStore = deps.childProfileStore ?? new FirestoreChildProfileStore(getFirestore(firebaseApp), config.sealer);
   const oidcClient = new OAuth2Client();
   const verifyFirebaseIdToken: VerifyIdToken =
     deps.verifyFirebaseIdToken ??

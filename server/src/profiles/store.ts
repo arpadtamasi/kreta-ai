@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { FieldValue, type Firestore, type Transaction } from "firebase-admin/firestore";
+import type { Sealer } from "../seal.js";
 
 export type ConnectionMode = "trial" | "keep_alive";
 export type ConnectionState = "active" | "attention";
@@ -83,7 +84,7 @@ export function normalizeChildName(value: string): string {
 
 interface StoredProfile {
   childName?: unknown;
-  normalizedName?: unknown;
+  nameFingerprint?: unknown;
   kretaUsername?: unknown;
   instituteCode?: unknown;
   connection?: unknown;
@@ -157,7 +158,7 @@ function storedConnection(value: unknown): ChildConnection | undefined {
   };
 }
 
-function storedClassroomConnection(value: unknown): ClassroomConnection | undefined {
+function storedClassroomConnection(value: unknown, sealer: Sealer): ClassroomConnection | undefined {
   if (!value || typeof value !== "object") return undefined;
   const data = value as StoredClassroomConnection;
   const connectedAt = optionalTimestampToIso(data.connectedAt);
@@ -170,7 +171,7 @@ function storedClassroomConnection(value: unknown): ClassroomConnection | undefi
     !Array.isArray(data.scopes) ||
     !data.scopes.every((scope): scope is string => typeof scope === "string")
   ) return undefined;
-  return { credential: data.credential, email: data.email, connectedAt, expiresAt, scopes: data.scopes };
+  return { credential: data.credential, email: openField(sealer, data.email), connectedAt, expiresAt, scopes: data.scopes };
 }
 
 function firestoreConnection(connection: ChildConnection) {
@@ -189,26 +190,37 @@ function firestoreConnection(connection: ChildConnection) {
   };
 }
 
-function firestoreClassroomConnection(connection: ClassroomConnection) {
+function firestoreClassroomConnection(connection: ClassroomConnection, sealer: Sealer) {
   return {
     credential: connection.credential,
-    email: connection.email,
+    // K4: a gyerek iskolai e-mail-címe azonosító adat, nem maradhat nyíltan.
+    email: sealer.sealField(connection.email),
     connectedAt: new Date(connection.connectedAt),
     expiresAt: new Date(connection.expiresAt),
     scopes: connection.scopes,
   };
 }
 
-function storedProfile(id: string, data: StoredProfile): ChildProfile {
+/** Pecsételt mező kibontása; sérült vagy régi értéknél üres sztring. */
+function openField(sealer: Sealer, value: unknown): string {
+  if (typeof value !== "string" || !value) return "";
+  try {
+    return sealer.openField(value);
+  } catch {
+    return "";
+  }
+}
+
+function storedProfile(id: string, data: StoredProfile, sealer: Sealer): ChildProfile {
   return {
     id,
-    childName: typeof data.childName === "string" ? data.childName : "",
-    normalizedName: typeof data.normalizedName === "string" ? data.normalizedName : "",
-    kretaUsername: typeof data.kretaUsername === "string" ? data.kretaUsername : "",
-    instituteCode: typeof data.instituteCode === "string" ? data.instituteCode : "",
+    childName: openField(sealer, data.childName),
+    normalizedName: typeof data.nameFingerprint === "string" ? data.nameFingerprint : "",
+    kretaUsername: openField(sealer, data.kretaUsername),
+    instituteCode: openField(sealer, data.instituteCode),
     ...(storedConnection(data.connection) ? { connection: storedConnection(data.connection) } : {}),
-    ...(storedClassroomConnection(data.classroomConnection)
-      ? { classroomConnection: storedClassroomConnection(data.classroomConnection) }
+    ...(storedClassroomConnection(data.classroomConnection, sealer)
+      ? { classroomConnection: storedClassroomConnection(data.classroomConnection, sealer) }
       : {}),
     createdAt: timestampToIso(data.createdAt),
     updatedAt: timestampToIso(data.updatedAt),
@@ -218,7 +230,10 @@ function storedProfile(id: string, data: StoredProfile): ChildProfile {
 export class FirestoreChildProfileStore implements ChildProfileStore {
   readonly #firestore: Firestore;
 
-  constructor(firestore: Firestore) {
+  readonly #sealer: Sealer;
+
+  constructor(firestore: Firestore, sealer: Sealer) {
+    this.#sealer = sealer;
     this.#firestore = firestore;
   }
 
@@ -251,7 +266,7 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
     const seen = new Set<string>();
     const profiles: ChildProfile[] = [];
     for (const doc of snapshot.docs) {
-      const profile = storedProfile(doc.id, doc.data() as StoredProfile);
+      const profile = storedProfile(doc.id, doc.data() as StoredProfile, this.#sealer);
       if (!profile.normalizedName || seen.has(profile.normalizedName)) continue;
       seen.add(profile.normalizedName);
       profiles.push(profile);
@@ -262,7 +277,7 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
 
   async get(uid: string, id: string): Promise<ChildProfile | undefined> {
     const snapshot = await this.#collection(uid).doc(id).get();
-    return snapshot.exists ? storedProfile(snapshot.id, snapshot.data() as StoredProfile) : undefined;
+    return snapshot.exists ? storedProfile(snapshot.id, snapshot.data() as StoredProfile, this.#sealer) : undefined;
   }
 
   async save(
@@ -274,11 +289,12 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
     const ref = input.id ? collection.doc(input.id) : collection.doc(randomBytes(12).toString("base64url"));
     return this.#firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(collection.orderBy("createdAt", "asc").limit(12));
-      const existing = snapshot.docs.map((doc) => storedProfile(doc.id, doc.data() as StoredProfile));
+      const existing = snapshot.docs.map((doc) => storedProfile(doc.id, doc.data() as StoredProfile, this.#sealer));
       const previous = existing.find((profile) => profile.id === input.id);
 
       if (input.id && !previous) throw new ChildProfileStoreError("not_found");
-      if (existing.some((profile) => profile.normalizedName === input.normalizedName && profile.id !== input.id)) {
+      const fingerprint = this.#sealer.fingerprint(input.normalizedName);
+      if (existing.some((profile) => profile.normalizedName === fingerprint && profile.id !== input.id)) {
         throw new ChildProfileStoreError("duplicate");
       }
       if (!input.id && existing.length >= 3) throw new ChildProfileStoreError("limit");
@@ -288,12 +304,12 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
       const savedConnection = connection ?? previous?.connection;
       const classroomConnection = previous?.classroomConnection;
       transaction.set(ref, {
-        childName: input.childName,
-        normalizedName: input.normalizedName,
-        kretaUsername: input.kretaUsername,
-        instituteCode: input.instituteCode,
+        childName: this.#sealer.sealField(input.childName),
+        nameFingerprint: this.#sealer.fingerprint(input.normalizedName),
+        kretaUsername: this.#sealer.sealField(input.kretaUsername),
+        instituteCode: this.#sealer.sealField(input.instituteCode),
         ...(savedConnection ? { connection: firestoreConnection(savedConnection) } : {}),
-        ...(classroomConnection ? { classroomConnection: firestoreClassroomConnection(classroomConnection) } : {}),
+        ...(classroomConnection ? { classroomConnection: firestoreClassroomConnection(classroomConnection, this.#sealer) } : {}),
         createdAt: new Date(createdAt),
         updatedAt: now,
       });
@@ -323,7 +339,7 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
     return this.#firestore.runTransaction(async (transaction) => {
       const snapshot = await transaction.get(ref);
       if (!snapshot.exists) return false;
-      const profile = storedProfile(snapshot.id, snapshot.data() as StoredProfile);
+      const profile = storedProfile(snapshot.id, snapshot.data() as StoredProfile, this.#sealer);
       if (!profile.connection || profile.connection.version !== expectedVersion) return false;
       transaction.update(ref, { connection: firestoreConnection(connection), updatedAt: new Date() });
       this.#writeQueue(transaction, uid, id, connection);
@@ -354,7 +370,7 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
       const existing = await transaction.get(ref);
       if (!existing.exists) return false;
       if (expectedVersion !== undefined) {
-        const profile = storedProfile(existing.id, existing.data() as StoredProfile);
+        const profile = storedProfile(existing.id, existing.data() as StoredProfile, this.#sealer);
         if (profile.connection?.version !== expectedVersion) return false;
       }
       transaction.update(ref, { connection: FieldValue.delete(), updatedAt: new Date() });
@@ -369,7 +385,7 @@ export class FirestoreChildProfileStore implements ChildProfileStore {
       const existing = await transaction.get(ref);
       if (!existing.exists) return false;
       transaction.update(ref, {
-        classroomConnection: firestoreClassroomConnection(connection),
+        classroomConnection: firestoreClassroomConnection(connection, this.#sealer),
         updatedAt: new Date(),
       });
       return true;
