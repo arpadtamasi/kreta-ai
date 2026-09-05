@@ -1,4 +1,4 @@
-import express, { type Express, type Request } from "express";
+import express, { type Express, type NextFunction, type Request, type Response } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { createSessionRouter } from "./auth/router.js";
 import type { CreateSessionCookie, VerifyIdToken, VerifySessionCookie } from "./auth/types.js";
@@ -158,6 +158,18 @@ export function createApp(deps: AppDeps): Express {
   app.post("/mcp", guard, createMcpPostHandler(mcpDeps));
   app.get("/mcp", guard, mcpMethodNotAllowed);
   app.delete("/mcp", guard, mcpMethodNotAllowed);
+
+  // Az Express beépített finalhandlere minden kezeletlen hibát
+  // console.error(err.stack)-kel ír ki. Az undici `fetch failed` oka tartalmazza
+  // a hívott <intézménykód>.e-kreta.hu URL-t, ezért nem engedjük a naplóba.
+  app.use((error: unknown, _req: Request, res: Response, next: NextFunction) => {
+    if (res.headersSent) {
+      next(error);
+      return;
+    }
+    console.error("unhandled_error", error instanceof Error ? error.name : typeof error);
+    res.status(500).json({ error: "Váratlan hiba történt. Próbáld újra." });
+  });
 
   return app;
 }

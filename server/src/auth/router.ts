@@ -58,7 +58,13 @@ export function createSessionRouter(deps: SessionRouterDeps): Router {
     }
   });
 
-  router.delete("/", (_req, res) => {
+  router.delete("/", (req, res) => {
+    // A POST-tal azonos védelem: enélkül egy idegen oldal kijelentkeztethet.
+    const origin = req.get("origin");
+    if (origin !== deps.issuerOf(req)) {
+      res.status(403).json({ error: "A kijelentkezést erről az oldalról nem lehet elindítani." });
+      return;
+    }
     res.set("Cache-Control", "no-store").set("Set-Cookie", clearedSessionCookieHeader()).status(204).end();
   });
 

@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import { z } from "zod";
 import type { Config } from "../config.js";
 import { login, revokeRefreshToken, type LoginCredentials } from "../kreta/auth.js";
+import { LoginThrottle } from "./loginThrottle.js";
 import { KretaError, normalizeInstituteCode } from "../kreta/institute.js";
 import type { VerifyIdToken, VerifiedUser } from "../auth/types.js";
 import { connectionIsOnline, createConnection, openConnectionCredential } from "./connection.js";
@@ -69,6 +70,7 @@ function publicProfile(profile: ChildProfile) {
 
 export function createChildProfileRouter(deps: ChildProfileRouterDeps): Router {
   const router = Router();
+  const throttle = new LoginThrottle();
   const doLogin = deps.loginImpl ?? login;
 
   async function authenticated(req: Request): Promise<VerifiedUser> {
@@ -147,6 +149,17 @@ export function createChildProfileRouter(deps: ChildProfileRouterDeps): Router {
         keepAliveUntil = new Date(deadline).toISOString();
       }
 
+      // K5: a hibás belépéseket fiókonként korlátozzuk, hogy a végpont ne
+      // legyen szabadon futtatható jelszópróbálgató a KRÉTA IDP-je ellen.
+      const throttleKey = `${user.uid}:${instituteCode}`;
+      const retryAfter = throttle.retryAfter(throttleKey);
+      if (retryAfter > 0) {
+        res.set("Retry-After", String(retryAfter)).status(429).json({
+          error: "Túl sok sikertelen KRÉTA-belépés. Próbáld újra később.",
+        });
+        return;
+      }
+
       let tokens;
       try {
         tokens = await doLogin({
@@ -154,7 +167,10 @@ export function createChildProfileRouter(deps: ChildProfileRouterDeps): Router {
           password: parsed.data.password,
           instituteCode,
         });
+        throttle.clear(throttleKey);
       } catch (error) {
+        throttle.recordFailure(throttleKey);
+        throttle.prune();
         res.status(400).json({
           error: error instanceof KretaError
             ? error.message

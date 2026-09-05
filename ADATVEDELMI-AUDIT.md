@@ -105,7 +105,7 @@ Ezeket nem kell újra végigfésülni, csak akkor, ha a mögöttes kód változi
       támaszkodik — miközben a `server/README.md:5-7` „titkosított tárolást"
       ígér.
 
-- [ ] **K5 — A profil-mentés hitelesítés-orákulum, korlátozás nélkül.**
+- [x] **K5 — A profil-mentés hitelesítés-orákulum, korlátozás nélkül.**
       `server/src/profiles/router.ts:152-164`: bármely Google-fiókkal belépett
       felhasználó tetszőleges `kretaUsername` + `password` + `instituteCode`
       hármast küldhet, és a válasz megkülönbözteti a sikeres és sikertelen
@@ -132,7 +132,7 @@ Ezeket nem kell újra végigfésülni, csak akkor, ha a mögöttes kód változi
       az USA-ban van, miközben az `server/web/src/pages/iskolai-admin.astro:22`
       és `:158` az iskoláknak EU-t állít.
 
-- [ ] **F2 — `storage.rules` nincs a repóban, miközben a kliens ismer egy
+- [x] **F2 — `storage.rules` nincs a repóban, miközben a kliens ismer egy
       bucketet.**
       `server/firebase.json` csak `firestore` és `hosting` kulcsot tartalmaz;
       `server/storage.rules` nem létezik. A böngészőbe viszont bekerül a
@@ -143,7 +143,7 @@ Ezeket nem kell újra végigfésülni, csak akkor, ha a mögöttes kód változi
       alapértelmezés esetén bármely bejelentkezett Google-felhasználó írhat és
       olvashat. Lásd M4.
 
-- [ ] **F3 — Az Express alapértelmezett hibakezelője stack trace-t ír a
+- [x] **F3 — Az Express alapértelmezett hibakezelője stack trace-t ír a
       stderr-re.**
       `server/src/app.ts` sehol nem regisztrál `(err, req, res, next)`
       middleware-t (a fájl `:162`-n `return app`-pel zárul), és a
@@ -206,7 +206,7 @@ Ezeket nem kell újra végigfésülni, csak akkor, ha a mögöttes kód változi
       **Kockázat:** egy szülői törlési kérésre ma nem lehet teljes körű választ
       adni, és a naplókra vonatkozó megőrzés sehol nincs kimondva.
 
-- [ ] **F8 — A `GET /api/pledges` hitelesítés nélkül nyilvános.**
+- [x] **F8 — A `GET /api/pledges` hitelesítés nélkül nyilvános.**
       `server/src/pledges/router.ts:62-72`: a bearer token opcionális (`:65`), a
       lista mindig visszamegy — 50 rekord, benne a szülők Google-profilneve
       (`server/src/pledges/router.ts:45-49`, `server/src/pledges/store.ts:65`). Az
@@ -240,7 +240,7 @@ Ezeket nem kell újra végigfésülni, csak akkor, ha a mögöttes kód változi
       (`server/src/app.ts:66`), a session-süti viszont igen
       (`server/src/app.ts:82`): egy visszavont Google-fiók ID tokenje még ~1 óráig
       működik az `/api/*` végpontokon.
-- [ ] **C2** — `DELETE /api/session` (`server/src/auth/router.ts:62`) nem
+- [x] **C2** — `DELETE /api/session` (`server/src/auth/router.ts:62`) nem
       ellenőriz Origint, ellentétben a POST-tal (`server/src/auth/router.ts:25`):
       triviális CSRF-kijelentkeztetés.
 - [ ] **C3** — `app.set("trust proxy", true)` (`server/src/app.ts:43`) minden
@@ -307,3 +307,38 @@ parancs vagy egy konzolképernyő.
 - [ ] **M12 — Firebase Auth: ki tud regisztrálni.** Console → Authentication →
       Settings. K5 miatt számít, hogy bárki nyithat-e fiókot; ha igen, a
       `PUT /api/profiles` bárki előtt nyitva áll.
+
+
+---
+
+## Kézi ellenőrzések eredménye (2026-09-05)
+
+Mind a 12 tétel lefuttatva. A felénél a kockázat nem áll fenn.
+
+| # | Eredmény | Következmény |
+|---|---|---|
+| M1 | `KRETA_RELAY_URL=https://kreta.uzenofuzet.hu/v1/fetch`, saját gép, Cloudflare Tunnel, Docker (`restart: unless-stopped`) | K1 áll, de nem külső fél: adatfeldolgozói szerződés tárgytalan. A tájékoztatásból viszont hiányzik. |
+| M2 | Firestore `europe-west1` | **Rendben**, F1 tárolási fele igaz. |
+| M3 | `uzenofuzet-connection-refresh`, `*/5 * * * *`, ENABLED | **Rendben**, F6 „nem fut a takarítás" fele megdől. |
+| M4 | `gs://uzenofuzet.firebasestorage.app` **nem létezik** (404) | F2 kockázata tárgytalan; csak a halott kliens-konfig maradt — eltávolítva. |
+| M5 | `uzenofuzet-sealing-key` replikáció **`automatic`** (globális), hozzáférés csak a runner SA-nak | **Nyitott:** a kulcs nem EU-ra rögzített, és a replikáció utólag nem módosítható — új titok + migráció kell. |
+| M6 | `_Default` logbucket **`global`**, 30 nap, nem zárolt | **Nyitott:** a napló nem EU-korlátos. |
+| M7 | Nulla stack trace, nulla ERROR az elmúlt 7 napban | F3 elméleti volt — a hibakezelő attól még beépítve. |
+| M8 | `autoscaling.knative.dev/maxScale=1` | **Rendben**, F10 kockázata ma nem áll fenn (a kódban továbbra sincs kikényszerítve). |
+| M9 | `OAUTH_ISSUER` be van állítva | **C3 nem aktív** — az issuer nem a Host fejlécből jön. |
+| M10 | `REFRESH_JOB_AUDIENCE` és `REFRESH_JOB_SERVICE_ACCOUNT` is beállítva | **Rendben**, a frissítés és takarítás fut. |
+| M11 | `uzenofuzet-runner@` SA, szerepkörei: `firebaseSessionIssuer` (egyedi) + `datastore.user` | **Rendben**, nem Editor. **De:** a Compute default SA-nak (`652545082668-compute@`) van `roles/editor` a projekten — érdemes elvenni, ha semmi nem használja. |
+| M12 | Google-belépés bárki előtt nyitott (tervezetten) | K5 emiatt számított — a korlátozás beépítve. |
+
+### Ebből fakadó új tétel
+
+- [ ] **F11 — A titkosító kulcs és a naplók nem EU-ra rögzítettek.**
+      A Secret Manager `automatic` replikációja globális (M5), a `_Default`
+      logbucket `global` (M6). Az `/adatkezeles` viszont azt állítja, hogy „az
+      adatkezelés az Európai Unión belül történik". A replikáció utólag nem
+      módosítható: új, `user-managed` EU-replikációjú titkot kell létrehozni és
+      átállni rá.
+
+- [ ] **F12 — A Compute default szolgáltatásfióknak `roles/editor` jogosultsága van.**
+      `652545082668-compute@developer.gserviceaccount.com`. A szolgáltatás nem
+      ezt használja (M11), tehát elvehető.

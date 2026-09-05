@@ -49,7 +49,16 @@ test("a valid session can be checked and cleared", async () => {
   assert.equal(checked.status, 200);
   assert.deepEqual(await checked.json(), { signedIn: true, name: "Anna Példa" });
 
-  const cleared = await fetch(`${base}/api/session`, { method: "DELETE" });
+  const cleared = await fetch(`${base}/api/session`, { method: "DELETE", headers: { origin: base } });
   assert.equal(cleared.status, 204);
   assert.match(cleared.headers.get("set-cookie") ?? "", /Max-Age=0/);
+});
+
+test("sign-out from a foreign origin is refused", async () => {
+  const response = await fetch(`${base}/api/session`, {
+    method: "DELETE",
+    headers: { origin: "https://evil.example", cookie: "__session=firebase-session-cookie" },
+  });
+  assert.equal(response.status, 403);
+  assert.equal(response.headers.get("set-cookie"), null);
 });

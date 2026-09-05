@@ -61,12 +61,13 @@ export function createPledgeRouter(deps: PledgeRouterDeps): Router {
 
   router.get("/", async (req, res) => {
     try {
-      const token = bearer(req);
-      const viewer = token ? await deps.verifyIdToken(token) : undefined;
+      // A lista a szülők megjelenített nevét tartalmazza, ezért belépés kell
+      // hozzá — az üzenőfal a publikus UI-ból amúgy is ki van kapcsolva.
+      const viewer = await authenticated(req);
       const result = await deps.store.list(50);
       res.set("Cache-Control", "no-store").json({
         count: result.count,
-        pledges: result.pledges.map((pledge) => publicPledge(pledge, viewer?.uid)),
+        pledges: result.pledges.map((pledge) => publicPledge(pledge, viewer.uid)),
       });
     } catch {
       res.status(401).json({ error: "A bejelentkezés lejárt. Jelentkezz be újra." });

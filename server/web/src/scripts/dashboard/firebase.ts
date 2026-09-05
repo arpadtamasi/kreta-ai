@@ -6,7 +6,6 @@ const firebaseConfig = {
   apiKey: "AIzaSyBFaJ8tV0bC4yfff6pTj09M1Oc17S9KuPc",
   authDomain: "uzenofuzet.firebaseapp.com",
   projectId: "uzenofuzet",
-  storageBucket: "uzenofuzet.firebasestorage.app",
   messagingSenderId: "652545082668",
   appId: "1:652545082668:web:2ae336556523a75af4d889",
 };

@@ -42,10 +42,15 @@ const server = createApp({
 const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
 after(() => void server.close());
 
-test("the public pledge list starts empty", async () => {
-  const response = await fetch(`${base}/api/pledges`);
-  assert.equal(response.status, 200);
-  assert.deepEqual(await response.json(), { count: 0, pledges: [] });
+test("the pledge list requires a verified Google identity", async () => {
+  const anonymous = await fetch(`${base}/api/pledges`);
+  assert.equal(anonymous.status, 401);
+
+  const signedIn = await fetch(`${base}/api/pledges`, {
+    headers: { authorization: "Bearer anna-token" },
+  });
+  assert.equal(signedIn.status, 200);
+  assert.deepEqual(await signedIn.json(), { count: 0, pledges: [] });
 });
 
 test("posting requires a verified Google identity", async () => {
