@@ -219,7 +219,7 @@ The public-site palette behaves like ink on cool stationery; saturated color is 
 
 ### Hierarchy
 
-- **Display** (600, fluid 4.5–9.5rem in the shipped surfaces): Hero and section-opening phrases only; most instances are uppercase, with tight negative tracking. Line-height is 0.76 for a **single-line** head and **1.05 from two lines up**, because Big Shoulders sets uppercase accents up to 0.96em above the baseline — Á, É, Ő, Ű are in almost every Hungarian heading, and anything under 0.97 makes the second line's accents strike the line above.
+- **Display** (600, fluid 4.5–9.5rem in the shipped surfaces): Hero and section-opening phrases only; most instances are uppercase, with tight negative tracking. Line-height is 0.76 for a **single-line** head and **1.0 from two lines up**, because Big Shoulders sets uppercase accents up to 0.96em above the baseline — Á, É, Ő, Ű are in almost every Hungarian heading, so 0.968 is the absolute floor. Do not sit on the floor: 0.97 leaves 0.1px of ink clearance, which reads as a near-miss rather than as tightness. 1.0 gives ~3px and still stacks like a poster.
 - **Headline** (700, fluid 2.1–6rem, 0.98–1.05 line-height): High-stakes warnings and advocacy statements in Manrope, not the display face.
 - **Lead** (650, fluid 1.35–2.35rem, 1.32–1.35 line-height): The interpretive statement paired with a large display heading.
 - **Body** (400, generally .85–1.25rem, 1.5–1.75 line-height): Explanations and legal copy. Reading measure is capped at roughly 70 rendered characters — about `33rem` for 16px Manrope, or `52ch` when the capped element sets its own smaller size. Body prose does not go below .85rem.

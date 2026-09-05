@@ -10,16 +10,6 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
     <p>Az Üzenőfüzet a KRÉTA-t és a Google Classroomot is elérhetővé teszi Claude-nak. Fontos pontosan értened a két eltérő kapcsolatot.</p>
   </header>
 
-  <section class="password" id="jelszo" aria-labelledby="password-title">
-    <div class="warning-mark" aria-hidden="true">!</div>
-    <div>
-      <h2 id="password-title">A belépéskor a KRÉTA-jelszavad átmegy az Üzenőfüzet szerverén.</h2>
-      <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak az Online kapcsolat létrehozásához használjuk, majd eldobjuk.</p>
-      <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. A jelszó kezelése átmeneti, nem „zero knowledge”.</p>
-      <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> A hosztolt szolgáltatás csak akkor való neked, ha ezt a szerveroldali bizalmi határt elfogadod.</aside>
-    </div>
-  </section>
-
   <section class="flow" aria-labelledby="flow-title">
     <div>
       <h2 id="flow-title">Mi történik<br />a háttérben?</h2>
@@ -38,6 +28,16 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
     <h2 id="classroom-title">Mit olvashat a Classroomból?</h2>
     <p>Aktív kurzusokat, kiadott feladatokat, a gyerek saját beadási állapotát és jegyét, közleményeket és tananyagokat. Az Üzenőfüzet ehhez kizárólag read-only Google scope-okat kér.</p>
     <p><strong>Nincs beadás vagy módosítás.</strong> Az iskola Workspace-rendszergazdája a külső alkalmazást letilthatja; ilyenkor az engedélyezést az iskola adminisztrátorának kell jóváhagynia.</p>
+  </section>
+
+  <section class="password" id="jelszo" aria-labelledby="password-title">
+    <div class="warning-mark" aria-hidden="true">!</div>
+    <div>
+      <h2 id="password-title">A belépéskor a KRÉTA-jelszavad átmegy az Üzenőfüzet szerverén.</h2>
+      <p class="large">Azért, mert az eKRÉTA nem kínál külső alkalmazásoknak használható hivatalos OAuth-hozzáférést. A jelszót nem mentjük el; csak az Online kapcsolat létrehozásához használjuk, majd eldobjuk.</p>
+      <p>A szolgáltatás Google Cloud Runon fut, a lezáró kulcsot a Google Secret Manager védi. Ez az infrastruktúrát védi — nem jelenti azt, hogy neked ne kellene megbíznod az Üzenőfüzet üzemeltetőjében. Az üzemeltető kontrollálja a futó kódot és a lezáró kulcsot. A jelszó kezelése átmeneti, nem „zero knowledge”.</p>
+      <aside><strong>Ha ez aggaszt, ne használd — minket se kell elhinned.</strong> A hosztolt szolgáltatás csak akkor való neked, ha ezt a szerveroldali bizalmi határt elfogadod.</aside>
+    </div>
   </section>
 
   <section class="why" aria-labelledby="why-title">
@@ -71,10 +71,10 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
 <style>
   /* A két hasáb alja egy vonalra ül: ez a 37/63 osztás értelme. Korábban egy
      üres második sorra volt igazítva, amitől 113px holt hely maradt alul. */
-  .page-hero { display: grid; grid-template-columns: 37% 63%; align-items: end; padding: clamp(4rem, 8vw, 7rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
-  h1 { grid-column: 1; margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(5rem, 8vw, 9rem); font-weight: 600; line-height: 1.05; letter-spacing: -.035em; text-transform: uppercase; }
+  .page-hero { display: grid; grid-template-columns: 37% 63%; align-items: end; padding: clamp(2.2rem, 4vw, 3.6rem) var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
+  h1 { grid-column: 1; margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(3.2rem, 5vw, 5.6rem); font-weight: 600; line-height: 1; letter-spacing: -.035em; text-transform: uppercase; }
   .page-hero > p:last-child { grid-column: 2; max-width: 51rem; margin: 0; color: var(--blue); font-size: clamp(1.35rem, 2.2vw, 2.2rem); font-weight: 650; line-height: 1.35; }
-  .password { display: grid; grid-template-columns: 1fr 5fr; gap: clamp(2rem, 5vw, 6rem); padding: clamp(4rem, 9vw, 9rem) var(--page-pad); color: white; background: var(--ink); scroll-margin-top: 1.5rem; }
+  .password { display: grid; grid-template-columns: 1fr 5fr; gap: clamp(2rem, 5vw, 6rem); padding: clamp(3rem, 6vw, 6rem) var(--page-pad); color: white; background: var(--ink); scroll-margin-top: 1.5rem; }
   .warning-mark { width: clamp(5rem, 9vw, 9rem); aspect-ratio: 1; display: grid; place-items: center; align-self: start; border: 5px solid var(--red); border-radius: 50%; color: var(--red); font-family: "IBM Plex Mono", monospace; font-size: clamp(3rem, 6vw, 6rem); transform: rotate(-5deg); }
   .password h2 { max-width: 67rem; margin: 0 0 1.6rem; font-size: clamp(2.1rem, 4.2vw, 4.7rem); letter-spacing: -.045em; line-height: 1.05; }
   .password p { max-width: 33rem; color: #bac6d5; line-height: 1.75; }
@@ -82,7 +82,7 @@ import ClassroomAdminHelp from "../components/dashboard/ClassroomAdminHelp.astro
   aside { max-width: 33rem; margin: 2rem 0; padding: 1.3rem 1.5rem; border: 1px solid rgba(242, 200, 75, .65); color: #f3e8bd; background: #172433; line-height: 1.65; }
   .flow { display: grid; grid-template-columns: 37% 63%; }
   .flow > div { padding: clamp(4rem, 8vw, 8rem) var(--page-pad); border-right: 1px solid var(--blue-soft); }
-  .flow h2 { margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 6vw, 7rem); font-weight: 600; line-height: 1.05; text-transform: uppercase; }
+  .flow h2 { margin: 0; font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif; font-size: clamp(4rem, 6vw, 7rem); font-weight: 600; line-height: 1; text-transform: uppercase; }
   .flow ol { margin: 0; padding: 0; list-style: none; }
   .flow li { display: grid; grid-template-columns: 4rem 1fr; gap: 1rem; padding: 2rem var(--page-pad); border-bottom: 1px solid var(--blue-soft); }
   /* 16px-en a vermilion 4.0:1 a papíron — bukó AA. 1.2rem/700 már nagy

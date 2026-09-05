@@ -57,10 +57,11 @@ const { title, description, heading, sections, related, updated } = Astro.props;
     font-family: "Big Shoulders Display Variable", "Arial Narrow", sans-serif;
     font-size: clamp(5rem, 10vw, 9rem);
     font-weight: 600;
-    /* Big Shouldersben a nagybetűs ékezet 0.96em-ig ér az alapvonal fölé
-       (a legmagasabb az É), így 0.97 alatt két sor tintája biztosan összeér.
-       1.05 mérten ~0.08em levegőt hagy — feszes marad, de nem ütközik. */
-    line-height: 1.05;
+    /* Big Shouldersben a nagybetűs ékezet 0.96em-ig ér az alapvonal fölé (a
+       legmagasabb az É), így 0.968 az abszolút alsó határ. 0.97 mérten 0,1px
+       hézagot hagy — az nem tömörség, hanem épphogy-nem-ütközés, és annak is
+       látszik. 1.0 ad ~3px valódi levegőt, és plakátszerű marad. */
+    line-height: 1;
     letter-spacing: -.035em;
     text-transform: uppercase;
   }
