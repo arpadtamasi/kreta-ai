@@ -92,14 +92,26 @@ npm run build
 
 Cloud Runra:
 
+Meglévő szolgáltatás frissítése — env-flag nélkül, hogy a beállítások
+megmaradjanak:
+
+```bash
+gcloud run deploy uzenofuzet --source . --region europe-west1
+```
+
+Első telepítéskor a teljes lista. **A `--set-env-vars` mindent felülír**, ezért
+a `KRETA_RELAY_*` és a `GOOGLE_CLOUD_PROJECT` sem maradhat le róla — enélkül a
+KRÉTA-hívások adatközponti IP-ről mennének, és a KRÉTA eldobja őket:
+
 ```bash
 gcloud run deploy uzenofuzet \
   --source . \
   --region europe-west1 \
   --allow-unauthenticated \
   --max-instances=1 \
-  --set-env-vars OAUTH_ISSUER=https://uzenofuzet.hu,REFRESH_JOB_AUDIENCE=https://<run-url>,REFRESH_JOB_SERVICE_ACCOUNT=uzenofuzet-refresher@<project>.iam.gserviceaccount.com,GOOGLE_CLASSROOM_CLIENT_ID=<web-client-id> \
-  --set-secrets TOKEN_SEALING_KEY=uzenofuzet-sealing-key:latest,GOOGLE_CLASSROOM_CLIENT_SECRET=uzenofuzet-classroom-client-secret:latest
+  --service-account uzenofuzet-runner@<project>.iam.gserviceaccount.com \
+  --set-env-vars OAUTH_ISSUER=https://uzenofuzet.hu,GOOGLE_CLOUD_PROJECT=<project>,REFRESH_JOB_AUDIENCE=https://<run-url>,REFRESH_JOB_SERVICE_ACCOUNT=uzenofuzet-refresher@<project>.iam.gserviceaccount.com,GOOGLE_CLASSROOM_CLIENT_ID=<web-client-id>,KRETA_RELAY_URL=https://kreta.uzenofuzet.hu/v1/fetch \
+  --set-secrets TOKEN_SEALING_KEY=uzenofuzet-sealing-key:latest,GOOGLE_CLASSROOM_CLIENT_SECRET=uzenofuzet-classroom-client-secret:latest,KRETA_RELAY_KEY=uzenofuzet-relay-key:latest
 ```
 
 A `--max-instances=1` az authorization code és a Classroom OAuth state
