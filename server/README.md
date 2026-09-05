@@ -178,7 +178,7 @@ A helyi `127.0.0.1:39090` portot hitelesített HTTPS tunnel mögé kell tenni,
 majd a Cloud Run szolgáltatásnak együtt kell megadni:
 
 ```text
-KRETA_RELAY_URL=https://<saját-tunnel>/v1/fetch
+KRETA_RELAY_URL=https://kreta.uzenofuzet.hu/v1/fetch
 KRETA_RELAY_KEY=<ugyanaz a kulcs>
 ```
 
